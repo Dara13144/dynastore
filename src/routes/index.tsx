@@ -465,7 +465,7 @@ function CartModal({ onClose, onToast }: { onClose: () => void; onToast: (m: str
 
 
 function SettingsModal({ onClose, onToast }: { onClose: () => void; onToast: (m: string) => void }) {
-  const { profile, setProfile, library } = useStore();
+  const { profile, setProfile, library, coins } = useStore();
   const [name, setName] = useState(profile.name);
   const [avatar, setAvatar] = useState<string | null>(profile.avatar);
   const fileRef = useRef<HTMLInputElement>(null);
