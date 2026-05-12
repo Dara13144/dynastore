@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState, useRef } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import QRCode from "react-qr-code";
-import { Coins, ShoppingCart, Settings, LogIn, LogOut, X, Trash2, Check, Star, Zap, Clock, Heart, Send, Gamepad2, Sparkles, ImageIcon, AlertTriangle, RefreshCw, Download, Copy } from "lucide-react";
+import { Coins, ShoppingCart, Settings, LogIn, LogOut, X, Trash2, Check, Star, Zap, Clock, Heart, Send, Gamepad2, Sparkles, ImageIcon, AlertTriangle, RefreshCw, Download, Copy, Loader2, QrCode as QrCodeIcon } from "lucide-react";
 import { StoreProvider, useStore, GAMES, COIN_PACKS, gameFinalPrice, type CoinPack, type Game } from "@/lib/store";
 import { createTopup as createTopupFn, checkPayment as checkPaymentFn } from "@/lib/bakong.functions";
 import heroImg from "@/assets/hero-arcade.jpg";
@@ -599,6 +599,7 @@ function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () 
   const [lastChecked, setLastChecked] = useState<number | null>(null);
   const [pollTick, setPollTick] = useState(0);
   const [paidAt, setPaidAt] = useState<number | null>(null);
+  const [mismatch, setMismatch] = useState<{ scanned: string; active: string } | null>(null);
   const [autoCloseIn, setAutoCloseIn] = useState<number>(0);
   const POLL_WINDOW_S = 300;
   const AUTO_CLOSE_S = 6;
@@ -648,6 +649,7 @@ function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () 
 
     // Move current tx into history before regenerating
     setPrevTx(tx);
+    setMismatch(null);
     setStatus("loading");
     setErrMsg("");
     setTx(null);
@@ -783,6 +785,7 @@ function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () 
       });
       if (mismatched) {
         setStatus("qr");
+        setMismatch({ scanned: checkingMd5, active: tx?.md5 ?? "" });
         onToast("MD5 មិនត្រូវនឹង QR ដែលកំពុងសកម្ម — សូមស្កេន QR ថ្មី");
       } else if (expired) {
         setStatus("expired");
@@ -804,6 +807,43 @@ function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () 
           </div>
         </div>
       </div>
+
+      {/* Unified payment status panel */}
+      {(() => {
+        type S = { tone: string; ring: string; iconBg: string; icon: any; label: string; hint: string; action?: { label: string; onClick: () => void } | null };
+        let s: S | null = null;
+        if (status === "confirm") s = { tone: "text-foreground", ring: "ring-border", iconBg: "bg-muted text-muted-foreground", icon: ShoppingCart, label: "ត្រៀមបង់ប្រាក់", hint: "ពិនិត្យព័ត៌មានកញ្ចប់ មុនបង្កើត KHQR" };
+        else if (status === "loading") s = { tone: "text-primary", ring: "ring-primary/30", iconBg: "bg-primary/15 text-primary animate-pulse", icon: Loader2, label: "កំពុងបង្កើត KHQR…", hint: "សូមរង់ចាំបន្តិច" };
+        else if (status === "login") s = { tone: "text-amber-600 dark:text-amber-400", ring: "ring-amber-500/30", iconBg: "bg-amber-500/15 text-amber-600 dark:text-amber-400", icon: LogIn, label: "ត្រូវការចូលគណនី", hint: "ចូលគណនីដើម្បីបង្កើត KHQR និងផ្ទៀងផ្ទាត់" };
+        else if (mismatch) s = { tone: "text-destructive", ring: "ring-destructive/40", iconBg: "bg-destructive/15 text-destructive", icon: AlertTriangle, label: "MD5 មិនត្រូវនឹង QR សកម្ម", hint: "QR ដែលបានស្កេនមិនមែនជា QR បច្ចុប្បន្ន — សូមស្កេនថ្មី", action: { label: "ស្កេន QR ថ្មី", onClick: () => { setMismatch(null); onToast("សូមស្កេន QR ខាងក្រោម"); } } };
+        else if (status === "qr") s = { tone: "text-emerald-600 dark:text-emerald-400", ring: "ring-emerald-500/30", iconBg: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400", icon: QrCodeIcon, label: "កំពុងរង់ចាំការស្កេន", hint: "ស្កេន KHQR ខាងក្រោម — យើងពិនិត្យរៀងរាល់ ៤ វិនាទី" };
+        else if (status === "verifying") s = { tone: "text-primary", ring: "ring-primary/30", iconBg: "bg-primary/15 text-primary animate-pulse", icon: Loader2, label: "កំពុងផ្ទៀងផ្ទាត់…", hint: "កំពុងសួរទៅ Bakong សម្រាប់ការទូទាត់" };
+        else if (status === "paid") s = { tone: "text-primary", ring: "ring-primary/40", iconBg: "bg-primary text-primary-foreground", icon: Check, label: "បង់ប្រាក់ជោគជ័យ", hint: "Coins បានបន្ថែមចូល Wallet ដោយស្វ័យប្រវត្តិ" };
+        else if (status === "expired") s = { tone: "text-amber-600 dark:text-amber-400", ring: "ring-amber-500/40", iconBg: "bg-amber-500/15 text-amber-600 dark:text-amber-400", icon: Clock, label: "KHQR ផុតកំណត់", hint: "MD5 មានសុពលភាព ៥ នាទី — ត្រូវបង្កើត QR ថ្មី", action: { label: "បង្កើត KHQR ថ្មី", onClick: retryAndRegenerate } };
+        else if (status === "error") s = { tone: "text-destructive", ring: "ring-destructive/40", iconBg: "bg-destructive/15 text-destructive", icon: AlertTriangle, label: "មានបញ្ហា", hint: errMsg || "បង្កើត KHQR មិនបាន", action: authed ? { label: "ព្យាយាមម្ដងទៀត", onClick: retryAndRegenerate } : null };
+        if (!s) return null;
+        const Icon = s.icon;
+        return (
+          <div className={`mt-3 flex items-center gap-3 rounded-2xl bg-background/40 px-4 py-3 ring-1 ${s.ring}`}>
+            <div className={`grid h-9 w-9 shrink-0 place-items-center rounded-full ${s.iconBg}`}>
+              <Icon className={`h-4 w-4 ${status === "loading" || status === "verifying" ? "animate-spin" : ""}`} />
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className={`text-sm font-bold ${s.tone}`}>{s.label}</div>
+              <div className="truncate text-[11px] text-muted-foreground">{s.hint}</div>
+            </div>
+            {s.action && (
+              <button
+                onClick={s.action.onClick}
+                disabled={refreshing}
+                className="shrink-0 rounded-full bg-foreground px-3 py-1.5 text-[11px] font-semibold text-background hover:opacity-90 disabled:opacity-60"
+              >
+                {s.action.label}
+              </button>
+            )}
+          </div>
+        );
+      })()}
 
       <div className="mt-5 grid place-items-center rounded-2xl bg-white p-5 min-h-[300px]">
         {tx && status !== "error" && status !== "loading" && status !== "confirm" && status !== "login" && (
