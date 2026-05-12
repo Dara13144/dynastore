@@ -598,7 +598,10 @@ function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () 
   const [refreshing, setRefreshing] = useState(false);
   const [lastChecked, setLastChecked] = useState<number | null>(null);
   const [pollTick, setPollTick] = useState(0);
+  const [paidAt, setPaidAt] = useState<number | null>(null);
+  const [autoCloseIn, setAutoCloseIn] = useState<number>(0);
   const POLL_WINDOW_S = 300;
+  const AUTO_CLOSE_S = 6;
 
   const retry = () => {
     setStatus("confirm");
