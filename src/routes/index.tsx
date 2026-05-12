@@ -622,50 +622,20 @@ function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () 
   useEffect(() => {
     if (!tx) return;
     let cancelled = false;
-
-    const renderQr = async () => {
-      const canvas = qrCanvasRef.current;
-      if (!canvas) {
-        if (!cancelled) {
-          setStatus("error");
-          setErrMsg("បង្កើត QR មិនបានជោគជ័យ (canvas មិនមាន)។ សូមព្យាយាមម្តងទៀត។");
-        }
-        return;
-      }
-
-      const ctx = canvas.getContext("2d");
-      if (!ctx) {
-        if (!cancelled) {
-          setStatus("error");
-          setErrMsg("បង្កើត QR មិនបានជោគជ័យ (canvas មិនមាន)។ សូមព្យាយាមម្តងទៀត។");
-        }
-        return;
-      }
-
+    (async () => {
       try {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        await QRCode.toCanvas(canvas, tx.qrPayload, { margin: 1, width: 280, errorCorrectionLevel: "M" });
-        if (!cancelled) {
-          setErrMsg("");
-          setStatus("qr");
-        }
+        const dataUrl = await QRCode.toDataURL(tx.qrPayload, { margin: 1, width: 280, errorCorrectionLevel: "M" });
+        if (cancelled) return;
+        setQrDataUrl(dataUrl);
+        setErrMsg("");
+        setStatus("qr");
       } catch (qrErr: any) {
-        const msg = String(qrErr?.message || qrErr || "");
-        if (!cancelled) {
-          setStatus("error");
-          setErrMsg(
-            msg.includes("getContext") || msg.toLowerCase().includes("canvas")
-              ? "បង្កើត QR មិនបានជោគជ័យ (canvas មិនមាន)។ សូមព្យាយាមម្តងទៀត។"
-              : `បង្កើត QR បរាជ័យ៖ ${msg || "មិនស្គាល់"}`
-          );
-        }
+        if (cancelled) return;
+        setStatus("error");
+        setErrMsg(`បង្កើត QR បរាជ័យ៖ ${String(qrErr?.message || qrErr || "មិនស្គាល់")}`);
       }
-    };
-
-    void renderQr();
-    return () => {
-      cancelled = true;
-    };
+    })();
+    return () => { cancelled = true; };
   }, [tx, attempt]);
 
   useEffect(() => {
