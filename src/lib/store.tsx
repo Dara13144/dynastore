@@ -53,7 +53,6 @@ type StoreCtx = {
   library: string[];
   profile: Profile;
   recs: Recommendation[];
-  isAdmin: boolean;
   addToCart: (id: string) => void;
   removeFromCart: (id: string) => void;
   clearCart: () => void;
@@ -63,7 +62,6 @@ type StoreCtx = {
   signOut: () => Promise<void>;
   setProfile: (p: Profile) => void;
   addRec: (r: Omit<Recommendation, "id" | "initial">) => void;
-  toggleAdmin: () => void;
 };
 
 const Ctx = createContext<StoreCtx | null>(null);
@@ -79,7 +77,6 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [cart, setCart] = useState<string[]>([]);
   const [profile, setProfile] = useState<Profile>({ name: "Player", avatar: null });
   const [recs, setRecs] = useState<Recommendation[]>(INITIAL_RECS);
-  const [isAdmin, setIsAdmin] = useState(false);
 
   const wallet = useQuery({
     queryKey: ["wallet", session?.user.id],
@@ -106,7 +103,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     coins: wallet.data?.coins ?? 0,
     cart,
     library: wallet.data?.library ?? [],
-    profile, recs, isAdmin,
+    profile, recs,
     addToCart: (id) => setCart((c) => (c.includes(id) ? c : [...c, id])),
     removeFromCart: (id) => setCart((c) => c.filter((x) => x !== id)),
     clearCart: () => setCart([]),
@@ -125,7 +122,6 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     signOut: async () => { await supabase.auth.signOut(); qc.clear(); },
     setProfile,
     addRec: (r) => setRecs((rs) => [{ id: crypto.randomUUID(), initial: r.name.charAt(0).toUpperCase() || "?", ...r }, ...rs]),
-    toggleAdmin: () => setIsAdmin((a) => !a),
   };
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

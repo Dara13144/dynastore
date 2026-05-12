@@ -2,7 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState, useRef } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import QRCode from "qrcode";
-import { Coins, ShoppingCart, Settings, LogIn, LogOut, X, Plus, Minus, Trash2, Check, Star, Shield, Zap, Clock, Heart, Send, Gamepad2, Sparkles, ImageIcon } from "lucide-react";
+import { Coins, ShoppingCart, Settings, LogIn, LogOut, X, Trash2, Check, Star, Zap, Clock, Heart, Send, Gamepad2, Sparkles, ImageIcon } from "lucide-react";
 import { StoreProvider, useStore, GAMES, COIN_PACKS, gameFinalPrice, type CoinPack, type Game } from "@/lib/store";
 import { createTopup as createTopupFn, checkPayment as checkPaymentFn } from "@/lib/bakong.functions";
 import heroImg from "@/assets/hero-arcade.jpg";
@@ -32,7 +32,6 @@ export const Route = createFileRoute("/")({
 function Page() {
   const [cartOpen, setCartOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [adminOpen, setAdminOpen] = useState(false);
   const [paymentPack, setPaymentPack] = useState<CoinPack | null>(null);
   const [toast, setToast] = useState<string | null>(null);
 
@@ -43,7 +42,7 @@ function Page() {
 
   return (
     <div className="min-h-screen">
-      <Header onCart={() => setCartOpen(true)} onSettings={() => setSettingsOpen(true)} onAdmin={() => setAdminOpen(true)} />
+      <Header onCart={() => setCartOpen(true)} onSettings={() => setSettingsOpen(true)} />
       <Hero />
       <CoinShop onBuyPack={(p) => setPaymentPack(p)} />
       <GamesSection onToast={showToast} onOpenCart={() => setCartOpen(true)} />
@@ -54,7 +53,6 @@ function Page() {
 
       {cartOpen && <CartModal onClose={() => setCartOpen(false)} onToast={showToast} />}
       {settingsOpen && <SettingsModal onClose={() => setSettingsOpen(false)} onToast={showToast} />}
-      {adminOpen && <AdminModal onClose={() => setAdminOpen(false)} onToast={showToast} />}
       {paymentPack && <PaymentModal pack={paymentPack} onClose={() => setPaymentPack(null)} onToast={showToast} />}
 
       {toast && (
@@ -66,8 +64,8 @@ function Page() {
   );
 }
 
-function Header({ onCart, onSettings, onAdmin }: { onCart: () => void; onSettings: () => void; onAdmin: () => void }) {
-  const { coins, cart, isAdmin, authed, signOut } = useStore();
+function Header({ onCart, onSettings }: { onCart: () => void; onSettings: () => void }) {
+  const { coins, cart, authed, signOut } = useStore();
   const navigate = useNavigate();
   return (
     <header className="sticky top-0 z-50 glass border-b border-border/50">
@@ -113,11 +111,6 @@ function Header({ onCart, onSettings, onAdmin }: { onCart: () => void; onSetting
           <button onClick={onSettings} className="grid h-10 w-10 place-items-center rounded-full bg-secondary/70 ring-1 ring-border transition hover:bg-secondary" title="Settings" aria-label="Settings">
             <Settings className="h-4 w-4" />
           </button>
-          {isAdmin && (
-            <button onClick={onAdmin} className="hidden rounded-full bg-accent/20 px-3 py-2 text-xs font-medium text-accent ring-1 ring-accent/40 hover:bg-accent/30 md:inline-flex items-center gap-1.5" title="Admin">
-              <Shield className="h-3.5 w-3.5" /> Admin
-            </button>
-          )}
           <button onClick={onCart} className="relative grid h-10 w-10 place-items-center rounded-full bg-secondary/70 ring-1 ring-border transition hover:bg-secondary" aria-label={`កន្ត្រក ${cart.length}`}>
             <ShoppingCart className="h-4 w-4" />
             <span className="absolute -right-1 -top-1 grid h-5 w-5 place-items-center rounded-full bg-accent text-[10px] font-bold text-accent-foreground">{cart.length}</span>
@@ -526,6 +519,7 @@ function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () 
   const [qrDataUrl, setQrDataUrl] = useState<string>("");
   const [status, setStatus] = useState<"loading" | "qr" | "verifying" | "paid" | "expired" | "error">("loading");
   const [errMsg, setErrMsg] = useState<string>("");
+  const [secondsLeft, setSecondsLeft] = useState<number>(300); // 5 minutes
 
   useEffect(() => {
     if (!authed) { setStatus("error"); setErrMsg("សូមចូលគណនីសិន"); return; }
@@ -542,10 +536,18 @@ function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () 
     return () => { cancelled = true; };
   }, [pack.id, authed, createTopup]);
 
-  // Auto-poll Bakong every 4s while pending
+  // Auto-poll Bakong every 4s for up to 5 minutes
   useEffect(() => {
     if (!tx || (status !== "qr" && status !== "verifying")) return;
-    const t = setInterval(async () => {
+    const startedAt = Date.now();
+    const WINDOW_MS = 5 * 60 * 1000;
+    const tick = setInterval(() => {
+      const left = Math.max(0, Math.ceil((WINDOW_MS - (Date.now() - startedAt)) / 1000));
+      setSecondsLeft(left);
+      if (left === 0) setStatus("expired");
+    }, 1000);
+    const poll = setInterval(async () => {
+      if (Date.now() - startedAt > WINDOW_MS) { clearInterval(poll); return; }
       try {
         const r = await checkPayment({ data: { md5: tx.md5 } });
         if (r.status === "paid") {
@@ -558,7 +560,7 @@ function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () 
         }
       } catch {}
     }, 4000);
-    return () => clearInterval(t);
+    return () => { clearInterval(poll); clearInterval(tick); };
   }, [tx, status, checkPayment, onClose, onToast, refresh]);
 
   const manualVerify = async () => {
@@ -596,6 +598,11 @@ function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () 
           <>
             <img src={qrDataUrl} alt="KHQR" className="h-64 w-64" />
             <div className="mt-2 text-[11px] font-bold text-black tracking-wider">BAKONG KHQR · ${pack.price}</div>
+            {(status === "qr" || status === "verifying") && (
+              <div className="mt-1 text-[11px] text-black/60">
+                ផុតកំណត់ក្នុង {Math.floor(secondsLeft / 60)}:{String(secondsLeft % 60).padStart(2, "0")}
+              </div>
+            )}
           </>
         )}
       </div>
@@ -635,7 +642,7 @@ function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () 
 }
 
 function SettingsModal({ onClose, onToast }: { onClose: () => void; onToast: (m: string) => void }) {
-  const { profile, setProfile, isAdmin, toggleAdmin, library } = useStore();
+  const { profile, setProfile, library } = useStore();
   const [name, setName] = useState(profile.name);
   const [avatar, setAvatar] = useState<string | null>(profile.avatar);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -672,16 +679,6 @@ function SettingsModal({ onClose, onToast }: { onClose: () => void; onToast: (m:
           <Stat label="Wallet" v={`${useStore().coins}c`} />
         </div>
 
-        <div className="flex items-center justify-between rounded-xl bg-background/40 p-3 ring-1 ring-border">
-          <div>
-            <div className="text-sm font-semibold">Admin Mode</div>
-            <div className="text-xs text-muted-foreground">បង្ហាញឧបករណ៍គ្រប់គ្រង (សាកល្បង)</div>
-          </div>
-          <button onClick={toggleAdmin} className={`relative h-6 w-11 rounded-full transition ${isAdmin ? "bg-primary" : "bg-secondary"}`}>
-            <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white transition ${isAdmin ? "left-5" : "left-0.5"}`} />
-          </button>
-        </div>
-
         <div className="flex gap-2">
           <button onClick={() => { setProfile({ name: name.trim() || "Player", avatar }); onToast("បានរក្សាទុក"); onClose(); }} className="flex-1 rounded-full px-5 py-3 font-semibold text-primary-foreground" style={{ background: "var(--gradient-hero)" }}>
             Save Profile
@@ -693,6 +690,7 @@ function SettingsModal({ onClose, onToast }: { onClose: () => void; onToast: (m:
   );
 }
 
+
 function Stat({ label, v }: { label: string; v: number | string }) {
   return (
     <div className="text-center">
@@ -702,35 +700,3 @@ function Stat({ label, v }: { label: string; v: number | string }) {
   );
 }
 
-function AdminModal({ onClose, onToast: _onToast }: { onClose: () => void; onToast: (m: string) => void }) {
-  const { profile, coins } = useStore();
-  const [amount, setAmount] = useState(100);
-  return (
-    <ModalShell onClose={onClose} eyebrow="Admin Coins" title="Give Coins">
-      <p className="text-sm text-muted-foreground">Add Coins to the current customer wallet.</p>
-      <div className="mt-4 space-y-3">
-        <div>
-          <label className="text-xs text-muted-foreground">Customer Name</label>
-          <input readOnly value={profile.name} className="mt-1 w-full rounded-xl bg-input/50 px-4 py-3 text-sm ring-1 ring-border" />
-        </div>
-        <div>
-          <label className="text-xs text-muted-foreground">Coins Amount</label>
-          <div className="mt-1 flex items-center gap-2">
-            <button onClick={() => setAmount((a) => Math.max(0, a - 100))} className="grid h-11 w-11 place-items-center rounded-xl bg-secondary ring-1 ring-border"><Minus className="h-4 w-4" /></button>
-            <input type="number" value={amount} onChange={(e) => setAmount(Number(e.target.value) || 0)} className="flex-1 rounded-xl bg-input px-4 py-3 text-center font-display text-lg outline-none ring-1 ring-border focus:ring-primary" />
-            <button onClick={() => setAmount((a) => a + 100)} className="grid h-11 w-11 place-items-center rounded-xl bg-secondary ring-1 ring-border"><Plus className="h-4 w-4" /></button>
-          </div>
-        </div>
-        <div className="flex items-center justify-between rounded-xl bg-background/40 p-3 text-xs ring-1 ring-border">
-          <span className="text-muted-foreground">Wallet បច្ចុប្បន្ន</span>
-          <span className="font-display text-base text-coin">{coins.toLocaleString()} Coins</span>
-        </div>
-        <button
-          onClick={() => { _onToast("Admin top-up ត្រូវប្រើ Coin Shop ជាមួយ Bakong KHQR"); onClose(); }}
-          className="w-full rounded-full px-5 py-3 font-semibold text-coin-foreground" style={{ background: "var(--gradient-coin)" }}>
-          Give Coins
-        </button>
-      </div>
-    </ModalShell>
-  );
-}
