@@ -1102,9 +1102,24 @@ function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () 
         </div>
       )}
       {status === "expired" && (
-        <button onClick={retryAndRegenerate} disabled={refreshing} className="mt-5 w-full inline-flex items-center justify-center gap-2 rounded-full bg-destructive/20 px-5 py-3 text-sm font-semibold text-destructive ring-1 ring-destructive/40 hover:bg-destructive/30 disabled:opacity-60">
-          <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} /> ផ្ទុក Wallet ឡើងវិញ & បង្កើត KHQR ថ្មី
-        </button>
+        <div className="mt-5 space-y-2">
+          {regenIn !== null && regenIn > 0 && (
+            <div className="flex items-center justify-between gap-2 rounded-2xl bg-amber-500/10 px-4 py-3 text-xs ring-1 ring-amber-500/30">
+              <span className="font-medium text-amber-600 dark:text-amber-400">
+                បង្កើត KHQR ថ្មីដោយស្វ័យប្រវត្តិក្នុង <span className="font-bold">{regenIn}s</span>
+              </span>
+              <button
+                onClick={cancelAutoRegen}
+                className="rounded-full bg-background/60 px-3 py-1 text-[11px] font-semibold ring-1 ring-border hover:bg-background"
+              >
+                បោះបង់
+              </button>
+            </div>
+          )}
+          <button onClick={() => { cancelAutoRegen(); retryAndRegenerate(); }} disabled={refreshing} className="w-full inline-flex items-center justify-center gap-2 rounded-full bg-destructive/20 px-5 py-3 text-sm font-semibold text-destructive ring-1 ring-destructive/40 hover:bg-destructive/30 disabled:opacity-60">
+            <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} /> ផ្ទុក Wallet ឡើងវិញ & បង្កើត KHQR ថ្មីឥឡូវ
+          </button>
+        </div>
       )}
       {status === "error" && authed && (
         <button onClick={retryAndRegenerate} disabled={refreshing} className="mt-5 w-full inline-flex items-center justify-center gap-2 rounded-full px-5 py-3 font-semibold text-primary-foreground disabled:opacity-60" style={{ background: "var(--gradient-hero)" }}>
