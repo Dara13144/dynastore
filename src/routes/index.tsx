@@ -628,7 +628,7 @@ function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () 
 }
 
 function SettingsModal({ onClose, onToast }: { onClose: () => void; onToast: (m: string) => void }) {
-  const { profile, setProfile, isAdmin, toggleAdmin, library, orders } = useStore();
+  const { profile, setProfile, isAdmin, toggleAdmin, library } = useStore();
   const [name, setName] = useState(profile.name);
   const [avatar, setAvatar] = useState<string | null>(profile.avatar);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -660,10 +660,9 @@ function SettingsModal({ onClose, onToast }: { onClose: () => void; onToast: (m:
           </div>
         </div>
 
-        <div className="grid grid-cols-3 gap-3 rounded-xl bg-background/40 p-4 ring-1 ring-border">
+        <div className="grid grid-cols-2 gap-3 rounded-xl bg-background/40 p-4 ring-1 ring-border">
           <Stat label="ហ្គេមមាន" v={library.length} />
-          <Stat label="ការទិញ" v={orders.length} />
-          <Stat label="សរុបចំណាយ" v={`${orders.reduce((s, o) => s + o.price, 0)}c`} />
+          <Stat label="Wallet" v={`${useStore().coins}c`} />
         </div>
 
         <div className="flex items-center justify-between rounded-xl bg-background/40 p-3 ring-1 ring-border">
@@ -696,8 +695,8 @@ function Stat({ label, v }: { label: string; v: number | string }) {
   );
 }
 
-function AdminModal({ onClose, onToast }: { onClose: () => void; onToast: (m: string) => void }) {
-  const { profile, addCoins, coins } = useStore();
+function AdminModal({ onClose, onToast: _onToast }: { onClose: () => void; onToast: (m: string) => void }) {
+  const { profile, coins } = useStore();
   const [amount, setAmount] = useState(100);
   return (
     <ModalShell onClose={onClose} eyebrow="Admin Coins" title="Give Coins">
