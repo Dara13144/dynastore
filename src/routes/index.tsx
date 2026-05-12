@@ -589,7 +589,9 @@ function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () 
   const createTopup = useServerFn(createTopupFn);
   const checkPayment = useServerFn(checkPaymentFn);
   const qrWrapRef = useRef<HTMLDivElement | null>(null);
-  const [tx, setTx] = useState<{ md5: string; qrPayload: string; coins: number } | null>(null);
+  type Tx = { md5: string; qrPayload: string; coins: number; createdAt: number; expiresAt: number };
+  const [tx, setTx] = useState<Tx | null>(null);
+  const [prevTx, setPrevTx] = useState<Tx | null>(null);
   const [status, setStatus] = useState<"confirm" | "loading" | "login" | "qr" | "verifying" | "paid" | "expired" | "error">("confirm");
   const [errMsg, setErrMsg] = useState<string>("");
   const [secondsLeft, setSecondsLeft] = useState<number>(300);
@@ -641,14 +643,23 @@ function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () 
       return;
     }
 
+    // Move current tx into history before regenerating
+    setPrevTx(tx);
     setStatus("loading");
     setErrMsg("");
     setTx(null);
-    setSecondsLeft(300);
+    setSecondsLeft(POLL_WINDOW_S);
 
     try {
       const res = await createTopup({ data: { packId: pack.id } });
-      setTx({ md5: res.md5, qrPayload: res.qrPayload, coins: res.coins });
+      const now = Date.now();
+      setTx({
+        md5: res.md5,
+        qrPayload: res.qrPayload,
+        coins: res.coins,
+        createdAt: now,
+        expiresAt: now + POLL_WINDOW_S * 1000,
+      });
       setStatus("qr");
     } catch (e: any) {
       setStatus("error");
@@ -858,10 +869,46 @@ function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () 
 
       {tx && (
         <>
-          <div className="mt-3 flex items-center gap-2 rounded-lg bg-background/40 p-2 ring-1 ring-border text-xs">
+          <div className="mt-3 flex flex-wrap items-center gap-2 rounded-lg bg-background/40 p-2 ring-1 ring-border text-xs">
+            <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-bold text-emerald-400 ring-1 ring-emerald-500/30">NEW</span>
             <span className="font-mono text-muted-foreground">MD5</span>
             <span className="flex-1 truncate font-mono">{tx.md5}</span>
+            <span className="font-mono text-[10px] text-muted-foreground">
+              ផុត {new Date(tx.expiresAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
+            </span>
           </div>
+
+          {prevTx && prevTx.md5 !== tx.md5 && (
+            <details className="mt-2 rounded-lg bg-background/30 p-2 ring-1 ring-border/60 text-xs">
+              <summary className="flex cursor-pointer items-center gap-2 select-none">
+                <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-bold text-muted-foreground ring-1 ring-border">PREVIOUS</span>
+                <span className="font-mono text-muted-foreground truncate">{prevTx.md5.slice(0, 16)}…</span>
+                <span className="ml-auto font-mono text-[10px] text-muted-foreground">
+                  ផុត {new Date(prevTx.expiresAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
+                </span>
+              </summary>
+              <div className="mt-2 grid gap-2">
+                <div className="flex items-center justify-between gap-2 text-[11px] text-muted-foreground">
+                  <span>បានបង្កើត: {new Date(prevTx.createdAt).toLocaleTimeString()}</span>
+                  <span>{prevTx.coins.toLocaleString()} Coins</span>
+                </div>
+                <div className="rounded-md bg-background/40 p-2">
+                  <div className="font-mono text-[10px] text-muted-foreground">PAYLOAD</div>
+                  <div className="mt-1 max-h-20 overflow-auto break-all font-mono text-[10px] leading-relaxed">{prevTx.qrPayload}</div>
+                </div>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    try { await navigator.clipboard.writeText(prevTx.qrPayload); onToast("បានចម្លង KHQR មុន"); }
+                    catch { onToast("ចម្លងបរាជ័យ"); }
+                  }}
+                  className="inline-flex items-center justify-center gap-1.5 rounded-md bg-secondary px-2 py-1.5 text-[11px] font-semibold hover:bg-secondary/80"
+                >
+                  <Copy className="h-3 w-3" /> ចម្លង payload មុន
+                </button>
+              </div>
+            </details>
+          )}
           {status !== "error" && status !== "loading" && status !== "confirm" && status !== "login" && (
             <div className="mt-2 grid grid-cols-2 gap-2">
               <button
