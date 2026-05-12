@@ -2,7 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState, useRef } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import QRCode from "qrcode";
-import { Coins, ShoppingCart, Settings, LogIn, LogOut, X, Plus, Minus, Trash2, Check, Star, Shield, Zap, Clock, Heart, Send, Gamepad2, Sparkles, ImageIcon } from "lucide-react";
+import { Coins, ShoppingCart, Settings, LogIn, LogOut, X, Trash2, Check, Star, Zap, Clock, Heart, Send, Gamepad2, Sparkles, ImageIcon } from "lucide-react";
 import { StoreProvider, useStore, GAMES, COIN_PACKS, gameFinalPrice, type CoinPack, type Game } from "@/lib/store";
 import { createTopup as createTopupFn, checkPayment as checkPaymentFn } from "@/lib/bakong.functions";
 import heroImg from "@/assets/hero-arcade.jpg";
@@ -519,6 +519,7 @@ function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () 
   const [qrDataUrl, setQrDataUrl] = useState<string>("");
   const [status, setStatus] = useState<"loading" | "qr" | "verifying" | "paid" | "expired" | "error">("loading");
   const [errMsg, setErrMsg] = useState<string>("");
+  const [secondsLeft, setSecondsLeft] = useState<number>(300); // 5 minutes
 
   useEffect(() => {
     if (!authed) { setStatus("error"); setErrMsg("សូមចូលគណនីសិន"); return; }
@@ -535,10 +536,18 @@ function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () 
     return () => { cancelled = true; };
   }, [pack.id, authed, createTopup]);
 
-  // Auto-poll Bakong every 4s while pending
+  // Auto-poll Bakong every 4s for up to 5 minutes
   useEffect(() => {
     if (!tx || (status !== "qr" && status !== "verifying")) return;
-    const t = setInterval(async () => {
+    const startedAt = Date.now();
+    const WINDOW_MS = 5 * 60 * 1000;
+    const tick = setInterval(() => {
+      const left = Math.max(0, Math.ceil((WINDOW_MS - (Date.now() - startedAt)) / 1000));
+      setSecondsLeft(left);
+      if (left === 0) setStatus("expired");
+    }, 1000);
+    const poll = setInterval(async () => {
+      if (Date.now() - startedAt > WINDOW_MS) { clearInterval(poll); return; }
       try {
         const r = await checkPayment({ data: { md5: tx.md5 } });
         if (r.status === "paid") {
@@ -551,7 +560,7 @@ function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () 
         }
       } catch {}
     }, 4000);
-    return () => clearInterval(t);
+    return () => { clearInterval(poll); clearInterval(tick); };
   }, [tx, status, checkPayment, onClose, onToast, refresh]);
 
   const manualVerify = async () => {
