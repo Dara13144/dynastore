@@ -712,7 +712,26 @@ function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () 
               </div>
               <div className="flex items-center justify-between gap-4">
                 <span className="text-xs text-black/60">Wallet បច្ចុប្បន្ន</span>
-                <span className="text-sm font-semibold text-black">{authed ? `${coins.toLocaleString()} Coins` : "សូមចូលគណនីសិន"}</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-semibold text-black">{authed ? `${coins.toLocaleString()} Coins` : "សូមចូលគណនីសិន"}</span>
+                  {authed && (
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        if (refreshing) return;
+                        setRefreshing(true);
+                        try { await refresh(); onToast("បានធ្វើបច្ចុប្បន្នភាព Wallet"); }
+                        catch { onToast("ធ្វើបច្ចុប្បន្នភាពបរាជ័យ"); }
+                        finally { setRefreshing(false); }
+                      }}
+                      disabled={refreshing}
+                      className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-black/5 text-black transition hover:bg-black/10 disabled:opacity-50"
+                      title="ផ្ទុក Wallet ឡើងវិញ"
+                    >
+                      <RefreshCw className={`h-3 w-3 ${refreshing ? "animate-spin" : ""}`} />
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
             <div className="text-xs text-black/60">ពិនិត្យព័ត៌មានខាងលើសិន មុនបង្កើត KHQR សម្រាប់ការទូទាត់នេះ។</div>
