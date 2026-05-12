@@ -26,6 +26,9 @@ export type KhqrInput = {
   currency: "USD" | "KHR";
   billNumber?: string;
   storeLabel?: string;
+  mobileNumber?: string;       // additional data — tag 62/02
+  terminalLabel?: string;      // additional data — tag 62/07
+  acquiringBank?: string;      // unstructured info — tag 62/99 sub-id 30
 };
 
 export function buildKhqr(input: KhqrInput): { payload: string; md5: string } {
@@ -33,7 +36,9 @@ export function buildKhqr(input: KhqrInput): { payload: string; md5: string } {
 
   let additional = "";
   if (input.billNumber) additional += tlv("01", input.billNumber.slice(0, 25));
+  if (input.mobileNumber) additional += tlv("02", input.mobileNumber.slice(0, 25));
   if (input.storeLabel) additional += tlv("03", input.storeLabel.slice(0, 25));
+  if (input.terminalLabel) additional += tlv("07", input.terminalLabel.slice(0, 25));
 
   const currencyCode = input.currency === "USD" ? "840" : "116";
   const amountStr = input.currency === "USD"
