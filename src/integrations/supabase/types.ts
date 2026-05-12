@@ -100,7 +100,15 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      credit_topup_atomic: {
+        Args: { _bakong_ref: string; _md5: string }
+        Returns: {
+          coins_added: number
+          credited: boolean
+          new_balance: number
+          status: string
+        }[]
+      }
     }
     Enums: {
       tx_status: "pending" | "paid" | "expired" | "failed"

@@ -83,19 +83,20 @@ export const checkPayment = createServerFn({ method: "POST" })
 
     const result = await checkBakongMd5(data.md5, token);
     if (result.status === "SUCCESS") {
-      const { data: updated, error: upErr } = await supabaseAdmin
-        .from("transactions")
-        .update({ status: "paid", paid_at: new Date().toISOString(), bakong_ref: result.raw?.data?.hash ?? null })
-        .eq("id", tx.id).eq("status", "pending").select("id, coins").maybeSingle();
-      if (upErr) throw new Error(upErr.message);
-      if (updated) {
-        const { data: w } = await supabaseAdmin.from("wallets").select("coins").eq("user_id", userId).maybeSingle();
-        const cur = w?.coins ?? 0;
-        await supabaseAdmin.from("wallets").upsert({
-          user_id: userId, coins: cur + updated.coins, updated_at: new Date().toISOString(),
-        });
-      }
-      return { status: "paid" as const, coinsCredited: tx.coins };
+      // Atomic + idempotent: flips pending->paid and credits wallet exactly once per md5.
+      const { data: rpc, error: rpcErr } = await supabaseAdmin.rpc("credit_topup_atomic", {
+        _md5: data.md5,
+        _bakong_ref: result.raw?.data?.hash ?? null,
+      });
+      if (rpcErr) throw new Error(rpcErr.message);
+      const row = Array.isArray(rpc) ? rpc[0] : rpc;
+      // Whether this call credited or a previous one did, the user-facing status is "paid".
+      return {
+        status: "paid" as const,
+        coinsCredited: tx.coins,
+        creditedNow: !!row?.credited,
+        newBalance: row?.new_balance ?? null,
+      };
     }
     return { status: "pending" as const };
   });
