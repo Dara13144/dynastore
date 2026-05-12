@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { lovable } from "@/integrations/lovable/index";
+
 import logoD from "@/assets/dyna-logo.jpeg";
 
 export const Route = createFileRoute("/login")({
@@ -48,14 +48,6 @@ function LoginPage() {
     finally { setBusy(false); }
   };
 
-  const google = async () => {
-    setBusy(true); setErr(null);
-    try {
-      const r = await lovable.auth.signInWithOAuth("google", { redirect_uri: window.location.origin });
-      if (r.error) throw new Error(r.error.message || "Google sign-in failed");
-      if (!r.redirected) navigate({ to: "/" });
-    } catch (e: any) { setErr(e.message); setBusy(false); }
-  };
 
   return (
     <div className="min-h-screen grid place-items-center bg-background px-4">
@@ -67,15 +59,7 @@ function LoginPage() {
         <h1 className="font-display text-2xl text-center">{mode === "login" ? "ចូលប្រើគណនី" : "បង្កើតគណនី"}</h1>
         <p className="text-center text-sm text-muted-foreground mt-1">បង់ប្រាក់តាម Bakong KHQR ទិញ Coins និងហ្គេម</p>
 
-        <button onClick={google} disabled={busy} className="mt-6 w-full rounded-full bg-secondary px-5 py-3 text-sm font-medium ring-1 ring-border hover:bg-secondary/80 disabled:opacity-50">
-          បន្តដោយ Google
-        </button>
-
-        <div className="my-5 flex items-center gap-3 text-xs text-muted-foreground">
-          <div className="h-px flex-1 bg-border" /> ឬ <div className="h-px flex-1 bg-border" />
-        </div>
-
-        <form onSubmit={submit} className="space-y-3">
+        <form onSubmit={submit} className="space-y-3 mt-6">
           <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="អ៊ីមែល" className="w-full rounded-xl bg-input px-4 py-3 text-sm outline-none ring-1 ring-border focus:ring-primary" />
           <input type="password" required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="ពាក្យសម្ងាត់" className="w-full rounded-xl bg-input px-4 py-3 text-sm outline-none ring-1 ring-border focus:ring-primary" />
           {err && <div className="rounded-lg bg-destructive/15 px-3 py-2 text-xs text-destructive">{err}</div>}
