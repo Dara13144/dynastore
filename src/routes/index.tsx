@@ -584,6 +584,7 @@ function CoinShop({ onBuyPack }: { onBuyPack: (p: CoinPack) => void }) {
 }
 
 function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () => void; onToast: (m: string) => void }) {
+  const navigate = useNavigate();
   const { authed, refresh } = useStore();
   const createTopup = useServerFn(createTopupFn);
   const checkPayment = useServerFn(checkPaymentFn);
@@ -738,9 +739,21 @@ function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () 
             </div>
             <div className="text-sm font-semibold text-black">បង្កើត KHQR មិនបាន</div>
             <div className="text-xs text-black/60 max-w-xs">{errMsg}</div>
-            <button onClick={retry} className="mt-2 inline-flex items-center gap-2 rounded-full bg-foreground px-4 py-2 text-xs font-semibold text-background hover:opacity-90">
-              <RefreshCw className="h-3.5 w-3.5" /> ព្យាយាមម្តងទៀត
-            </button>
+            {authed ? (
+              <button onClick={retry} className="mt-2 inline-flex items-center gap-2 rounded-full bg-foreground px-4 py-2 text-xs font-semibold text-background hover:opacity-90">
+                <RefreshCw className="h-3.5 w-3.5" /> ព្យាយាមម្តងទៀត
+              </button>
+            ) : (
+              <button
+                onClick={() => {
+                  onClose();
+                  navigate({ to: "/login" });
+                }}
+                className="mt-2 inline-flex items-center gap-2 rounded-full bg-foreground px-4 py-2 text-xs font-semibold text-background hover:opacity-90"
+              >
+                <LogIn className="h-3.5 w-3.5" /> ចូលគណនីសិន
+              </button>
+            )}
           </div>
         )}
         {tx && status !== "error" && status !== "loading" && (
@@ -785,7 +798,7 @@ function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () 
           <RefreshCw className="h-4 w-4" /> QR ផុតកំណត់ — បង្កើតថ្មី
         </button>
       )}
-      {status === "error" && (
+      {status === "error" && authed && (
         <button onClick={retry} className="mt-5 w-full inline-flex items-center justify-center gap-2 rounded-full px-5 py-3 font-semibold text-primary-foreground" style={{ background: "var(--gradient-hero)" }}>
           <RefreshCw className="h-4 w-4" /> ព្យាយាមម្តងទៀត
         </button>
