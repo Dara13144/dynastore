@@ -602,6 +602,17 @@ function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () 
     setSecondsLeft(300);
   };
 
+  const retryAndRegenerate = async () => {
+    if (!authed) { setStatus("login"); return; }
+    setErrMsg("");
+    setTx(null);
+    setSecondsLeft(300);
+    setRefreshing(true);
+    try { await Promise.resolve(refresh()); } catch {}
+    setRefreshing(false);
+    await startPayment();
+  };
+
   useEffect(() => {
     setErrMsg("");
     setTx(null);
