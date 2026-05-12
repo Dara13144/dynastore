@@ -1,0 +1,1 @@
+REVOKE EXECUTE ON FUNCTION public.credit_topup_atomic(text, text) FROM PUBLIC, anon, authenticated;
