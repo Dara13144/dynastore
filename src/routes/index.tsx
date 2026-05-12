@@ -624,8 +624,14 @@ function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () 
     let cancelled = false;
     (async () => {
       try {
-        const dataUrl = await QRCode.toDataURL(tx.qrPayload, { margin: 1, width: 280, errorCorrectionLevel: "M" });
+        const svgMarkup = await QRCode.toString(tx.qrPayload, {
+          type: "svg",
+          margin: 1,
+          width: 280,
+          errorCorrectionLevel: "M",
+        } as any);
         if (cancelled) return;
+        const dataUrl = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svgMarkup)}`;
         setQrDataUrl(dataUrl);
         setErrMsg("");
         setStatus("qr");
