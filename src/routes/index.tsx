@@ -628,7 +628,7 @@ function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () 
 }
 
 function SettingsModal({ onClose, onToast }: { onClose: () => void; onToast: (m: string) => void }) {
-  const { profile, setProfile, isAdmin, toggleAdmin, library } = useStore();
+  const { profile, setProfile, library } = useStore();
   const [name, setName] = useState(profile.name);
   const [avatar, setAvatar] = useState<string | null>(profile.avatar);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -665,17 +665,16 @@ function SettingsModal({ onClose, onToast }: { onClose: () => void; onToast: (m:
           <Stat label="Wallet" v={`${useStore().coins}c`} />
         </div>
 
-        <div className="flex items-center justify-between rounded-xl bg-background/40 p-3 ring-1 ring-border">
-          <div>
-            <div className="text-sm font-semibold">Admin Mode</div>
-            <div className="text-xs text-muted-foreground">បង្ហាញឧបករណ៍គ្រប់គ្រង (សាកល្បង)</div>
-          </div>
-          <button onClick={toggleAdmin} className={`relative h-6 w-11 rounded-full transition ${isAdmin ? "bg-primary" : "bg-secondary"}`}>
-            <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white transition ${isAdmin ? "left-5" : "left-0.5"}`} />
-          </button>
-        </div>
-
         <div className="flex gap-2">
+          <button onClick={() => { setProfile({ name: name.trim() || "Player", avatar }); onToast("បានរក្សាទុក"); onClose(); }} className="flex-1 rounded-full px-5 py-3 font-semibold text-primary-foreground" style={{ background: "var(--gradient-hero)" }}>
+            Save Profile
+          </button>
+          <button onClick={() => { setName("Player"); setAvatar(null); }} className="rounded-full bg-secondary px-5 py-3 text-sm ring-1 ring-border hover:bg-secondary/80">Reset</button>
+        </div>
+      </div>
+    </ModalShell>
+  );
+}
           <button onClick={() => { setProfile({ name: name.trim() || "Player", avatar }); onToast("បានរក្សាទុក"); onClose(); }} className="flex-1 rounded-full px-5 py-3 font-semibold text-primary-foreground" style={{ background: "var(--gradient-hero)" }}>
             Save Profile
           </button>
@@ -695,35 +694,3 @@ function Stat({ label, v }: { label: string; v: number | string }) {
   );
 }
 
-function AdminModal({ onClose, onToast: _onToast }: { onClose: () => void; onToast: (m: string) => void }) {
-  const { profile, coins } = useStore();
-  const [amount, setAmount] = useState(100);
-  return (
-    <ModalShell onClose={onClose} eyebrow="Admin Coins" title="Give Coins">
-      <p className="text-sm text-muted-foreground">Add Coins to the current customer wallet.</p>
-      <div className="mt-4 space-y-3">
-        <div>
-          <label className="text-xs text-muted-foreground">Customer Name</label>
-          <input readOnly value={profile.name} className="mt-1 w-full rounded-xl bg-input/50 px-4 py-3 text-sm ring-1 ring-border" />
-        </div>
-        <div>
-          <label className="text-xs text-muted-foreground">Coins Amount</label>
-          <div className="mt-1 flex items-center gap-2">
-            <button onClick={() => setAmount((a) => Math.max(0, a - 100))} className="grid h-11 w-11 place-items-center rounded-xl bg-secondary ring-1 ring-border"><Minus className="h-4 w-4" /></button>
-            <input type="number" value={amount} onChange={(e) => setAmount(Number(e.target.value) || 0)} className="flex-1 rounded-xl bg-input px-4 py-3 text-center font-display text-lg outline-none ring-1 ring-border focus:ring-primary" />
-            <button onClick={() => setAmount((a) => a + 100)} className="grid h-11 w-11 place-items-center rounded-xl bg-secondary ring-1 ring-border"><Plus className="h-4 w-4" /></button>
-          </div>
-        </div>
-        <div className="flex items-center justify-between rounded-xl bg-background/40 p-3 text-xs ring-1 ring-border">
-          <span className="text-muted-foreground">Wallet បច្ចុប្បន្ន</span>
-          <span className="font-display text-base text-coin">{coins.toLocaleString()} Coins</span>
-        </div>
-        <button
-          onClick={() => { _onToast("Admin top-up ត្រូវប្រើ Coin Shop ជាមួយ Bakong KHQR"); onClose(); }}
-          className="w-full rounded-full px-5 py-3 font-semibold text-coin-foreground" style={{ background: "var(--gradient-coin)" }}>
-          Give Coins
-        </button>
-      </div>
-    </ModalShell>
-  );
-}
