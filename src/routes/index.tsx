@@ -598,7 +598,10 @@ function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () 
   const [refreshing, setRefreshing] = useState(false);
   const [lastChecked, setLastChecked] = useState<number | null>(null);
   const [pollTick, setPollTick] = useState(0);
+  const [paidAt, setPaidAt] = useState<number | null>(null);
+  const [autoCloseIn, setAutoCloseIn] = useState<number>(0);
   const POLL_WINDOW_S = 300;
+  const AUTO_CLOSE_S = 6;
 
   const retry = () => {
     setStatus("confirm");
@@ -686,9 +689,9 @@ function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () 
         setPollTick((n) => n + 1);
         if (r.status === "paid") {
           setStatus("paid");
+          setPaidAt(Date.now());
           onToast(`បានបន្ថែម ${tx.coins.toLocaleString()} Coins ✓`);
           refresh();
-          setTimeout(onClose, 1500);
         } else if (r.status === "expired") {
           setStatus("expired");
         }
@@ -696,6 +699,19 @@ function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () 
     }, 4000);
     return () => { clearInterval(poll); clearInterval(tick); };
   }, [tx, status, checkPayment, onClose, onToast, refresh]);
+
+  // Auto-close countdown after successful payment
+  useEffect(() => {
+    if (status !== "paid") return;
+    setAutoCloseIn(AUTO_CLOSE_S);
+    const t = setInterval(() => {
+      setAutoCloseIn((s) => {
+        if (s <= 1) { clearInterval(t); onClose(); return 0; }
+        return s - 1;
+      });
+    }, 1000);
+    return () => clearInterval(t);
+  }, [status, onClose]);
 
   const manualVerify = async () => {
     if (!tx) return;
@@ -705,8 +721,7 @@ function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () 
       setLastChecked(Date.now());
       setPollTick((n) => n + 1);
       if (r.status === "paid") {
-        setStatus("paid"); onToast("ការបង់ប្រាក់ជោគជ័យ ✓"); refresh();
-        setTimeout(onClose, 1400);
+        setStatus("paid"); setPaidAt(Date.now()); onToast("ការបង់ប្រាក់ជោគជ័យ ✓"); refresh();
       } else if (r.status === "expired") setStatus("expired");
       else { setStatus("qr"); onToast("មិនទាន់ទទួលការទូទាត់នៅឡើយទេ"); }
     } catch (e: any) { setStatus("qr"); onToast(e?.message || "ផ្ទៀងផ្ទាត់បរាជ័យ"); }
@@ -994,8 +1009,53 @@ function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () 
         <div className="mt-5 rounded-full bg-background/40 px-5 py-3 text-center text-sm text-muted-foreground ring-1 ring-border animate-pulse">កំពុងផ្ទៀងផ្ទាត់…</div>
       )}
       {status === "paid" && (
-        <div className="mt-5 rounded-full bg-primary/20 px-5 py-3 text-center text-sm font-semibold text-primary ring-1 ring-primary/40 inline-flex items-center justify-center gap-2 w-full">
-          <Check className="h-4 w-4" /> ការបង់ប្រាក់ជោគជ័យ — Coins បានបន្ថែម
+        <div className="mt-5 overflow-hidden rounded-2xl bg-primary/10 ring-1 ring-primary/30">
+          <div className="flex items-center gap-3 bg-primary/20 px-4 py-3">
+            <div className="grid h-9 w-9 place-items-center rounded-full bg-primary text-primary-foreground">
+              <Check className="h-5 w-5" />
+            </div>
+            <div className="flex-1">
+              <div className="text-sm font-bold text-primary">ការបង់ប្រាក់ជោគជ័យ</div>
+              <div className="text-[11px] text-primary/80">Coins បានបន្ថែមចូល Wallet ដោយស្វ័យប្រវត្តិ</div>
+            </div>
+            <div className="text-right">
+              <div className="font-display text-xl text-primary leading-none">+{(tx?.coins ?? pack.coins + (pack.bonus ?? 0)).toLocaleString()}</div>
+              <div className="text-[10px] uppercase tracking-wider text-primary/70">Coins</div>
+            </div>
+          </div>
+          <div className="grid gap-1.5 px-4 py-3 text-xs">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-muted-foreground">កញ្ចប់</span>
+              <span className="font-semibold">{pack.name}</span>
+            </div>
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-muted-foreground">តម្លៃ</span>
+              <span className="font-semibold">${pack.price}</span>
+            </div>
+            {tx && (
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-muted-foreground">MD5</span>
+                <span className="truncate font-mono text-[10px]">{tx.md5}</span>
+              </div>
+            )}
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-muted-foreground">ពេលវេលា</span>
+              <span className="font-mono text-[11px]">
+                {paidAt ? new Date(paidAt).toLocaleString([], { dateStyle: "short", timeStyle: "medium" }) : "—"}
+              </span>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 border-t border-primary/20 bg-background/30 px-4 py-2">
+            <div className="flex-1 text-[11px] text-muted-foreground">
+              បិទដោយស្វ័យប្រវត្តិក្នុង <span className="font-mono font-semibold text-primary">{autoCloseIn}s</span>
+            </div>
+            <button
+              onClick={onClose}
+              className="rounded-full bg-primary px-3 py-1.5 text-[11px] font-semibold text-primary-foreground hover:opacity-90"
+            >
+              បិទឥឡូវ
+            </button>
+          </div>
         </div>
       )}
       {status === "expired" && (
