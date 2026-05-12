@@ -708,18 +708,35 @@ function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () 
     return () => { clearInterval(poll); clearInterval(tick); };
   }, [tx, status, checkPayment, onClose, onToast, refresh]);
 
-  // When MD5 becomes stale/expired, automatically force-generate a fresh KHQR
-  const autoRegenRef = useRef(false);
+  // When MD5 becomes stale/expired, ask the user to confirm regen with a 5s cancellable countdown
+  const REGEN_CONFIRM_S = 5;
+  const [regenIn, setRegenIn] = useState<number | null>(null);
+  const regenCancelledRef = useRef(false);
   useEffect(() => {
-    if (status !== "expired") { autoRegenRef.current = false; return; }
-    if (!authed) return;
-    if (autoRegenRef.current) return;
-    autoRegenRef.current = true;
-    onToast("MD5 ផុតកំណត់ — កំពុងបង្កើត KHQR ថ្មី");
-    const t = setTimeout(() => { retryAndRegenerate(); }, 1200);
-    return () => clearTimeout(t);
+    if (status !== "expired" || !authed) {
+      setRegenIn(null);
+      regenCancelledRef.current = false;
+      return;
+    }
+    regenCancelledRef.current = false;
+    setRegenIn(REGEN_CONFIRM_S);
+    onToast("MD5 ផុតកំណត់ — បង្កើត KHQR ថ្មីក្នុង 5s (អាចបោះបង់)");
+    const t = setInterval(() => {
+      setRegenIn((s) => {
+        if (regenCancelledRef.current) { clearInterval(t); return null; }
+        if (s === null) { clearInterval(t); return null; }
+        if (s <= 1) {
+          clearInterval(t);
+          if (!regenCancelledRef.current) setTimeout(() => retryAndRegenerate(), 0);
+          return 0;
+        }
+        return s - 1;
+      });
+    }, 1000);
+    return () => clearInterval(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status, authed]);
+  const cancelAutoRegen = () => { regenCancelledRef.current = true; setRegenIn(null); };
 
   // Auto-close countdown after successful payment
   useEffect(() => {
@@ -1085,9 +1102,24 @@ function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () 
         </div>
       )}
       {status === "expired" && (
-        <button onClick={retryAndRegenerate} disabled={refreshing} className="mt-5 w-full inline-flex items-center justify-center gap-2 rounded-full bg-destructive/20 px-5 py-3 text-sm font-semibold text-destructive ring-1 ring-destructive/40 hover:bg-destructive/30 disabled:opacity-60">
-          <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} /> ផ្ទុក Wallet ឡើងវិញ & បង្កើត KHQR ថ្មី
-        </button>
+        <div className="mt-5 space-y-2">
+          {regenIn !== null && regenIn > 0 && (
+            <div className="flex items-center justify-between gap-2 rounded-2xl bg-amber-500/10 px-4 py-3 text-xs ring-1 ring-amber-500/30">
+              <span className="font-medium text-amber-600 dark:text-amber-400">
+                បង្កើត KHQR ថ្មីដោយស្វ័យប្រវត្តិក្នុង <span className="font-bold">{regenIn}s</span>
+              </span>
+              <button
+                onClick={cancelAutoRegen}
+                className="rounded-full bg-background/60 px-3 py-1 text-[11px] font-semibold ring-1 ring-border hover:bg-background"
+              >
+                បោះបង់
+              </button>
+            </div>
+          )}
+          <button onClick={() => { cancelAutoRegen(); retryAndRegenerate(); }} disabled={refreshing} className="w-full inline-flex items-center justify-center gap-2 rounded-full bg-destructive/20 px-5 py-3 text-sm font-semibold text-destructive ring-1 ring-destructive/40 hover:bg-destructive/30 disabled:opacity-60">
+            <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} /> ផ្ទុក Wallet ឡើងវិញ & បង្កើត KHQR ថ្មីឥឡូវ
+          </button>
+        </div>
       )}
       {status === "error" && authed && (
         <button onClick={retryAndRegenerate} disabled={refreshing} className="mt-5 w-full inline-flex items-center justify-center gap-2 rounded-full px-5 py-3 font-semibold text-primary-foreground disabled:opacity-60" style={{ background: "var(--gradient-hero)" }}>
