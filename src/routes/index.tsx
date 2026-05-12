@@ -584,11 +584,12 @@ function CoinShop({ onBuyPack }: { onBuyPack: (p: CoinPack) => void }) {
 }
 
 function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () => void; onToast: (m: string) => void }) {
+  const navigate = useNavigate();
   const { authed, refresh } = useStore();
   const createTopup = useServerFn(createTopupFn);
   const checkPayment = useServerFn(checkPaymentFn);
+  const qrCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const [tx, setTx] = useState<{ md5: string; qrPayload: string; coins: number } | null>(null);
-  const [qrDataUrl, setQrDataUrl] = useState<string>("");
   const [status, setStatus] = useState<"loading" | "qr" | "verifying" | "paid" | "expired" | "error">("loading");
   const [errMsg, setErrMsg] = useState<string>("");
   const [secondsLeft, setSecondsLeft] = useState<number>(300);
@@ -597,7 +598,6 @@ function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () 
   const retry = () => {
     setStatus("loading");
     setErrMsg("");
-    setQrDataUrl("");
     setTx(null);
     setSecondsLeft(300);
     setAttempt((a) => a + 1);
@@ -611,26 +611,61 @@ function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () 
         const res = await createTopup({ data: { packId: pack.id } });
         if (cancelled) return;
         setTx({ md5: res.md5, qrPayload: res.qrPayload, coins: res.coins });
-        try {
-          const url = await QRCode.toDataURL(res.qrPayload, { margin: 1, width: 280, errorCorrectionLevel: "M" });
-          if (!cancelled) { setQrDataUrl(url); setStatus("qr"); }
-        } catch (qrErr: any) {
-          const msg = String(qrErr?.message || qrErr || "");
-          if (!cancelled) {
-            setStatus("error");
-            setErrMsg(
-              msg.includes("getContext") || msg.toLowerCase().includes("canvas")
-                ? "បង្កើត QR មិនបានជោគជ័យ (canvas មិនមាន)។ សូមព្យាយាមម្តងទៀត។"
-                : `បង្កើត QR បរាជ័យ៖ ${msg || "មិនស្គាល់"}`
-            );
-          }
-        }
       } catch (e: any) {
         if (!cancelled) { setStatus("error"); setErrMsg(e?.message || "មានបញ្ហាបង្កើតការទូទាត់"); }
       }
     })();
     return () => { cancelled = true; };
   }, [pack.id, authed, createTopup, attempt]);
+
+  useEffect(() => {
+    if (!tx) return;
+    let cancelled = false;
+
+    const renderQr = async () => {
+      const canvas = qrCanvasRef.current;
+      if (!canvas) {
+        if (!cancelled) {
+          setStatus("error");
+          setErrMsg("បង្កើត QR មិនបានជោគជ័យ (canvas មិនមាន)។ សូមព្យាយាមម្តងទៀត។");
+        }
+        return;
+      }
+
+      const ctx = canvas.getContext("2d");
+      if (!ctx) {
+        if (!cancelled) {
+          setStatus("error");
+          setErrMsg("បង្កើត QR មិនបានជោគជ័យ (canvas មិនមាន)។ សូមព្យាយាមម្តងទៀត។");
+        }
+        return;
+      }
+
+      try {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        await QRCode.toCanvas(canvas, tx.qrPayload, { margin: 1, width: 280, errorCorrectionLevel: "M" });
+        if (!cancelled) {
+          setErrMsg("");
+          setStatus("qr");
+        }
+      } catch (qrErr: any) {
+        const msg = String(qrErr?.message || qrErr || "");
+        if (!cancelled) {
+          setStatus("error");
+          setErrMsg(
+            msg.includes("getContext") || msg.toLowerCase().includes("canvas")
+              ? "បង្កើត QR មិនបានជោគជ័យ (canvas មិនមាន)។ សូមព្យាយាមម្តងទៀត។"
+              : `បង្កើត QR បរាជ័យ៖ ${msg || "មិនស្គាល់"}`
+          );
+        }
+      }
+    };
+
+    void renderQr();
+    return () => {
+      cancelled = true;
+    };
+  }, [tx, attempt]);
 
   useEffect(() => {
     if (!tx || (status !== "qr" && status !== "verifying")) return;
@@ -687,6 +722,15 @@ function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () 
       </div>
 
       <div className="mt-5 grid place-items-center rounded-2xl bg-white p-5 min-h-[300px]">
+        {tx && status !== "error" && (
+          <canvas
+            ref={qrCanvasRef}
+            width={280}
+            height={280}
+            aria-label="KHQR"
+            className={status === "loading" ? "hidden" : "h-64 w-64"}
+          />
+        )}
         {status === "loading" && <div className="text-sm text-black/60">កំពុងបង្កើត KHQR…</div>}
         {status === "error" && (
           <div className="flex flex-col items-center gap-3 p-4 text-center">
@@ -695,14 +739,25 @@ function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () 
             </div>
             <div className="text-sm font-semibold text-black">បង្កើត KHQR មិនបាន</div>
             <div className="text-xs text-black/60 max-w-xs">{errMsg}</div>
-            <button onClick={retry} className="mt-2 inline-flex items-center gap-2 rounded-full bg-foreground px-4 py-2 text-xs font-semibold text-background hover:opacity-90">
-              <RefreshCw className="h-3.5 w-3.5" /> ព្យាយាមម្តងទៀត
-            </button>
+            {authed ? (
+              <button onClick={retry} className="mt-2 inline-flex items-center gap-2 rounded-full bg-foreground px-4 py-2 text-xs font-semibold text-background hover:opacity-90">
+                <RefreshCw className="h-3.5 w-3.5" /> ព្យាយាមម្តងទៀត
+              </button>
+            ) : (
+              <button
+                onClick={() => {
+                  onClose();
+                  navigate({ to: "/login" });
+                }}
+                className="mt-2 inline-flex items-center gap-2 rounded-full bg-foreground px-4 py-2 text-xs font-semibold text-background hover:opacity-90"
+              >
+                <LogIn className="h-3.5 w-3.5" /> ចូលគណនីសិន
+              </button>
+            )}
           </div>
         )}
-        {qrDataUrl && status !== "error" && status !== "loading" && (
+        {tx && status !== "error" && status !== "loading" && (
           <>
-            <img src={qrDataUrl} alt="KHQR" className="h-64 w-64" />
             <div className="mt-2 text-[11px] font-bold text-black tracking-wider">BAKONG KHQR · ${pack.price}</div>
             {(status === "qr" || status === "verifying") && (
               <div className="mt-1 text-[11px] text-black/60">
@@ -743,7 +798,7 @@ function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () 
           <RefreshCw className="h-4 w-4" /> QR ផុតកំណត់ — បង្កើតថ្មី
         </button>
       )}
-      {status === "error" && (
+      {status === "error" && authed && (
         <button onClick={retry} className="mt-5 w-full inline-flex items-center justify-center gap-2 rounded-full px-5 py-3 font-semibold text-primary-foreground" style={{ background: "var(--gradient-hero)" }}>
           <RefreshCw className="h-4 w-4" /> ព្យាយាមម្តងទៀត
         </button>
