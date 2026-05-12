@@ -796,8 +796,8 @@ function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () 
             <div className="text-sm font-semibold text-black">បង្កើត KHQR មិនបាន</div>
             <div className="text-xs text-black/60 max-w-xs">{errMsg}</div>
             {authed ? (
-              <button onClick={retry} className="mt-2 inline-flex items-center gap-2 rounded-full bg-foreground px-4 py-2 text-xs font-semibold text-background hover:opacity-90">
-                <RefreshCw className="h-3.5 w-3.5" /> ព្យាយាមម្តងទៀត
+              <button onClick={retryAndRegenerate} disabled={refreshing} className="mt-2 inline-flex items-center gap-2 rounded-full bg-foreground px-4 py-2 text-xs font-semibold text-background hover:opacity-90 disabled:opacity-60">
+                <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? "animate-spin" : ""}`} /> ផ្ទុក Wallet ឡើងវិញ & បង្កើត KHQR ថ្មី
               </button>
             ) : null}
           </div>
