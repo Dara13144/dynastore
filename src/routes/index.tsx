@@ -914,13 +914,13 @@ function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () 
         </div>
       )}
       {status === "expired" && (
-        <button onClick={retry} className="mt-5 w-full inline-flex items-center justify-center gap-2 rounded-full bg-destructive/20 px-5 py-3 text-sm font-semibold text-destructive ring-1 ring-destructive/40 hover:bg-destructive/30">
-          <RefreshCw className="h-4 w-4" /> QR ផុតកំណត់ — បង្កើតថ្មី
+        <button onClick={retryAndRegenerate} disabled={refreshing} className="mt-5 w-full inline-flex items-center justify-center gap-2 rounded-full bg-destructive/20 px-5 py-3 text-sm font-semibold text-destructive ring-1 ring-destructive/40 hover:bg-destructive/30 disabled:opacity-60">
+          <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} /> ផ្ទុក Wallet ឡើងវិញ & បង្កើត KHQR ថ្មី
         </button>
       )}
       {status === "error" && authed && (
-        <button onClick={retry} className="mt-5 w-full inline-flex items-center justify-center gap-2 rounded-full px-5 py-3 font-semibold text-primary-foreground" style={{ background: "var(--gradient-hero)" }}>
-          <RefreshCw className="h-4 w-4" /> ព្យាយាមម្តងទៀត
+        <button onClick={retryAndRegenerate} disabled={refreshing} className="mt-5 w-full inline-flex items-center justify-center gap-2 rounded-full px-5 py-3 font-semibold text-primary-foreground disabled:opacity-60" style={{ background: "var(--gradient-hero)" }}>
+          <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} /> ផ្ទុក Wallet ឡើងវិញ & បង្កើត KHQR ថ្មី
         </button>
       )}
     </ModalShell>
