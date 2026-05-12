@@ -727,6 +727,7 @@ function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () 
 
   const manualVerify = async () => {
     if (!tx) return;
+    if (Date.now() >= tx.expiresAt) { setStatus("expired"); return; }
     setStatus("verifying");
     try {
       const r = await checkPayment({ data: { md5: tx.md5 } });
