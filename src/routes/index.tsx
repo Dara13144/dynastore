@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState, useRef } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { QRCodeSVG } from "react-qr-code";
+import QRCode from "react-qr-code";
 import { Coins, ShoppingCart, Settings, LogIn, LogOut, X, Trash2, Check, Star, Zap, Clock, Heart, Send, Gamepad2, Sparkles, ImageIcon, AlertTriangle, RefreshCw, Download, Copy } from "lucide-react";
 import { StoreProvider, useStore, GAMES, COIN_PACKS, gameFinalPrice, type CoinPack, type Game } from "@/lib/store";
 import { createTopup as createTopupFn, checkPayment as checkPaymentFn } from "@/lib/bakong.functions";
@@ -686,7 +686,7 @@ function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () 
       <div className="mt-5 grid place-items-center rounded-2xl bg-white p-5 min-h-[300px]">
         {tx && status !== "error" && status !== "loading" && status !== "confirm" && status !== "login" && (
           <div ref={qrWrapRef} className="rounded-xl bg-white p-2">
-            <QRCodeSVG
+            <QRCode
               value={tx.qrPayload}
               size={256}
               bgColor="#FFFFFF"
