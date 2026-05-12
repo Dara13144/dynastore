@@ -138,4 +138,22 @@ export const checkoutCart = createServerFn({ method: "POST" })
       .from("library").select("game_id").eq("user_id", userId).in("game_id", data.gameIds);
     const ownedSet = new Set((owned ?? []).map((r) => r.game_id));
     const toBuy = data.gameIds.filter((id) => !ownedSet.has(id) && GAME_PRICES[id]);
-    if (toBuy.length === 0) return { ok: false as const, msg: "កន្
+    if (toBuy.length === 0) return { ok: false as const, msg: "កន្ត្រកគ្មានហ្គេមថ្មី" };
+
+    const total = toBuy.reduce((s, id) => s + (finalGamePrice(id) ?? 0), 0);
+    const { data: w } = await supabaseAdmin.from("wallets").select("coins").eq("user_id", userId).maybeSingle();
+    const cur = w?.coins ?? 0;
+    if (cur < total) return { ok: false as const, msg: "Coins មិនគ្រប់គ្រាន់" };
+
+    const { error: wErr } = await supabaseAdmin.from("wallets")
+      .update({ coins: cur - total, updated_at: new Date().toISOString() }).eq("user_id", userId);
+    if (wErr) throw new Error(wErr.message);
+
+    const rows = toBuy.map((id) => ({ user_id: userId, game_id: id }));
+    const { error: lErr } = await supabaseAdmin.from("library").insert(rows);
+    if (lErr) {
+      await supabaseAdmin.from("wallets").update({ coins: cur }).eq("user_id", userId);
+      throw new Error(lErr.message);
+    }
+    return { ok: true as const, msg: `ទិញ ${toBuy.length} ហ្គេម — សរុប ${total} Coins`, newCoins: cur - total };
+  });
