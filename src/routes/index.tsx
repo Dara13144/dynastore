@@ -1,7 +1,10 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useMemo, useState, useRef } from "react";
-import { ShoppingCart, Settings, LogIn, LogOut, X, Trash2, Check, Star, Zap, Clock, Heart, Send, Gamepad2, Sparkles, ImageIcon } from "lucide-react";
-import { StoreProvider, useStore, GAMES, gameFinalPrice, type Game } from "@/lib/store";
+import { useEffect, useMemo, useState, useRef } from "react";
+import { useServerFn } from "@tanstack/react-start";
+import QRCode from "qrcode/lib/browser";
+import { Coins, ShoppingCart, Settings, LogIn, LogOut, X, Trash2, Check, Star, Zap, Clock, Heart, Send, Gamepad2, Sparkles, ImageIcon, AlertTriangle, RefreshCw } from "lucide-react";
+import { StoreProvider, useStore, GAMES, COIN_PACKS, gameFinalPrice, type CoinPack, type Game } from "@/lib/store";
+import { createTopup as createTopupFn, checkPayment as checkPaymentFn } from "@/lib/bakong.functions";
 import heroImg from "@/assets/hero-arcade.jpg";
 import logoD from "@/assets/dyna-logo.jpeg";
 
@@ -29,6 +32,7 @@ export const Route = createFileRoute("/")({
 function Page() {
   const [cartOpen, setCartOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [paymentPack, setPaymentPack] = useState<CoinPack | null>(null);
   const [toast, setToast] = useState<string | null>(null);
 
   const showToast = (msg: string) => {
@@ -40,6 +44,7 @@ function Page() {
     <div className="min-h-screen">
       <Header onCart={() => setCartOpen(true)} onSettings={() => setSettingsOpen(true)} />
       <Hero />
+      <CoinShop onBuyPack={(p) => setPaymentPack(p)} />
       <GamesSection onToast={showToast} onOpenCart={() => setCartOpen(true)} />
       <DealsBanner />
       <Recommendations onToast={showToast} />
@@ -48,6 +53,7 @@ function Page() {
 
       {cartOpen && <CartModal onClose={() => setCartOpen(false)} onToast={showToast} />}
       {settingsOpen && <SettingsModal onClose={() => setSettingsOpen(false)} onToast={showToast} />}
+      {paymentPack && <PaymentModal pack={paymentPack} onClose={() => setPaymentPack(null)} onToast={showToast} />}
 
       {toast && (
         <div className="fixed bottom-6 left-1/2 z-[100] -translate-x-1/2 rounded-full glass px-5 py-3 text-sm shadow-[var(--shadow-card)] animate-in fade-in slide-in-from-bottom-4">
@@ -73,7 +79,7 @@ function Header({ onCart, onSettings }: { onCart: () => void; onSettings: () => 
         <nav className="hidden items-center gap-1 md:flex ml-4">
           {[
             { href: "#games", label: "ហ្គេម" },
-            
+            { href: "#coins", label: "Coins" },
             { href: "#deals", label: "ប្រូម៉ូសិន" },
             { href: "#recs", label: "ណែនាំ" },
             { href: "#plus", label: "សមាជិកភាព" },
@@ -517,3 +523,209 @@ function Stat({ label, v }: { label: string; v: number | string }) {
   );
 }
 
+
+function CoinShop({ onBuyPack }: { onBuyPack: (p: CoinPack) => void }) {
+  return (
+    <section id="coins" className="mx-auto max-w-7xl px-4 py-16 md:px-6 md:py-20">
+      <div className="mx-auto max-w-2xl text-center">
+        <div className="inline-flex items-center gap-2 rounded-full bg-coin/15 px-3 py-1 text-xs font-medium text-coin ring-1 ring-coin/30">
+          <Coins className="h-3.5 w-3.5" /> Coin Shop
+        </div>
+        <h2 className="mt-4 font-display text-4xl md:text-5xl">ទិញ <span className="text-coin">Coins</span> ដើម្បីទិញហ្គេម</h2>
+        <p className="mt-3 text-muted-foreground">ជ្រើសរើសកញ្ចប់ Coins ហើយបង់ប្រាក់តាម Bakong KHQR។ Coins នឹងចូល Wallet បន្ទាប់ពីការបង់ប្រាក់ត្រូវបានផ្ទៀងផ្ទាត់។</p>
+      </div>
+      <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+        {COIN_PACKS.map((p, i) => (
+          <div key={p.id} className="group relative overflow-hidden rounded-2xl ring-1 ring-border p-6 transition hover:ring-coin/60 hover:-translate-y-1" style={{ background: "var(--gradient-card)" }}>
+            <div className="absolute -right-10 -top-10 h-32 w-32 rounded-full bg-coin/15 blur-2xl transition group-hover:bg-coin/30" />
+            <div className="relative">
+              <div className="text-xs uppercase tracking-wider text-muted-foreground">{p.name}</div>
+              <div className="mt-2 flex items-baseline gap-2">
+                <span className="font-display text-3xl text-coin">{p.coins.toLocaleString()}</span>
+                <span className="text-sm text-muted-foreground">Coins</span>
+              </div>
+              {p.bonus && <div className="mt-1 inline-flex rounded-full bg-accent/20 px-2 py-0.5 text-xs text-accent">+{p.bonus.toLocaleString()} Bonus</div>}
+              <p className="mt-3 text-sm text-muted-foreground">{p.tag}</p>
+              <div className="mt-5 flex items-center justify-between">
+                <div className="font-display text-2xl">${p.price}</div>
+                <button onClick={() => onBuyPack(p)} className="rounded-full px-4 py-2 text-sm font-semibold text-coin-foreground transition hover:scale-105" style={{ background: "var(--gradient-coin)" }}>
+                  ទិញ Coins
+                </button>
+              </div>
+              {i === 1 && <span className="absolute -top-3 right-0 rounded-full bg-accent px-2 py-0.5 text-[10px] font-bold text-accent-foreground">POPULAR</span>}
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () => void; onToast: (m: string) => void }) {
+  const { authed, refresh } = useStore();
+  const createTopup = useServerFn(createTopupFn);
+  const checkPayment = useServerFn(checkPaymentFn);
+  const [tx, setTx] = useState<{ md5: string; qrPayload: string; coins: number } | null>(null);
+  const [qrDataUrl, setQrDataUrl] = useState<string>("");
+  const [status, setStatus] = useState<"loading" | "qr" | "verifying" | "paid" | "expired" | "error">("loading");
+  const [errMsg, setErrMsg] = useState<string>("");
+  const [secondsLeft, setSecondsLeft] = useState<number>(300);
+  const [attempt, setAttempt] = useState(0);
+
+  const retry = () => {
+    setStatus("loading");
+    setErrMsg("");
+    setQrDataUrl("");
+    setTx(null);
+    setSecondsLeft(300);
+    setAttempt((a) => a + 1);
+  };
+
+  useEffect(() => {
+    if (!authed) { setStatus("error"); setErrMsg("សូមចូលគណនីសិន"); return; }
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await createTopup({ data: { packId: pack.id } });
+        if (cancelled) return;
+        setTx({ md5: res.md5, qrPayload: res.qrPayload, coins: res.coins });
+        try {
+          const url = await QRCode.toDataURL(res.qrPayload, { margin: 1, width: 280, errorCorrectionLevel: "M" });
+          if (!cancelled) { setQrDataUrl(url); setStatus("qr"); }
+        } catch (qrErr: any) {
+          const msg = String(qrErr?.message || qrErr || "");
+          if (!cancelled) {
+            setStatus("error");
+            setErrMsg(
+              msg.includes("getContext") || msg.toLowerCase().includes("canvas")
+                ? "បង្កើត QR មិនបានជោគជ័យ (canvas មិនមាន)។ សូមព្យាយាមម្តងទៀត។"
+                : `បង្កើត QR បរាជ័យ៖ ${msg || "មិនស្គាល់"}`
+            );
+          }
+        }
+      } catch (e: any) {
+        if (!cancelled) { setStatus("error"); setErrMsg(e?.message || "មានបញ្ហាបង្កើតការទូទាត់"); }
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [pack.id, authed, createTopup, attempt]);
+
+  useEffect(() => {
+    if (!tx || (status !== "qr" && status !== "verifying")) return;
+    const startedAt = Date.now();
+    const WINDOW_MS = 5 * 60 * 1000;
+    const tick = setInterval(() => {
+      const left = Math.max(0, Math.ceil((WINDOW_MS - (Date.now() - startedAt)) / 1000));
+      setSecondsLeft(left);
+      if (left === 0) setStatus("expired");
+    }, 1000);
+    const poll = setInterval(async () => {
+      if (Date.now() - startedAt > WINDOW_MS) { clearInterval(poll); return; }
+      try {
+        const r = await checkPayment({ data: { md5: tx.md5 } });
+        if (r.status === "paid") {
+          setStatus("paid");
+          onToast(`បានបន្ថែម ${tx.coins.toLocaleString()} Coins ✓`);
+          refresh();
+          setTimeout(onClose, 1500);
+        } else if (r.status === "expired") {
+          setStatus("expired");
+        }
+      } catch {}
+    }, 4000);
+    return () => { clearInterval(poll); clearInterval(tick); };
+  }, [tx, status, checkPayment, onClose, onToast, refresh]);
+
+  const manualVerify = async () => {
+    if (!tx) return;
+    setStatus("verifying");
+    try {
+      const r = await checkPayment({ data: { md5: tx.md5 } });
+      if (r.status === "paid") {
+        setStatus("paid"); onToast("ការបង់ប្រាក់ជោគជ័យ ✓"); refresh();
+        setTimeout(onClose, 1400);
+      } else if (r.status === "expired") setStatus("expired");
+      else { setStatus("qr"); onToast("មិនទាន់ទទួលការទូទាត់នៅឡើយទេ"); }
+    } catch (e: any) { setStatus("qr"); onToast(e?.message || "ផ្ទៀងផ្ទាត់បរាជ័យ"); }
+  };
+
+  return (
+    <ModalShell onClose={onClose} eyebrow="Bakong KHQR" title="ស្កេនដើម្បីបង់ប្រាក់">
+      <div className="rounded-2xl bg-background/40 p-5 ring-1 ring-border">
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="text-xs text-muted-foreground">{pack.name}</div>
+            <div className="font-display text-xl text-coin">{(pack.coins + (pack.bonus ?? 0)).toLocaleString()} Coins</div>
+          </div>
+          <div className="text-right">
+            <div className="text-xs text-muted-foreground">ប្រាក់ត្រូវបង់</div>
+            <div className="font-display text-2xl">${pack.price}</div>
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-5 grid place-items-center rounded-2xl bg-white p-5 min-h-[300px]">
+        {status === "loading" && <div className="text-sm text-black/60">កំពុងបង្កើត KHQR…</div>}
+        {status === "error" && (
+          <div className="flex flex-col items-center gap-3 p-4 text-center">
+            <div className="grid h-12 w-12 place-items-center rounded-full bg-destructive/15 text-destructive">
+              <AlertTriangle className="h-6 w-6" />
+            </div>
+            <div className="text-sm font-semibold text-black">បង្កើត KHQR មិនបាន</div>
+            <div className="text-xs text-black/60 max-w-xs">{errMsg}</div>
+            <button onClick={retry} className="mt-2 inline-flex items-center gap-2 rounded-full bg-foreground px-4 py-2 text-xs font-semibold text-background hover:opacity-90">
+              <RefreshCw className="h-3.5 w-3.5" /> ព្យាយាមម្តងទៀត
+            </button>
+          </div>
+        )}
+        {qrDataUrl && status !== "error" && status !== "loading" && (
+          <>
+            <img src={qrDataUrl} alt="KHQR" className="h-64 w-64" />
+            <div className="mt-2 text-[11px] font-bold text-black tracking-wider">BAKONG KHQR · ${pack.price}</div>
+            {(status === "qr" || status === "verifying") && (
+              <div className="mt-1 text-[11px] text-black/60">
+                ផុតកំណត់ក្នុង {Math.floor(secondsLeft / 60)}:{String(secondsLeft % 60).padStart(2, "0")}
+              </div>
+            )}
+          </>
+        )}
+      </div>
+
+      <p className="mt-4 text-xs text-muted-foreground">
+        ស្កេន KHQR តាម Bakong, ABA, Wing, ACLEDA ឬកម្មវិធីធនាគារផ្សេងទៀត។ Coins នឹងចូល Wallet ស្វ័យប្រវត្តិពេល Bakong បញ្ជាក់។
+      </p>
+
+      {tx && (
+        <div className="mt-3 flex items-center gap-2 rounded-lg bg-background/40 p-2 ring-1 ring-border text-xs">
+          <span className="font-mono text-muted-foreground">MD5</span>
+          <span className="flex-1 truncate font-mono">{tx.md5}</span>
+          <button onClick={() => { navigator.clipboard?.writeText(tx.qrPayload); onToast("Copied KHQR"); }} className="rounded-md bg-secondary px-2 py-1 text-[10px]">Copy QR</button>
+        </div>
+      )}
+
+      {status === "qr" && (
+        <button onClick={manualVerify} className="mt-5 w-full rounded-full px-5 py-3 font-semibold text-primary-foreground" style={{ background: "var(--gradient-hero)" }}>
+          ខ្ញុំបានបង់ប្រាក់រួច — ផ្ទៀងផ្ទាត់ឥឡូវ
+        </button>
+      )}
+      {status === "verifying" && (
+        <div className="mt-5 rounded-full bg-background/40 px-5 py-3 text-center text-sm text-muted-foreground ring-1 ring-border animate-pulse">កំពុងផ្ទៀងផ្ទាត់…</div>
+      )}
+      {status === "paid" && (
+        <div className="mt-5 rounded-full bg-primary/20 px-5 py-3 text-center text-sm font-semibold text-primary ring-1 ring-primary/40 inline-flex items-center justify-center gap-2 w-full">
+          <Check className="h-4 w-4" /> ការបង់ប្រាក់ជោគជ័យ — Coins បានបន្ថែម
+        </div>
+      )}
+      {status === "expired" && (
+        <button onClick={retry} className="mt-5 w-full inline-flex items-center justify-center gap-2 rounded-full bg-destructive/20 px-5 py-3 text-sm font-semibold text-destructive ring-1 ring-destructive/40 hover:bg-destructive/30">
+          <RefreshCw className="h-4 w-4" /> QR ផុតកំណត់ — បង្កើតថ្មី
+        </button>
+      )}
+      {status === "error" && (
+        <button onClick={retry} className="mt-5 w-full inline-flex items-center justify-center gap-2 rounded-full px-5 py-3 font-semibold text-primary-foreground" style={{ background: "var(--gradient-hero)" }}>
+          <RefreshCw className="h-4 w-4" /> ព្យាយាមម្តងទៀត
+        </button>
+      )}
+    </ModalShell>
+  );
+}
