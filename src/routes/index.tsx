@@ -708,18 +708,35 @@ function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () 
     return () => { clearInterval(poll); clearInterval(tick); };
   }, [tx, status, checkPayment, onClose, onToast, refresh]);
 
-  // When MD5 becomes stale/expired, automatically force-generate a fresh KHQR
-  const autoRegenRef = useRef(false);
+  // When MD5 becomes stale/expired, ask the user to confirm regen with a 5s cancellable countdown
+  const REGEN_CONFIRM_S = 5;
+  const [regenIn, setRegenIn] = useState<number | null>(null);
+  const regenCancelledRef = useRef(false);
   useEffect(() => {
-    if (status !== "expired") { autoRegenRef.current = false; return; }
-    if (!authed) return;
-    if (autoRegenRef.current) return;
-    autoRegenRef.current = true;
-    onToast("MD5 ផុតកំណត់ — កំពុងបង្កើត KHQR ថ្មី");
-    const t = setTimeout(() => { retryAndRegenerate(); }, 1200);
-    return () => clearTimeout(t);
+    if (status !== "expired" || !authed) {
+      setRegenIn(null);
+      regenCancelledRef.current = false;
+      return;
+    }
+    regenCancelledRef.current = false;
+    setRegenIn(REGEN_CONFIRM_S);
+    onToast("MD5 ផុតកំណត់ — បង្កើត KHQR ថ្មីក្នុង 5s (អាចបោះបង់)");
+    const t = setInterval(() => {
+      setRegenIn((s) => {
+        if (regenCancelledRef.current) { clearInterval(t); return null; }
+        if (s === null) { clearInterval(t); return null; }
+        if (s <= 1) {
+          clearInterval(t);
+          if (!regenCancelledRef.current) setTimeout(() => retryAndRegenerate(), 0);
+          return 0;
+        }
+        return s - 1;
+      });
+    }, 1000);
+    return () => clearInterval(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status, authed]);
+  const cancelAutoRegen = () => { regenCancelledRef.current = true; setRegenIn(null); };
 
   // Auto-close countdown after successful payment
   useEffect(() => {
