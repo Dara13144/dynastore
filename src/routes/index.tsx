@@ -73,7 +73,7 @@ function Header({ onCart, onSettings }: { onCart: () => void; onSettings: () => 
         <nav className="hidden items-center gap-1 md:flex ml-4">
           {[
             { href: "#games", label: "ហ្គេម" },
-            { href: "#coins", label: "Coins" },
+            
             { href: "#deals", label: "ប្រូម៉ូសិន" },
             { href: "#recs", label: "ណែនាំ" },
             { href: "#plus", label: "សមាជិកភាព" },
