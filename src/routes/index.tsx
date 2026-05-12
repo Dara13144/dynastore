@@ -693,14 +693,8 @@ function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () 
       </div>
 
       <div className="mt-5 grid place-items-center rounded-2xl bg-white p-5 min-h-[300px]">
-        {tx && status !== "error" && (
-          <canvas
-            ref={qrCanvasRef}
-            width={280}
-            height={280}
-            aria-label="KHQR"
-            className={status === "loading" ? "hidden" : "h-64 w-64"}
-          />
+        {qrDataUrl && status !== "error" && status !== "loading" && (
+          <img src={qrDataUrl} alt="KHQR" width={280} height={280} className="h-64 w-64" />
         )}
         {status === "loading" && <div className="text-sm text-black/60">កំពុងបង្កើត KHQR…</div>}
         {status === "error" && (
