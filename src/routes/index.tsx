@@ -65,7 +65,7 @@ function Page() {
 }
 
 function Header({ onCart, onSettings }: { onCart: () => void; onSettings: () => void }) {
-  const { coins, cart, authed, signOut } = useStore();
+  const { cart, authed, signOut } = useStore();
   const navigate = useNavigate();
   return (
     <header className="sticky top-0 z-50 glass border-b border-border/50">
@@ -90,15 +90,6 @@ function Header({ onCart, onSettings }: { onCart: () => void; onSettings: () => 
           ))}
         </nav>
         <div className="ml-auto flex items-center gap-2 md:gap-3">
-          <div className="hidden items-center gap-2 rounded-full bg-coin/15 pl-2 pr-4 py-1.5 ring-1 ring-coin/40 sm:flex">
-            <div className="grid h-8 w-8 place-items-center rounded-full" style={{ background: "var(--gradient-coin)" }}>
-              <Coins className="h-4 w-4 text-coin-foreground" />
-            </div>
-            <div className="leading-tight">
-              <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Player Coins</div>
-              <div className="font-display text-base text-coin">{coins.toLocaleString()}</div>
-            </div>
-          </div>
           {authed ? (
             <button onClick={signOut} className="hidden rounded-full px-4 py-2 text-sm font-medium ring-1 ring-border bg-secondary/70 hover:bg-secondary md:inline-flex items-center gap-2">
               <LogOut className="h-4 w-4" /> ចាកចេញ
@@ -116,9 +107,6 @@ function Header({ onCart, onSettings }: { onCart: () => void; onSettings: () => 
             <span className="absolute -right-1 -top-1 grid h-5 w-5 place-items-center rounded-full bg-accent text-[10px] font-bold text-accent-foreground">{cart.length}</span>
           </button>
         </div>
-      </div>
-      <div className="border-t border-border/40 bg-background/40 px-4 py-1.5 text-center text-[11px] text-muted-foreground sm:hidden">
-        <span className="inline-flex items-center gap-1.5"><Coins className="h-3 w-3 text-coin" /> {useStore().profile.name} · {useStore().coins} Coins</span>
       </div>
     </header>
   );
