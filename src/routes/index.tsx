@@ -700,6 +700,19 @@ function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () 
     return () => { clearInterval(poll); clearInterval(tick); };
   }, [tx, status, checkPayment, onClose, onToast, refresh]);
 
+  // Auto-close countdown after successful payment
+  useEffect(() => {
+    if (status !== "paid") return;
+    setAutoCloseIn(AUTO_CLOSE_S);
+    const t = setInterval(() => {
+      setAutoCloseIn((s) => {
+        if (s <= 1) { clearInterval(t); onClose(); return 0; }
+        return s - 1;
+      });
+    }, 1000);
+    return () => clearInterval(t);
+  }, [status, onClose]);
+
   const manualVerify = async () => {
     if (!tx) return;
     setStatus("verifying");
