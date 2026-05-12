@@ -65,7 +65,7 @@ function Page() {
 }
 
 function Header({ onCart, onSettings }: { onCart: () => void; onSettings: () => void }) {
-  const { coins, cart, authed, signOut } = useStore();
+  const { cart, authed, signOut } = useStore();
   const navigate = useNavigate();
   return (
     <header className="sticky top-0 z-50 glass border-b border-border/50">
