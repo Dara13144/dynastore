@@ -689,9 +689,9 @@ function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () 
         setPollTick((n) => n + 1);
         if (r.status === "paid") {
           setStatus("paid");
+          setPaidAt(Date.now());
           onToast(`បានបន្ថែម ${tx.coins.toLocaleString()} Coins ✓`);
           refresh();
-          setTimeout(onClose, 1500);
         } else if (r.status === "expired") {
           setStatus("expired");
         }
