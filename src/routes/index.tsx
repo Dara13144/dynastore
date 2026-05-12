@@ -509,28 +509,68 @@ function CartModal({ onClose, onToast }: { onClose: () => void; onToast: (m: str
 }
 
 function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () => void; onToast: (m: string) => void }) {
-  const { addCoins } = useStore();
-  const [step, setStep] = useState<"qr" | "verify" | "done">("qr");
-  const totalCoins = pack.coins + (pack.bonus ?? 0);
-  const payload = `00020101021229370016A000000677010111011300012345678901520458125303840540${pack.price.toFixed(2)}5802KH5910Dyna Store6010Phnom Penh62070703${pack.id.toUpperCase()}6304ABCD`;
+  const { authed, refresh } = useStore();
+  const createTopup = useServerFn(createTopupFn);
+  const checkPayment = useServerFn(checkPaymentFn);
+  const [tx, setTx] = useState<{ md5: string; qrPayload: string; coins: number } | null>(null);
+  const [qrDataUrl, setQrDataUrl] = useState<string>("");
+  const [status, setStatus] = useState<"loading" | "qr" | "verifying" | "paid" | "expired" | "error">("loading");
+  const [errMsg, setErrMsg] = useState<string>("");
 
-  const handleVerify = () => {
-    setStep("verify");
-    setTimeout(() => {
-      addCoins(totalCoins);
-      setStep("done");
-      onToast(`បានបន្ថែម ${totalCoins.toLocaleString()} Coins`);
-      setTimeout(onClose, 1400);
-    }, 1600);
+  useEffect(() => {
+    if (!authed) { setStatus("error"); setErrMsg("សូមចូលគណនីសិន"); return; }
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await createTopup({ data: { packId: pack.id } });
+        if (cancelled) return;
+        setTx({ md5: res.md5, qrPayload: res.qrPayload, coins: res.coins });
+        const url = await QRCode.toDataURL(res.qrPayload, { margin: 1, width: 280, errorCorrectionLevel: "M" });
+        if (!cancelled) { setQrDataUrl(url); setStatus("qr"); }
+      } catch (e: any) { if (!cancelled) { setStatus("error"); setErrMsg(e.message || "មានបញ្ហា"); } }
+    })();
+    return () => { cancelled = true; };
+  }, [pack.id, authed, createTopup]);
+
+  // Auto-poll Bakong every 4s while pending
+  useEffect(() => {
+    if (!tx || (status !== "qr" && status !== "verifying")) return;
+    const t = setInterval(async () => {
+      try {
+        const r = await checkPayment({ data: { md5: tx.md5 } });
+        if (r.status === "paid") {
+          setStatus("paid");
+          onToast(`បានបន្ថែម ${tx.coins.toLocaleString()} Coins ✓`);
+          refresh();
+          setTimeout(onClose, 1500);
+        } else if (r.status === "expired") {
+          setStatus("expired");
+        }
+      } catch {}
+    }, 4000);
+    return () => clearInterval(t);
+  }, [tx, status, checkPayment, onClose, onToast, refresh]);
+
+  const manualVerify = async () => {
+    if (!tx) return;
+    setStatus("verifying");
+    try {
+      const r = await checkPayment({ data: { md5: tx.md5 } });
+      if (r.status === "paid") {
+        setStatus("paid"); onToast("ការបង់ប្រាក់ជោគជ័យ ✓"); refresh();
+        setTimeout(onClose, 1400);
+      } else if (r.status === "expired") setStatus("expired");
+      else { setStatus("qr"); onToast("មិនទាន់ទទួលការទូទាត់នៅឡើយទេ"); }
+    } catch (e: any) { setStatus("qr"); onToast(e.message || "ផ្ទៀងផ្ទាត់បរាជ័យ"); }
   };
 
   return (
-    <ModalShell onClose={onClose} eyebrow="Bakong KHQR" title="ម៉ឺនុយបង់ប្រាក់">
+    <ModalShell onClose={onClose} eyebrow="Bakong KHQR" title="ស្កេនដើម្បីបង់ប្រាក់">
       <div className="rounded-2xl bg-background/40 p-5 ring-1 ring-border">
         <div className="flex items-center justify-between">
           <div>
             <div className="text-xs text-muted-foreground">{pack.name}</div>
-            <div className="font-display text-xl text-coin">{totalCoins.toLocaleString()} Coins</div>
+            <div className="font-display text-xl text-coin">{(pack.coins + (pack.bonus ?? 0)).toLocaleString()} Coins</div>
           </div>
           <div className="text-right">
             <div className="text-xs text-muted-foreground">ប្រាក់ត្រូវបង់</div>
@@ -539,38 +579,45 @@ function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () 
         </div>
       </div>
 
-      <div className="mt-5 grid place-items-center rounded-2xl bg-white p-6">
-        <div className="grid h-48 w-48 grid-cols-12 grid-rows-12 gap-[2px]">
-          {Array.from({ length: 144 }).map((_, i) => {
-            const seed = (i * 9301 + 49297) % 233280;
-            const on = (seed / 233280) > 0.5;
-            return <div key={i} className={on ? "bg-black" : "bg-white"} />;
-          })}
-        </div>
-        <div className="mt-3 text-xs font-bold text-black">BAKONG KHQR · ${pack.price}</div>
+      <div className="mt-5 grid place-items-center rounded-2xl bg-white p-5 min-h-[300px]">
+        {status === "loading" && <div className="text-sm text-black/60">កំពុងបង្កើត KHQR…</div>}
+        {status === "error" && <div className="text-sm text-destructive p-4 text-center">{errMsg}</div>}
+        {qrDataUrl && status !== "error" && status !== "loading" && (
+          <>
+            <img src={qrDataUrl} alt="KHQR" className="h-64 w-64" />
+            <div className="mt-2 text-[11px] font-bold text-black tracking-wider">BAKONG KHQR · ${pack.price}</div>
+          </>
+        )}
       </div>
 
-      <p className="mt-4 text-xs text-muted-foreground">ស្កេន KHQR ដើម្បីទិញកញ្ចប់ Coins។ ពេល Bakong បញ្ជាក់ថាបង់ប្រាក់ជោគជ័យ Coins នឹងចូល Wallet ស្វ័យប្រវត្តិ។</p>
+      <p className="mt-4 text-xs text-muted-foreground">
+        ស្កេន KHQR តាម Bakong, ABA, Wing, ACLEDA ឬកម្មវិធីធនាគារផ្សេងទៀត។ Coins នឹងចូល Wallet ស្វ័យប្រវត្តិពេល Bakong បញ្ជាក់។
+      </p>
 
-      <div className="mt-3 space-y-2 text-xs">
-        <div className="flex items-center gap-2 rounded-lg bg-background/40 p-2 ring-1 ring-border">
-          <span className="font-mono text-muted-foreground">KHQR</span>
-          <span className="flex-1 truncate font-mono">{payload.slice(0, 36)}…</span>
-          <button onClick={() => { navigator.clipboard?.writeText(payload); onToast("Copied"); }} className="rounded-md bg-secondary px-2 py-1 text-[10px]">Copy</button>
+      {tx && (
+        <div className="mt-3 flex items-center gap-2 rounded-lg bg-background/40 p-2 ring-1 ring-border text-xs">
+          <span className="font-mono text-muted-foreground">MD5</span>
+          <span className="flex-1 truncate font-mono">{tx.md5}</span>
+          <button onClick={() => { navigator.clipboard?.writeText(tx.qrPayload); onToast("Copied KHQR"); }} className="rounded-md bg-secondary px-2 py-1 text-[10px]">Copy QR</button>
         </div>
-      </div>
+      )}
 
-      {step === "qr" && (
-        <button onClick={handleVerify} className="mt-5 w-full rounded-full px-5 py-3 font-semibold text-primary-foreground" style={{ background: "var(--gradient-hero)" }}>
-          ខ្ញុំបានបង់ប្រាក់រួច — ផ្ទៀងផ្ទាត់
+      {status === "qr" && (
+        <button onClick={manualVerify} className="mt-5 w-full rounded-full px-5 py-3 font-semibold text-primary-foreground" style={{ background: "var(--gradient-hero)" }}>
+          ខ្ញុំបានបង់ប្រាក់រួច — ផ្ទៀងផ្ទាត់ឥឡូវ
         </button>
       )}
-      {step === "verify" && (
-        <div className="mt-5 rounded-full bg-background/40 px-5 py-3 text-center text-sm text-muted-foreground ring-1 ring-border animate-pulse">កំពុងផ្ទៀងផ្ទាត់ការបង់ប្រាក់…</div>
+      {status === "verifying" && (
+        <div className="mt-5 rounded-full bg-background/40 px-5 py-3 text-center text-sm text-muted-foreground ring-1 ring-border animate-pulse">កំពុងផ្ទៀងផ្ទាត់…</div>
       )}
-      {step === "done" && (
+      {status === "paid" && (
         <div className="mt-5 rounded-full bg-primary/20 px-5 py-3 text-center text-sm font-semibold text-primary ring-1 ring-primary/40 inline-flex items-center justify-center gap-2 w-full">
-          <Check className="h-4 w-4" /> បន្ថែម Coins ជោគជ័យ
+          <Check className="h-4 w-4" /> ការបង់ប្រាក់ជោគជ័យ — Coins បានបន្ថែម
+        </div>
+      )}
+      {status === "expired" && (
+        <div className="mt-5 rounded-full bg-destructive/20 px-5 py-3 text-center text-sm font-semibold text-destructive ring-1 ring-destructive/40">
+          QR ផុតកំណត់ — សូមបិទ ហើយបង្កើតថ្មី
         </div>
       )}
     </ModalShell>
