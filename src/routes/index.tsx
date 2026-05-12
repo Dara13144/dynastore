@@ -670,19 +670,18 @@ function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () 
     }
   };
 
+  // 5-minute MD5 validity window — countdown + status polling
   useEffect(() => {
     if (!tx || (status !== "qr" && status !== "verifying")) return;
-    const startedAt = Date.now();
     const WINDOW_MS = POLL_WINDOW_S * 1000;
-    setLastChecked(null);
-    setPollTick(0);
     const tick = setInterval(() => {
-      const left = Math.max(0, Math.ceil((WINDOW_MS - (Date.now() - startedAt)) / 1000));
+      const left = Math.max(0, Math.ceil((tx.expiresAt - Date.now()) / 1000));
       setSecondsLeft(left);
       if (left === 0) setStatus("expired");
     }, 1000);
     const poll = setInterval(async () => {
-      if (Date.now() - startedAt > WINDOW_MS) { clearInterval(poll); return; }
+      // Stop polling stale MD5 — server will reject anyway after 5 min
+      if (Date.now() >= tx.expiresAt) { clearInterval(poll); setStatus("expired"); return; }
       try {
         const r = await checkPayment({ data: { md5: tx.md5 } });
         setLastChecked(Date.now());
@@ -699,6 +698,19 @@ function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () 
     }, 4000);
     return () => { clearInterval(poll); clearInterval(tick); };
   }, [tx, status, checkPayment, onClose, onToast, refresh]);
+
+  // When MD5 becomes stale/expired, automatically force-generate a fresh KHQR
+  const autoRegenRef = useRef(false);
+  useEffect(() => {
+    if (status !== "expired") { autoRegenRef.current = false; return; }
+    if (!authed) return;
+    if (autoRegenRef.current) return;
+    autoRegenRef.current = true;
+    onToast("MD5 ផុតកំណត់ — កំពុងបង្កើត KHQR ថ្មី");
+    const t = setTimeout(() => { retryAndRegenerate(); }, 1200);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [status, authed]);
 
   // Auto-close countdown after successful payment
   useEffect(() => {
