@@ -1016,6 +1016,57 @@ function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () 
             </span>
           </div>
 
+          {/* Debug panel: merchant config + final MD5 used to verify with Bakong */}
+          <details
+            open={debugOpen}
+            onToggle={(e) => setDebugOpen((e.target as HTMLDetailsElement).open)}
+            className="mt-2 rounded-lg bg-background/30 p-2 ring-1 ring-dashed ring-border/70 text-xs"
+          >
+            <summary className="flex cursor-pointer select-none items-center gap-2">
+              <span className="rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-bold text-amber-500 ring-1 ring-amber-500/30">DEBUG</span>
+              <span className="font-mono text-muted-foreground">KHQR config & MD5</span>
+              <span className="ml-auto text-[10px] text-muted-foreground">{debugOpen ? "បិទ" : "បើក"}</span>
+            </summary>
+            <div className="mt-2 grid gap-1.5">
+              {[
+                ["Merchant Name", merchantInfo?.merchantName],
+                ["Merchant City", merchantInfo?.merchantCity],
+                ["Merchant Phone", merchantInfo?.merchantPhone],
+                ["Acquiring Bank", merchantInfo?.acquiringBank],
+                ["Bakong Account", merchantInfo?.bakongAccountIdMasked],
+                ["Amount", `$${pack.price} USD`],
+                ["Coins", `${(pack.coins + (pack.bonus ?? 0)).toLocaleString()}`],
+                ["Tx Created", new Date(tx.createdAt).toLocaleTimeString()],
+                ["Tx Expires", new Date(tx.expiresAt).toLocaleTimeString()],
+              ].map(([k, v]) => (
+                <div key={k as string} className="flex items-start justify-between gap-3 rounded bg-background/40 px-2 py-1">
+                  <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{k}</span>
+                  <span className="max-w-[60%] truncate text-right font-mono text-[11px]">{v ?? <span className="text-destructive">— not set —</span>}</span>
+                </div>
+              ))}
+              <div className="rounded bg-background/40 p-2">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Final MD5 (verify)</span>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      try { await navigator.clipboard.writeText(tx.md5); onToast("បានចម្លង MD5"); }
+                      catch { onToast("ចម្លងបរាជ័យ"); }
+                    }}
+                    className="inline-flex items-center gap-1 rounded bg-secondary px-1.5 py-0.5 text-[10px] font-semibold hover:bg-secondary/80"
+                  >
+                    <Copy className="h-2.5 w-2.5" /> Copy
+                  </button>
+                </div>
+                <div className="mt-1 break-all font-mono text-[11px] text-foreground">{tx.md5}</div>
+              </div>
+              <div className="rounded bg-background/40 p-2">
+                <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">QR Payload</div>
+                <div className="mt-1 max-h-24 overflow-auto break-all font-mono text-[10px] leading-relaxed">{tx.qrPayload}</div>
+              </div>
+            </div>
+          </details>
+
           {prevTx && prevTx.md5 !== tx.md5 && (
             <details className="mt-2 rounded-lg bg-background/30 p-2 ring-1 ring-border/60 text-xs">
               <summary className="flex cursor-pointer items-center gap-2 select-none">
