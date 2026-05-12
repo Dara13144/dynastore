@@ -691,6 +691,8 @@ function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () 
     setStatus("verifying");
     try {
       const r = await checkPayment({ data: { md5: tx.md5 } });
+      setLastChecked(Date.now());
+      setPollTick((n) => n + 1);
       if (r.status === "paid") {
         setStatus("paid"); onToast("ការបង់ប្រាក់ជោគជ័យ ✓"); refresh();
         setTimeout(onClose, 1400);
