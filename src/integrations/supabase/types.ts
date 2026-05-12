@@ -14,7 +14,87 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      library: {
+        Row: {
+          acquired_at: string
+          game_id: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          acquired_at?: string
+          game_id: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          acquired_at?: string
+          game_id?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      transactions: {
+        Row: {
+          amount_usd: number
+          bakong_ref: string | null
+          coins: number
+          created_at: string
+          expires_at: string
+          id: string
+          md5: string
+          paid_at: string | null
+          qr_payload: string
+          status: Database["public"]["Enums"]["tx_status"]
+          user_id: string
+        }
+        Insert: {
+          amount_usd: number
+          bakong_ref?: string | null
+          coins: number
+          created_at?: string
+          expires_at?: string
+          id?: string
+          md5: string
+          paid_at?: string | null
+          qr_payload: string
+          status?: Database["public"]["Enums"]["tx_status"]
+          user_id: string
+        }
+        Update: {
+          amount_usd?: number
+          bakong_ref?: string | null
+          coins?: number
+          created_at?: string
+          expires_at?: string
+          id?: string
+          md5?: string
+          paid_at?: string | null
+          qr_payload?: string
+          status?: Database["public"]["Enums"]["tx_status"]
+          user_id?: string
+        }
+        Relationships: []
+      }
+      wallets: {
+        Row: {
+          coins: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          coins?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          coins?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -23,7 +103,7 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      tx_status: "pending" | "paid" | "expired" | "failed"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +230,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      tx_status: ["pending", "paid", "expired", "failed"],
+    },
   },
 } as const
