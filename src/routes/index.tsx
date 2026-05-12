@@ -682,18 +682,27 @@ function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () 
     const poll = setInterval(async () => {
       // Stop polling stale MD5 — server will reject anyway after 5 min
       if (Date.now() >= tx.expiresAt) { clearInterval(poll); setStatus("expired"); return; }
+      // Snapshot MD5 at request time so a late response from a previous QR
+      // can never flip the now-active QR to "paid".
+      const checkingMd5 = tx.md5;
       try {
-        const r = await checkPayment({ data: { md5: tx.md5 } });
+        const r = await checkPayment({ data: { md5: checkingMd5 } });
         setLastChecked(Date.now());
         setPollTick((n) => n + 1);
-        if (r.status === "paid") {
-          setStatus("paid");
-          setPaidAt(Date.now());
-          onToast(`បានបន្ថែម ${tx.coins.toLocaleString()} Coins ✓`);
-          refresh();
-        } else if (r.status === "expired") {
-          setStatus("expired");
-        }
+        // Validate: must still be the active QR AND not expired
+        setTx((cur) => {
+          if (!cur || cur.md5 !== checkingMd5) return cur;
+          if (Date.now() >= cur.expiresAt) { setStatus("expired"); return cur; }
+          if (r.status === "paid") {
+            setStatus("paid");
+            setPaidAt(Date.now());
+            onToast(`បានបន្ថែម ${cur.coins.toLocaleString()} Coins ✓`);
+            refresh();
+          } else if (r.status === "expired") {
+            setStatus("expired");
+          }
+          return cur;
+        });
       } catch {}
     }, 4000);
     return () => { clearInterval(poll); clearInterval(tick); };
@@ -728,11 +737,15 @@ function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () 
   const manualVerify = async () => {
     if (!tx) return;
     if (Date.now() >= tx.expiresAt) { setStatus("expired"); return; }
+    const checkingMd5 = tx.md5;
     setStatus("verifying");
     try {
-      const r = await checkPayment({ data: { md5: tx.md5 } });
+      const r = await checkPayment({ data: { md5: checkingMd5 } });
       setLastChecked(Date.now());
       setPollTick((n) => n + 1);
+      // Reject if user already regenerated a different KHQR while we waited
+      if (!tx || tx.md5 !== checkingMd5) { onToast("MD5 មិនត្រូវនឹង QR ដែលកំពុងសកម្ម"); return; }
+      if (Date.now() >= tx.expiresAt) { setStatus("expired"); return; }
       if (r.status === "paid") {
         setStatus("paid"); setPaidAt(Date.now()); onToast("ការបង់ប្រាក់ជោគជ័យ ✓"); refresh();
       } else if (r.status === "expired") setStatus("expired");
