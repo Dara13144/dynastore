@@ -760,13 +760,33 @@ function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () 
       const r = await checkPayment({ data: { md5: checkingMd5 } });
       setLastChecked(Date.now());
       setPollTick((n) => n + 1);
-      // Reject if user already regenerated a different KHQR while we waited
-      if (!tx || tx.md5 !== checkingMd5) { onToast("MD5 មិនត្រូវនឹង QR ដែលកំពុងសកម្ម"); return; }
-      if (Date.now() >= tx.expiresAt) { setStatus("expired"); return; }
-      if (r.status === "paid") {
-        setStatus("paid"); setPaidAt(Date.now()); onToast("ការបង់ប្រាក់ជោគជ័យ ✓"); refresh();
-      } else if (r.status === "expired") setStatus("expired");
-      else { setStatus("qr"); onToast("មិនទាន់ទទួលការទូទាត់នៅឡើយទេ"); }
+      // Validate against the LIVE active QR (not the closure snapshot) so a
+      // late response from a previously-displayed KHQR cannot mark the new
+      // one as paid or trigger the auto-close receipt.
+      let mismatched = false;
+      let expired = false;
+      setTx((cur) => {
+        if (!cur || cur.md5 !== checkingMd5) { mismatched = true; return cur; }
+        if (Date.now() >= cur.expiresAt) { expired = true; return cur; }
+        if (r.status === "paid") {
+          setStatus("paid");
+          setPaidAt(Date.now());
+          onToast(`ការបង់ប្រាក់ជោគជ័យ ✓ — បន្ថែម ${cur.coins.toLocaleString()} Coins`);
+          refresh();
+        } else if (r.status === "expired") {
+          setStatus("expired");
+        } else {
+          setStatus("qr");
+          onToast("មិនទាន់ទទួលការទូទាត់នៅឡើយទេ");
+        }
+        return cur;
+      });
+      if (mismatched) {
+        setStatus("qr");
+        onToast("MD5 មិនត្រូវនឹង QR ដែលកំពុងសកម្ម — សូមស្កេន QR ថ្មី");
+      } else if (expired) {
+        setStatus("expired");
+      }
     } catch (e: any) { setStatus("qr"); onToast(e?.message || "ផ្ទៀងផ្ទាត់បរាជ័យ"); }
   };
 
