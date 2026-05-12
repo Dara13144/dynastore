@@ -266,8 +266,8 @@ function GameCard({ game, onToast, onOpenCart }: { game: Game; onToast: (m: stri
   const inCart = cart.includes(game.id);
   const owned = library.includes(game.id);
   const price = gameFinalPrice(game);
-  const handleBuy = () => {
-    const r = buyGame(game.id);
+  const handleBuy = async () => {
+    const r = await buyGame(game.id);
     onToast(r.msg);
   };
   return (
@@ -498,7 +498,7 @@ function CartModal({ onClose, onToast }: { onClose: () => void; onToast: (m: str
           </div>
           <div className="mt-2 text-xs text-muted-foreground">Wallet មាន: {coins.toLocaleString()} Coins</div>
           <button
-            onClick={() => { const r = checkoutCart(); onToast(r.msg); if (r.ok) onClose(); }}
+            onClick={async () => { const r = await checkoutCart(); onToast(r.msg); if (r.ok) onClose(); }}
             className="mt-5 w-full rounded-full px-5 py-3 font-semibold text-primary-foreground transition hover:scale-[1.01]" style={{ background: "var(--gradient-hero)" }}>
             បង់ប្រាក់ឥឡូវ
           </button>
