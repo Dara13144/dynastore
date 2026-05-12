@@ -43,7 +43,7 @@ function Page() {
 
   return (
     <div className="min-h-screen">
-      <Header onCart={() => setCartOpen(true)} onSettings={() => setSettingsOpen(true)} onAdmin={() => setAdminOpen(true)} onLogin={() => showToast("បានចូលប្រើជាមួយ Google (មុខងារសាកល្បង)")} />
+      <Header onCart={() => setCartOpen(true)} onSettings={() => setSettingsOpen(true)} onAdmin={() => setAdminOpen(true)} />
       <Hero />
       <CoinShop onBuyPack={(p) => setPaymentPack(p)} />
       <GamesSection onToast={showToast} onOpenCart={() => setCartOpen(true)} />
@@ -66,8 +66,9 @@ function Page() {
   );
 }
 
-function Header({ onCart, onSettings, onAdmin, onLogin }: { onCart: () => void; onSettings: () => void; onAdmin: () => void; onLogin: () => void }) {
-  const { coins, cart, profile, isAdmin } = useStore();
+function Header({ onCart, onSettings, onAdmin }: { onCart: () => void; onSettings: () => void; onAdmin: () => void }) {
+  const { coins, cart, isAdmin, authed, signOut } = useStore();
+  const navigate = useNavigate();
   return (
     <header className="sticky top-0 z-50 glass border-b border-border/50">
       <div className="mx-auto flex max-w-7xl items-center gap-4 px-4 py-3 md:px-6">
@@ -100,9 +101,15 @@ function Header({ onCart, onSettings, onAdmin, onLogin }: { onCart: () => void; 
               <div className="font-display text-base text-coin">{coins.toLocaleString()}</div>
             </div>
           </div>
-          <button onClick={onLogin} className="hidden rounded-full px-4 py-2 text-sm font-medium text-primary-foreground transition hover:opacity-90 md:inline-flex items-center gap-2" style={{ background: "var(--gradient-hero)" }}>
-            <LogIn className="h-4 w-4" /> Login Google
-          </button>
+          {authed ? (
+            <button onClick={signOut} className="hidden rounded-full px-4 py-2 text-sm font-medium ring-1 ring-border bg-secondary/70 hover:bg-secondary md:inline-flex items-center gap-2">
+              <LogOut className="h-4 w-4" /> ចាកចេញ
+            </button>
+          ) : (
+            <button onClick={() => navigate({ to: "/login" })} className="hidden rounded-full px-4 py-2 text-sm font-medium text-primary-foreground transition hover:opacity-90 md:inline-flex items-center gap-2" style={{ background: "var(--gradient-hero)" }}>
+              <LogIn className="h-4 w-4" /> ចូលប្រើ
+            </button>
+          )}
           <button onClick={onSettings} className="grid h-10 w-10 place-items-center rounded-full bg-secondary/70 ring-1 ring-border transition hover:bg-secondary" title="Settings" aria-label="Settings">
             <Settings className="h-4 w-4" />
           </button>
