@@ -36,19 +36,28 @@ export const createTopup = createServerFn({ method: "POST" })
     const pack = COIN_PACK_PRICES[data.packId];
     if (!pack) throw new Error("Invalid coin pack");
 
-    const accountId = process.env.BAKONG_ACCOUNT_ID;
-    const merchantName = process.env.BAKONG_MERCHANT_NAME || "Dyna Store";
-    const merchantCity = process.env.BAKONG_MERCHANT_CITY || "Phnom Penh";
-    if (!accountId) throw new Error("BAKONG_ACCOUNT_ID not configured");
+    // Read merchant configuration entirely from environment — no hardcoded values.
+    const accountId =
+      process.env.BAKONG_ACCOUNT_ID || process.env.BAKONG_MERCHANT_ID;
+    const merchantName = process.env.BAKONG_MERCHANT_NAME;
+    const merchantCity = process.env.BAKONG_MERCHANT_CITY;
+    const merchantPhone = process.env.BAKONG_MERCHANT_PHONE;
+    const acquiringBank = process.env.BAKONG_ACQUIRING_BANK;
+    if (!accountId) throw new Error("BAKONG_ACCOUNT_ID (or BAKONG_MERCHANT_ID) is not configured");
+    if (!merchantName) throw new Error("BAKONG_MERCHANT_NAME is not configured");
+    if (!merchantCity) throw new Error("BAKONG_MERCHANT_CITY is not configured");
 
     const billNumber = `T${Date.now().toString(36).toUpperCase()}`;
     const { payload, md5 } = buildKhqr({
       bakongAccountId: accountId,
-      merchantName, merchantCity,
+      merchantName,
+      merchantCity,
       amount: pack.price,
       currency: "USD",
       billNumber,
       storeLabel: pack.name.slice(0, 25),
+      mobileNumber: merchantPhone?.replace(/\s+/g, "") || undefined,
+      terminalLabel: acquiringBank || undefined,
     });
     const totalCoins = pack.coins + (pack.bonus ?? 0);
 
