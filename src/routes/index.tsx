@@ -692,7 +692,6 @@ function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () 
               bgColor="#FFFFFF"
               fgColor="#111111"
               level="M"
-              includeMargin
             />
           </div>
         )}
