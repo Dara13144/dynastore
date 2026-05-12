@@ -553,8 +553,8 @@ function CoinShop({ onBuyPack }: { onBuyPack: (p: CoinPack) => void }) {
         <div className="inline-flex items-center gap-2 rounded-full bg-coin/15 px-3 py-1 text-xs font-medium text-coin ring-1 ring-coin/30">
           <Coins className="h-3.5 w-3.5" /> Coin Shop
         </div>
-        <h2 className="mt-4 font-display text-4xl md:text-5xl">ទិញ <span className="text-coin">Coins</span> ដើម្បីទិញហ្គេម</h2>
-        <p className="mt-3 text-muted-foreground">ជ្រើសរើសកញ្ចប់ Coins ហើយបង់ប្រាក់តាម Bakong KHQR។ Coins នឹងចូល Wallet បន្ទាប់ពីការបង់ប្រាក់ត្រូវបានផ្ទៀងផ្ទាត់។</p>
+        <h2 className="mt-4 font-display text-4xl md:text-5xl">Topup <span className="text-coin">Coins</span></h2>
+        <p className="mt-3 text-muted-foreground">ជ្រើសរើសកញ្ចប់តម្លៃ ហើយបង់ប្រាក់តាម Bakong KHQR។ Coins នឹងចូល Wallet បន្ទាប់ពីការបង់ប្រាក់ត្រូវបានផ្ទៀងផ្ទាត់។</p>
       </div>
       <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
         {COIN_PACKS.map((p, i) => (
@@ -570,8 +570,8 @@ function CoinShop({ onBuyPack }: { onBuyPack: (p: CoinPack) => void }) {
               <p className="mt-3 text-sm text-muted-foreground">{p.tag}</p>
               <div className="mt-5 flex items-center justify-between">
                 <div className="font-display text-2xl">${p.price}</div>
-                <button onClick={() => onBuyPack(p)} className="rounded-full px-4 py-2 text-sm font-semibold text-coin-foreground transition hover:scale-105" style={{ background: "var(--gradient-coin)" }}>
-                  ទិញ Coins
+                <button onClick={() => onBuyPack(p)} className="inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-semibold text-coin-foreground transition hover:scale-105" style={{ background: "var(--gradient-coin)" }}>
+                  <Coins className="h-4 w-4" /> Topup ${p.price}
                 </button>
               </div>
               {i === 1 && <span className="absolute -top-3 right-0 rounded-full bg-accent px-2 py-0.5 text-[10px] font-bold text-accent-foreground">POPULAR</span>}
