@@ -588,6 +588,15 @@ function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () 
   const { authed, refresh, coins } = useStore();
   const createTopup = useServerFn(createTopupFn);
   const checkPayment = useServerFn(checkPaymentFn);
+  const getMerchantInfo = useServerFn(getMerchantInfoFn);
+  const [merchantInfo, setMerchantInfo] = useState<Awaited<ReturnType<typeof getMerchantInfoFn>> | null>(null);
+  const [debugOpen, setDebugOpen] = useState(false);
+  useEffect(() => {
+    if (!authed) { setMerchantInfo(null); return; }
+    let cancelled = false;
+    getMerchantInfo().then((r) => { if (!cancelled) setMerchantInfo(r); }).catch(() => {});
+    return () => { cancelled = true; };
+  }, [authed, getMerchantInfo]);
   const qrWrapRef = useRef<HTMLDivElement | null>(null);
   type Tx = { md5: string; qrPayload: string; coins: number; createdAt: number; expiresAt: number };
   const [tx, setTx] = useState<Tx | null>(null);
