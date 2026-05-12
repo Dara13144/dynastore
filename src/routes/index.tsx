@@ -4,7 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import QRCode from "react-qr-code";
 import { Coins, ShoppingCart, Settings, LogIn, LogOut, X, Trash2, Check, Star, Zap, Clock, Heart, Send, Gamepad2, Sparkles, ImageIcon, AlertTriangle, RefreshCw, Download, Copy, Loader2, QrCode as QrCodeIcon } from "lucide-react";
 import { StoreProvider, useStore, GAMES, COIN_PACKS, gameFinalPrice, type CoinPack, type Game } from "@/lib/store";
-import { createTopup as createTopupFn, checkPayment as checkPaymentFn } from "@/lib/bakong.functions";
+import { createTopup as createTopupFn, checkPayment as checkPaymentFn, getMerchantInfo as getMerchantInfoFn } from "@/lib/bakong.functions";
 import heroImg from "@/assets/hero-arcade.jpg";
 import logoD from "@/assets/dyna-logo.jpeg";
 
