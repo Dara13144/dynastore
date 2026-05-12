@@ -497,9 +497,31 @@ function SettingsModal({ onClose, onToast }: { onClose: () => void; onToast: (m:
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-3 rounded-xl bg-background/40 p-4 ring-1 ring-border">
-          <Stat label="ហ្គេមមាន" v={library.length} />
-          <Stat label="Wallet" v={`${useStore().coins}c`} />
+        <div className="rounded-2xl p-5 ring-1 ring-coin/30" style={{ background: "var(--gradient-card)" }}>
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="inline-flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-coin">
+                <Coins className="h-3 w-3" /> Wallet Balance
+              </div>
+              <div className="mt-1 font-display text-3xl text-coin">{coins.toLocaleString()} <span className="text-sm text-muted-foreground">Coins</span></div>
+              <div className="mt-1 text-[11px] text-muted-foreground">បណ្ណាល័យហ្គេម: {library.length}</div>
+            </div>
+            <button
+              onClick={() => { onClose(); setTimeout(() => { document.getElementById("coins")?.scrollIntoView({ behavior: "smooth" }); }, 50); }}
+              className="inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold text-coin-foreground transition hover:scale-105"
+              style={{ background: "var(--gradient-coin)" }}>
+              <Coins className="h-4 w-4" /> Topup Coins
+            </button>
+          </div>
+          <div className="mt-4 grid grid-cols-4 gap-2">
+            {COIN_PACKS.map((p) => (
+              <div key={p.id} className="rounded-lg bg-background/40 px-2 py-2 text-center ring-1 ring-border">
+                <div className="text-[10px] text-muted-foreground">{p.name.replace(" Pack", "")}</div>
+                <div className="text-[11px] font-semibold text-coin">{p.coins.toLocaleString()}</div>
+                <div className="text-[10px] text-muted-foreground">${p.price}</div>
+              </div>
+            ))}
+          </div>
         </div>
 
         <div className="flex gap-2">
