@@ -590,7 +590,7 @@ function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () 
   const checkPayment = useServerFn(checkPaymentFn);
   const [qrDataUrl, setQrDataUrl] = useState<string>("");
   const [tx, setTx] = useState<{ md5: string; qrPayload: string; coins: number } | null>(null);
-  const [status, setStatus] = useState<"loading" | "qr" | "verifying" | "paid" | "expired" | "error">("loading");
+  const [status, setStatus] = useState<"loading" | "login" | "qr" | "verifying" | "paid" | "expired" | "error">("loading");
   const [errMsg, setErrMsg] = useState<string>("");
   const [secondsLeft, setSecondsLeft] = useState<number>(300);
   const [attempt, setAttempt] = useState(0);
@@ -605,7 +605,7 @@ function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () 
   };
 
   useEffect(() => {
-    if (!authed) { setStatus("error"); setErrMsg("សូមចូលគណនីសិន"); return; }
+    if (!authed) { setStatus("login"); setErrMsg(""); return; }
     let cancelled = false;
     (async () => {
       try {
@@ -703,6 +703,24 @@ function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () 
           <img src={qrDataUrl} alt="KHQR" width={280} height={280} className="h-64 w-64" />
         )}
         {status === "loading" && <div className="text-sm text-black/60">កំពុងបង្កើត KHQR…</div>}
+        {status === "login" && (
+          <div className="flex flex-col items-center gap-3 p-4 text-center">
+            <div className="grid h-12 w-12 place-items-center rounded-full bg-primary/15 text-primary">
+              <LogIn className="h-6 w-6" />
+            </div>
+            <div className="text-sm font-semibold text-black">សូមចូលគណនីសិន</div>
+            <div className="text-xs text-black/60 max-w-xs">ត្រូវចូលគណនីជាមុនសិន ដើម្បីបង្កើត KHQR និងផ្ទៀងផ្ទាត់ការទូទាត់។</div>
+            <button
+              onClick={() => {
+                onClose();
+                navigate({ to: "/login" });
+              }}
+              className="mt-2 inline-flex items-center gap-2 rounded-full bg-foreground px-4 py-2 text-xs font-semibold text-background hover:opacity-90"
+            >
+              <LogIn className="h-3.5 w-3.5" /> ចូលគណនីសិន
+            </button>
+          </div>
+        )}
         {status === "error" && (
           <div className="flex flex-col items-center gap-3 p-4 text-center">
             <div className="grid h-12 w-12 place-items-center rounded-full bg-destructive/15 text-destructive">
@@ -714,17 +732,7 @@ function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () 
               <button onClick={retry} className="mt-2 inline-flex items-center gap-2 rounded-full bg-foreground px-4 py-2 text-xs font-semibold text-background hover:opacity-90">
                 <RefreshCw className="h-3.5 w-3.5" /> ព្យាយាមម្តងទៀត
               </button>
-            ) : (
-              <button
-                onClick={() => {
-                  onClose();
-                  navigate({ to: "/login" });
-                }}
-                className="mt-2 inline-flex items-center gap-2 rounded-full bg-foreground px-4 py-2 text-xs font-semibold text-background hover:opacity-90"
-              >
-                <LogIn className="h-3.5 w-3.5" /> ចូលគណនីសិន
-              </button>
-            )}
+            ) : null}
           </div>
         )}
         {tx && status !== "error" && status !== "loading" && (
