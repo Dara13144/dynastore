@@ -72,14 +72,18 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Lovable App" },
-      { name: "description", content: "Lovable Generated Project" },
+      { title: "Dynastore Gaming" },
+      { name: "description", content: "DynaStore Complete is a full-stack e-commerce platform replicating a website's functionality." },
       { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Lovable App" },
-      { property: "og:description", content: "Lovable Generated Project" },
+      { property: "og:title", content: "Dynastore Gaming" },
+      { property: "og:description", content: "DynaStore Complete is a full-stack e-commerce platform replicating a website's functionality." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "twitter:site", content: "@Lovable" },
+      { name: "twitter:title", content: "Dynastore Gaming" },
+      { name: "twitter:description", content: "DynaStore Complete is a full-stack e-commerce platform replicating a website's functionality." },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/81765852-df1e-4307-8b6c-f764f338545e/id-preview-972c5967--c299877f-7af3-4cab-a4b4-973400b82e93.lovable.app-1778606757957.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/81765852-df1e-4307-8b6c-f764f338545e/id-preview-972c5967--c299877f-7af3-4cab-a4b4-973400b82e93.lovable.app-1778606757957.png" },
     ],
     links: [
       {
