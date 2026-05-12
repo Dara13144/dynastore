@@ -32,6 +32,7 @@ export const Route = createFileRoute("/")({
 function Page() {
   const [cartOpen, setCartOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [paymentPack, setPaymentPack] = useState<CoinPack | null>(null);
   const [toast, setToast] = useState<string | null>(null);
 
   const showToast = (msg: string) => {
@@ -43,6 +44,7 @@ function Page() {
     <div className="min-h-screen">
       <Header onCart={() => setCartOpen(true)} onSettings={() => setSettingsOpen(true)} />
       <Hero />
+      <CoinShop onBuyPack={(p) => setPaymentPack(p)} />
       <GamesSection onToast={showToast} onOpenCart={() => setCartOpen(true)} />
       <DealsBanner />
       <Recommendations onToast={showToast} />
@@ -51,6 +53,7 @@ function Page() {
 
       {cartOpen && <CartModal onClose={() => setCartOpen(false)} onToast={showToast} />}
       {settingsOpen && <SettingsModal onClose={() => setSettingsOpen(false)} onToast={showToast} />}
+      {paymentPack && <PaymentModal pack={paymentPack} onClose={() => setPaymentPack(null)} onToast={showToast} />}
 
       {toast && (
         <div className="fixed bottom-6 left-1/2 z-[100] -translate-x-1/2 rounded-full glass px-5 py-3 text-sm shadow-[var(--shadow-card)] animate-in fade-in slide-in-from-bottom-4">
