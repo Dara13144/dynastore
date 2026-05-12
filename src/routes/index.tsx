@@ -784,6 +784,7 @@ function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () 
       });
       if (mismatched) {
         setStatus("qr");
+        setMismatch({ scanned: checkingMd5, active: tx?.md5 ?? "" });
         onToast("MD5 មិនត្រូវនឹង QR ដែលកំពុងសកម្ម — សូមស្កេន QR ថ្មី");
       } else if (expired) {
         setStatus("expired");
