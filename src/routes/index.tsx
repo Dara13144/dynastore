@@ -615,7 +615,7 @@ function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () 
     if (!authed) return;
     let cancelled = false;
     setRefreshing(true);
-    refresh()
+    Promise.resolve(refresh())
       .catch(() => {})
       .finally(() => { if (!cancelled) setRefreshing(false); });
     return () => { cancelled = true; };
