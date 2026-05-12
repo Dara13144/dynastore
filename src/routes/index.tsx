@@ -659,7 +659,9 @@ function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () 
   useEffect(() => {
     if (!tx || (status !== "qr" && status !== "verifying")) return;
     const startedAt = Date.now();
-    const WINDOW_MS = 5 * 60 * 1000;
+    const WINDOW_MS = POLL_WINDOW_S * 1000;
+    setLastChecked(null);
+    setPollTick(0);
     const tick = setInterval(() => {
       const left = Math.max(0, Math.ceil((WINDOW_MS - (Date.now() - startedAt)) / 1000));
       setSecondsLeft(left);
@@ -669,6 +671,8 @@ function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () 
       if (Date.now() - startedAt > WINDOW_MS) { clearInterval(poll); return; }
       try {
         const r = await checkPayment({ data: { md5: tx.md5 } });
+        setLastChecked(Date.now());
+        setPollTick((n) => n + 1);
         if (r.status === "paid") {
           setStatus("paid");
           onToast(`បានបន្ថែម ${tx.coins.toLocaleString()} Coins ✓`);
