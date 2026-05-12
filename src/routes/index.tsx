@@ -598,6 +598,11 @@ function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () 
           <>
             <img src={qrDataUrl} alt="KHQR" className="h-64 w-64" />
             <div className="mt-2 text-[11px] font-bold text-black tracking-wider">BAKONG KHQR · ${pack.price}</div>
+            {(status === "qr" || status === "verifying") && (
+              <div className="mt-1 text-[11px] text-black/60">
+                ផុតកំណត់ក្នុង {Math.floor(secondsLeft / 60)}:{String(secondsLeft % 60).padStart(2, "0")}
+              </div>
+            )}
           </>
         )}
       </div>
