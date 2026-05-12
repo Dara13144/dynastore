@@ -815,7 +815,18 @@ function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () 
         if (status === "confirm") s = { tone: "text-foreground", ring: "ring-border", iconBg: "bg-muted text-muted-foreground", icon: ShoppingCart, label: "ត្រៀមបង់ប្រាក់", hint: "ពិនិត្យព័ត៌មានកញ្ចប់ មុនបង្កើត KHQR" };
         else if (status === "loading") s = { tone: "text-primary", ring: "ring-primary/30", iconBg: "bg-primary/15 text-primary animate-pulse", icon: Loader2, label: "កំពុងបង្កើត KHQR…", hint: "សូមរង់ចាំបន្តិច" };
         else if (status === "login") s = { tone: "text-amber-600 dark:text-amber-400", ring: "ring-amber-500/30", iconBg: "bg-amber-500/15 text-amber-600 dark:text-amber-400", icon: LogIn, label: "ត្រូវការចូលគណនី", hint: "ចូលគណនីដើម្បីបង្កើត KHQR និងផ្ទៀងផ្ទាត់" };
-        else if (mismatch) s = { tone: "text-destructive", ring: "ring-destructive/40", iconBg: "bg-destructive/15 text-destructive", icon: AlertTriangle, label: "MD5 មិនត្រូវនឹង QR សកម្ម", hint: "QR ដែលបានស្កេនមិនមែនជា QR បច្ចុប្បន្ន — សូមស្កេនថ្មី", action: { label: "ស្កេន QR ថ្មី", onClick: () => { setMismatch(null); onToast("សូមស្កេន QR ខាងក្រោម"); } } };
+        else if (mismatch) s = { tone: "text-destructive", ring: "ring-destructive/40", iconBg: "bg-destructive/15 text-destructive", icon: AlertTriangle, label: "MD5 មិនត្រូវនឹង QR សកម្ម", hint: "QR ដែលបានស្កេនមិនមែនជា QR បច្ចុប្បន្ន — សូមស្កេនថ្មី", action: { label: "ស្កេន QR ថ្មី", onClick: () => {
+          setMismatch(null);
+          requestAnimationFrame(() => {
+            const wrap = qrWrapRef.current;
+            if (wrap) {
+              wrap.scrollIntoView({ behavior: "smooth", block: "center" });
+              wrap.classList.add("ring-4", "ring-emerald-500/60");
+              setTimeout(() => wrap.classList.remove("ring-4", "ring-emerald-500/60"), 1600);
+            }
+          });
+          onToast("សូមស្កេន KHQR ខាងក្រោម");
+        } } };
         else if (status === "qr") s = { tone: "text-emerald-600 dark:text-emerald-400", ring: "ring-emerald-500/30", iconBg: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400", icon: QrCodeIcon, label: "កំពុងរង់ចាំការស្កេន", hint: "ស្កេន KHQR ខាងក្រោម — យើងពិនិត្យរៀងរាល់ ៤ វិនាទី" };
         else if (status === "verifying") s = { tone: "text-primary", ring: "ring-primary/30", iconBg: "bg-primary/15 text-primary animate-pulse", icon: Loader2, label: "កំពុងផ្ទៀងផ្ទាត់…", hint: "កំពុងសួរទៅ Bakong សម្រាប់ការទូទាត់" };
         else if (status === "paid") s = { tone: "text-primary", ring: "ring-primary/40", iconBg: "bg-primary text-primary-foreground", icon: Check, label: "បង់ប្រាក់ជោគជ័យ", hint: "Coins បានបន្ថែមចូល Wallet ដោយស្វ័យប្រវត្តិ" };
