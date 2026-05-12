@@ -708,8 +708,7 @@ function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () 
       setLastChecked(Date.now());
       setPollTick((n) => n + 1);
       if (r.status === "paid") {
-        setStatus("paid"); onToast("ការបង់ប្រាក់ជោគជ័យ ✓"); refresh();
-        setTimeout(onClose, 1400);
+        setStatus("paid"); setPaidAt(Date.now()); onToast("ការបង់ប្រាក់ជោគជ័យ ✓"); refresh();
       } else if (r.status === "expired") setStatus("expired");
       else { setStatus("qr"); onToast("មិនទាន់ទទួលការទូទាត់នៅឡើយទេ"); }
     } catch (e: any) { setStatus("qr"); onToast(e?.message || "ផ្ទៀងផ្ទាត់បរាជ័យ"); }
