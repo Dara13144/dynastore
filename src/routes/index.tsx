@@ -675,15 +675,7 @@ function SettingsModal({ onClose, onToast }: { onClose: () => void; onToast: (m:
     </ModalShell>
   );
 }
-          <button onClick={() => { setProfile({ name: name.trim() || "Player", avatar }); onToast("បានរក្សាទុក"); onClose(); }} className="flex-1 rounded-full px-5 py-3 font-semibold text-primary-foreground" style={{ background: "var(--gradient-hero)" }}>
-            Save Profile
-          </button>
-          <button onClick={() => { setName("Player"); setAvatar(null); }} className="rounded-full bg-secondary px-5 py-3 text-sm ring-1 ring-border hover:bg-secondary/80">Reset</button>
-        </div>
-      </div>
-    </ModalShell>
-  );
-}
+
 
 function Stat({ label, v }: { label: string; v: number | string }) {
   return (
