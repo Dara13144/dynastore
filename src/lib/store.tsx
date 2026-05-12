@@ -42,4 +42,101 @@ export const COIN_PACKS: CoinPack[] = [
 const INITIAL_RECS: Recommendation[] = [
   { id: "1", name: "Dara Player", game: "GTA 5 MODE", text: "ទិញ Coins លឿន ហើយ UI ស្រួលប្រើ។", initial: "D" },
   { id: "2", name: "Sokha Gamer", game: "Realmforge Odyssey", text: "ការទូទាត់តាម KHQR ងាយស្រួលណាស់។", initial: "S" },
-  { id: "3", name: "Vireak Pro", game: "Shadow Ops", text: "ហ្គេមច្រើន តម្លៃ Coins យ
+  { id: "3", name: "Vireak Pro", game: "Shadow Ops", text: "ហ្គេមមានជម្រើសច្រើន តម្លៃ Coins ងាយយល់។", initial: "V" },
+];
+
+type StoreCtx = {
+  authed: boolean;
+  loading: boolean;
+  coins: number;
+  cart: string[];
+  library: string[];
+  profile: Profile;
+  recs: Recommendation[];
+  isAdmin: boolean;
+  addToCart: (id: string) => void;
+  removeFromCart: (id: string) => void;
+  clearCart: () => void;
+  buyGame: (id: string) => Promise<{ ok: boolean; msg: string }>;
+  checkoutCart: () => Promise<{ ok: boolean; msg: string }>;
+  refresh: () => void;
+  signOut: () => Promise<void>;
+  setProfile: (p: Profile) => void;
+  addRec: (r: Omit<Recommendation, "id" | "initial">) => void;
+  toggleAdmin: () => void;
+};
+
+const Ctx = createContext<StoreCtx | null>(null);
+
+export function StoreProvider({ children }: { children: ReactNode }) {
+  const { session, loading: authLoading } = useSession();
+  const authed = !!session;
+  const qc = useQueryClient();
+  const fetchState = useServerFn(getWalletState);
+  const buyFn = useServerFn(buyGameFn);
+  const checkoutFn = useServerFn(checkoutCartFn);
+
+  const [cart, setCart] = useState<string[]>([]);
+  const [profile, setProfile] = useState<Profile>({ name: "Player", avatar: null });
+  const [recs, setRecs] = useState<Recommendation[]>(INITIAL_RECS);
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  const wallet = useQuery({
+    queryKey: ["wallet", session?.user.id],
+    queryFn: () => fetchState(),
+    enabled: authed,
+    staleTime: 5_000,
+  });
+
+  const buyMut = useMutation({
+    mutationFn: (gameId: string) => buyFn({ data: { gameId } }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["wallet"] }),
+  });
+  const checkoutMut = useMutation({
+    mutationFn: (gameIds: string[]) => checkoutFn({ data: { gameIds } }),
+    onSuccess: (r) => {
+      if (r.ok) setCart([]);
+      qc.invalidateQueries({ queryKey: ["wallet"] });
+    },
+  });
+
+  const value: StoreCtx = {
+    authed,
+    loading: authLoading || (authed && wallet.isLoading),
+    coins: wallet.data?.coins ?? 0,
+    cart,
+    library: wallet.data?.library ?? [],
+    profile, recs, isAdmin,
+    addToCart: (id) => setCart((c) => (c.includes(id) ? c : [...c, id])),
+    removeFromCart: (id) => setCart((c) => c.filter((x) => x !== id)),
+    clearCart: () => setCart([]),
+    buyGame: async (id) => {
+      if (!authed) return { ok: false, msg: "សូមចូលគណនីសិន" };
+      try { const r = await buyMut.mutateAsync(id); return { ok: r.ok, msg: r.msg }; }
+      catch (e: any) { return { ok: false, msg: e.message ?? "មានបញ្ហា" }; }
+    },
+    checkoutCart: async () => {
+      if (!authed) return { ok: false, msg: "សូមចូលគណនីសិន" };
+      if (cart.length === 0) return { ok: false, msg: "កន្ត្រកទទេ" };
+      try { const r = await checkoutMut.mutateAsync(cart); return { ok: r.ok, msg: r.msg }; }
+      catch (e: any) { return { ok: false, msg: e.message ?? "មានបញ្ហា" }; }
+    },
+    refresh: () => qc.invalidateQueries({ queryKey: ["wallet"] }),
+    signOut: async () => { await supabase.auth.signOut(); qc.clear(); },
+    setProfile,
+    addRec: (r) => setRecs((rs) => [{ id: crypto.randomUUID(), initial: r.name.charAt(0).toUpperCase() || "?", ...r }, ...rs]),
+    toggleAdmin: () => setIsAdmin((a) => !a),
+  };
+
+  return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
+}
+
+export function useStore() {
+  const c = useContext(Ctx);
+  if (!c) throw new Error("useStore must be used within StoreProvider");
+  return c;
+}
+
+export function gameFinalPrice(g: Game) {
+  return Math.round(g.price * (1 - (g.discount ?? 0) / 100));
+}
