@@ -788,26 +788,54 @@ function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () 
                   try {
                     const svgEl = qrWrapRef.current?.querySelector("svg");
                     if (!svgEl) throw new Error("svg");
-                    const svgMarkup = new XMLSerializer().serializeToString(svgEl);
+                    // Clone & normalize SVG so it has explicit width/height + viewBox
+                    const clone = svgEl.cloneNode(true) as SVGSVGElement;
+                    let vb = clone.getAttribute("viewBox");
+                    if (!vb) {
+                      const w = clone.getAttribute("width") || "256";
+                      const h = clone.getAttribute("height") || "256";
+                      vb = `0 0 ${parseFloat(w)} ${parseFloat(h)}`;
+                      clone.setAttribute("viewBox", vb);
+                    }
+                    const [, , vbW, vbH] = vb.split(/\s+/).map(Number);
+                    const scale = Math.max(1, Math.floor(1024 / Math.max(vbW, vbH)));
+                    const qrPx = Math.round(Math.max(vbW, vbH) * scale);
+                    const padding = Math.round(qrPx * 0.08);
+                    const size = qrPx + padding * 2;
+                    clone.setAttribute("width", String(qrPx));
+                    clone.setAttribute("height", String(qrPx));
+                    clone.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+                    const svgMarkup = new XMLSerializer().serializeToString(clone);
                     const svgBlob = new Blob([svgMarkup], { type: "image/svg+xml;charset=utf-8" });
                     const svgUrl = URL.createObjectURL(svgBlob);
                     const img = new Image();
+                    img.decoding = "sync";
+                    img.width = qrPx;
+                    img.height = qrPx;
                     img.src = svgUrl;
                     await new Promise<void>((res, rej) => { img.onload = () => res(); img.onerror = () => rej(new Error("load")); });
-                    const size = 720;
+                    const drawW = img.naturalWidth || qrPx;
+                    const drawH = img.naturalHeight || qrPx;
                     const canvas = document.createElement("canvas");
                     canvas.width = size; canvas.height = size;
                     const ctx = canvas.getContext("2d");
                     if (!ctx) throw new Error("canvas");
-                    ctx.fillStyle = "#fff";
+                    ctx.imageSmoothingEnabled = false;
+                    ctx.fillStyle = "#ffffff";
                     ctx.fillRect(0, 0, size, size);
-                    ctx.drawImage(img, 0, 0, size, size);
-                    const png = canvas.toDataURL("image/png");
+                    const dx = Math.round((size - drawW) / 2);
+                    const dy = Math.round((size - drawH) / 2);
+                    ctx.drawImage(img, dx, dy, drawW, drawH);
                     URL.revokeObjectURL(svgUrl);
+                    const blob: Blob = await new Promise((res, rej) =>
+                      canvas.toBlob((b) => (b ? res(b) : rej(new Error("blob"))), "image/png")
+                    );
+                    const url = URL.createObjectURL(blob);
                     const a = document.createElement("a");
-                    a.href = png;
+                    a.href = url;
                     a.download = `khqr-${pack.id}-${tx.md5.slice(0, 8)}.png`;
                     document.body.appendChild(a); a.click(); a.remove();
+                    setTimeout(() => URL.revokeObjectURL(url), 1000);
                     onToast("បានទាញយក QR (PNG)");
                   } catch { onToast("ទាញយកបរាជ័យ"); }
                 }}
