@@ -643,14 +643,23 @@ function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () 
       return;
     }
 
+    // Move current tx into history before regenerating
+    setPrevTx(tx);
     setStatus("loading");
     setErrMsg("");
     setTx(null);
-    setSecondsLeft(300);
+    setSecondsLeft(POLL_WINDOW_S);
 
     try {
       const res = await createTopup({ data: { packId: pack.id } });
-      setTx({ md5: res.md5, qrPayload: res.qrPayload, coins: res.coins });
+      const now = Date.now();
+      setTx({
+        md5: res.md5,
+        qrPayload: res.qrPayload,
+        coins: res.coins,
+        createdAt: now,
+        expiresAt: now + POLL_WINDOW_S * 1000,
+      });
       setStatus("qr");
     } catch (e: any) {
       setStatus("error");
