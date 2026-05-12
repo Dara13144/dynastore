@@ -721,6 +721,15 @@ function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () 
       </div>
 
       <div className="mt-5 grid place-items-center rounded-2xl bg-white p-5 min-h-[300px]">
+        {tx && status !== "error" && (
+          <canvas
+            ref={qrCanvasRef}
+            width={280}
+            height={280}
+            aria-label="KHQR"
+            className={status === "loading" ? "hidden" : "h-64 w-64"}
+          />
+        )}
         {status === "loading" && <div className="text-sm text-black/60">កំពុងបង្កើត KHQR…</div>}
         {status === "error" && (
           <div className="flex flex-col items-center gap-3 p-4 text-center">
@@ -736,7 +745,6 @@ function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () 
         )}
         {tx && status !== "error" && status !== "loading" && (
           <>
-            <canvas ref={qrCanvasRef} width={280} height={280} aria-label="KHQR" className="h-64 w-64" />
             <div className="mt-2 text-[11px] font-bold text-black tracking-wider">BAKONG KHQR · ${pack.price}</div>
             {(status === "qr" || status === "verifying") && (
               <div className="mt-1 text-[11px] text-black/60">
