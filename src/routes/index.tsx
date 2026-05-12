@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState, useRef } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import QRCode from "qrcode/lib/browser";
+import QRCode from "react-qr-code";
 import { Coins, ShoppingCart, Settings, LogIn, LogOut, X, Trash2, Check, Star, Zap, Clock, Heart, Send, Gamepad2, Sparkles, ImageIcon, AlertTriangle, RefreshCw, Download, Copy } from "lucide-react";
 import { StoreProvider, useStore, GAMES, COIN_PACKS, gameFinalPrice, type CoinPack, type Game } from "@/lib/store";
 import { createTopup as createTopupFn, checkPayment as checkPaymentFn } from "@/lib/bakong.functions";
@@ -585,64 +585,49 @@ function CoinShop({ onBuyPack }: { onBuyPack: (p: CoinPack) => void }) {
 
 function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () => void; onToast: (m: string) => void }) {
   const navigate = useNavigate();
-  const { authed, refresh } = useStore();
+  const { authed, refresh, coins } = useStore();
   const createTopup = useServerFn(createTopupFn);
   const checkPayment = useServerFn(checkPaymentFn);
-  const [qrDataUrl, setQrDataUrl] = useState<string>("");
+  const qrWrapRef = useRef<HTMLDivElement | null>(null);
   const [tx, setTx] = useState<{ md5: string; qrPayload: string; coins: number } | null>(null);
-  const [status, setStatus] = useState<"loading" | "login" | "qr" | "verifying" | "paid" | "expired" | "error">("loading");
+  const [status, setStatus] = useState<"confirm" | "loading" | "login" | "qr" | "verifying" | "paid" | "expired" | "error">("confirm");
   const [errMsg, setErrMsg] = useState<string>("");
   const [secondsLeft, setSecondsLeft] = useState<number>(300);
-  const [attempt, setAttempt] = useState(0);
 
   const retry = () => {
-    setStatus("loading");
+    setStatus("confirm");
     setErrMsg("");
     setTx(null);
-    setQrDataUrl("");
     setSecondsLeft(300);
-    setAttempt((a) => a + 1);
   };
 
   useEffect(() => {
-    if (!authed) { setStatus("login"); setErrMsg(""); return; }
-    let cancelled = false;
-    (async () => {
-      try {
-        const res = await createTopup({ data: { packId: pack.id } });
-        if (cancelled) return;
-        setTx({ md5: res.md5, qrPayload: res.qrPayload, coins: res.coins });
-      } catch (e: any) {
-        if (!cancelled) { setStatus("error"); setErrMsg(e?.message || "មានបញ្ហាបង្កើតការទូទាត់"); }
-      }
-    })();
-    return () => { cancelled = true; };
-  }, [pack.id, authed, createTopup, attempt]);
+    setErrMsg("");
+    setTx(null);
+    setSecondsLeft(300);
+    setStatus("confirm");
+  }, [authed]);
 
-  useEffect(() => {
-    if (!tx) return;
-    let cancelled = false;
-    (async () => {
-      try {
-        const svgMarkup = await QRCode.toString(tx.qrPayload, {
-          type: "svg",
-          margin: 1,
-          width: 280,
-          errorCorrectionLevel: "M",
-        } as any);
-        if (cancelled) return;
-        const dataUrl = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svgMarkup)}`;
-        setQrDataUrl(dataUrl);
-        setErrMsg("");
-        setStatus("qr");
-      } catch (qrErr: any) {
-        if (cancelled) return;
-        setStatus("error");
-        setErrMsg(`បង្កើត QR បរាជ័យ៖ ${String(qrErr?.message || qrErr || "មិនស្គាល់")}`);
-      }
-    })();
-    return () => { cancelled = true; };
-  }, [tx, attempt]);
+  const startPayment = async () => {
+    if (!authed) {
+      setStatus("login");
+      return;
+    }
+
+    setStatus("loading");
+    setErrMsg("");
+    setTx(null);
+    setSecondsLeft(300);
+
+    try {
+      const res = await createTopup({ data: { packId: pack.id } });
+      setTx({ md5: res.md5, qrPayload: res.qrPayload, coins: res.coins });
+      setStatus("qr");
+    } catch (e: any) {
+      setStatus("error");
+      setErrMsg(e?.message || "មានបញ្ហាបង្កើតការទូទាត់");
+    }
+  };
 
   useEffect(() => {
     if (!tx || (status !== "qr" && status !== "verifying")) return;
@@ -699,8 +684,47 @@ function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () 
       </div>
 
       <div className="mt-5 grid place-items-center rounded-2xl bg-white p-5 min-h-[300px]">
-        {qrDataUrl && status !== "error" && status !== "loading" && (
-          <img src={qrDataUrl} alt="KHQR" width={280} height={280} className="h-64 w-64" />
+        {tx && status !== "error" && status !== "loading" && status !== "confirm" && status !== "login" && (
+          <div ref={qrWrapRef} className="rounded-xl bg-white p-2">
+            <QRCode
+              value={tx.qrPayload}
+              size={256}
+              bgColor="#FFFFFF"
+              fgColor="#111111"
+              level="M"
+            />
+          </div>
+        )}
+        {status === "confirm" && (
+          <div className="flex w-full max-w-sm flex-col gap-4 text-center">
+            <div className="grid gap-3 rounded-2xl border border-black/10 bg-black/[0.03] p-4 text-left">
+              <div className="flex items-center justify-between gap-4">
+                <span className="text-xs text-black/60">កញ្ចប់</span>
+                <span className="text-sm font-semibold text-black">{pack.name}</span>
+              </div>
+              <div className="flex items-center justify-between gap-4">
+                <span className="text-xs text-black/60">Coins ទទួលបាន</span>
+                <span className="text-sm font-semibold text-black">{(pack.coins + (pack.bonus ?? 0)).toLocaleString()} Coins</span>
+              </div>
+              <div className="flex items-center justify-between gap-4">
+                <span className="text-xs text-black/60">តម្លៃត្រូវបង់</span>
+                <span className="text-base font-semibold text-black">${pack.price}</span>
+              </div>
+              <div className="flex items-center justify-between gap-4">
+                <span className="text-xs text-black/60">Wallet បច្ចុប្បន្ន</span>
+                <span className="text-sm font-semibold text-black">{authed ? `${coins.toLocaleString()} Coins` : "សូមចូលគណនីសិន"}</span>
+              </div>
+            </div>
+            <div className="text-xs text-black/60">ពិនិត្យព័ត៌មានខាងលើសិន មុនបង្កើត KHQR សម្រាប់ការទូទាត់នេះ។</div>
+            <div className="grid grid-cols-2 gap-2">
+              <button onClick={onClose} className="inline-flex items-center justify-center rounded-full bg-black/5 px-4 py-3 text-sm font-semibold text-black transition hover:bg-black/10">
+                បោះបង់
+              </button>
+              <button onClick={startPayment} className="inline-flex items-center justify-center rounded-full px-4 py-3 text-sm font-semibold text-white transition hover:opacity-90" style={{ background: "var(--gradient-hero)" }}>
+                {authed ? "បង្កើត KHQR" : "បន្តទៅចូលគណនី"}
+              </button>
+            </div>
+          </div>
         )}
         {status === "loading" && <div className="text-sm text-black/60">កំពុងបង្កើត KHQR…</div>}
         {status === "login" && (
@@ -735,7 +759,7 @@ function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () 
             ) : null}
           </div>
         )}
-        {tx && status !== "error" && status !== "loading" && (
+        {tx && status !== "error" && status !== "loading" && status !== "confirm" && status !== "login" && (
           <>
             <div className="mt-2 text-[11px] font-bold text-black tracking-wider">BAKONG KHQR · ${pack.price}</div>
             {(status === "qr" || status === "verifying") && (
@@ -757,14 +781,18 @@ function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () 
             <span className="font-mono text-muted-foreground">MD5</span>
             <span className="flex-1 truncate font-mono">{tx.md5}</span>
           </div>
-          {qrDataUrl && status !== "error" && status !== "loading" && (
+          {status !== "error" && status !== "loading" && status !== "confirm" && status !== "login" && (
             <div className="mt-2 grid grid-cols-2 gap-2">
               <button
                 onClick={async () => {
                   try {
+                    const svgEl = qrWrapRef.current?.querySelector("svg");
+                    if (!svgEl) throw new Error("svg");
+                    const svgMarkup = new XMLSerializer().serializeToString(svgEl);
+                    const svgBlob = new Blob([svgMarkup], { type: "image/svg+xml;charset=utf-8" });
+                    const svgUrl = URL.createObjectURL(svgBlob);
                     const img = new Image();
-                    img.crossOrigin = "anonymous";
-                    img.src = qrDataUrl;
+                    img.src = svgUrl;
                     await new Promise<void>((res, rej) => { img.onload = () => res(); img.onerror = () => rej(new Error("load")); });
                     const size = 720;
                     const canvas = document.createElement("canvas");
@@ -775,6 +803,7 @@ function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () 
                     ctx.fillRect(0, 0, size, size);
                     ctx.drawImage(img, 0, 0, size, size);
                     const png = canvas.toDataURL("image/png");
+                    URL.revokeObjectURL(svgUrl);
                     const a = document.createElement("a");
                     a.href = png;
                     a.download = `khqr-${pack.id}-${tx.md5.slice(0, 8)}.png`;
