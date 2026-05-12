@@ -719,7 +719,7 @@ function AdminModal({ onClose, onToast: _onToast }: { onClose: () => void; onToa
           <span className="font-display text-base text-coin">{coins.toLocaleString()} Coins</span>
         </div>
         <button
-          onClick={() => { addCoins(amount); onToast(`បានបន្ថែម ${amount} Coins`); onClose(); }}
+          onClick={() => { _onToast("Admin top-up ត្រូវប្រើ Coin Shop ជាមួយ Bakong KHQR"); onClose(); }}
           className="w-full rounded-full px-5 py-3 font-semibold text-coin-foreground" style={{ background: "var(--gradient-coin)" }}>
           Give Coins
         </button>
