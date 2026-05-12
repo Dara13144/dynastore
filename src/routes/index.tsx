@@ -737,11 +737,15 @@ function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () 
   const manualVerify = async () => {
     if (!tx) return;
     if (Date.now() >= tx.expiresAt) { setStatus("expired"); return; }
+    const checkingMd5 = tx.md5;
     setStatus("verifying");
     try {
-      const r = await checkPayment({ data: { md5: tx.md5 } });
+      const r = await checkPayment({ data: { md5: checkingMd5 } });
       setLastChecked(Date.now());
       setPollTick((n) => n + 1);
+      // Reject if user already regenerated a different KHQR while we waited
+      if (!tx || tx.md5 !== checkingMd5) { onToast("MD5 មិនត្រូវនឹង QR ដែលកំពុងសកម្ម"); return; }
+      if (Date.now() >= tx.expiresAt) { setStatus("expired"); return; }
       if (r.status === "paid") {
         setStatus("paid"); setPaidAt(Date.now()); onToast("ការបង់ប្រាក់ជោគជ័យ ✓"); refresh();
       } else if (r.status === "expired") setStatus("expired");
