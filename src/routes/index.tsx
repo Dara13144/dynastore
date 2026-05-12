@@ -590,12 +590,12 @@ function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () 
   const checkPayment = useServerFn(checkPaymentFn);
   const qrWrapRef = useRef<HTMLDivElement | null>(null);
   const [tx, setTx] = useState<{ md5: string; qrPayload: string; coins: number } | null>(null);
-  const [status, setStatus] = useState<"confirm" | "loading" | "login" | "qr" | "verifying" | "paid" | "expired" | "error">("loading");
+  const [status, setStatus] = useState<"confirm" | "loading" | "login" | "qr" | "verifying" | "paid" | "expired" | "error">("confirm");
   const [errMsg, setErrMsg] = useState<string>("");
   const [secondsLeft, setSecondsLeft] = useState<number>(300);
 
   const retry = () => {
-    setStatus(authed ? "confirm" : "login");
+    setStatus("confirm");
     setErrMsg("");
     setTx(null);
     setSecondsLeft(300);
@@ -605,7 +605,7 @@ function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () 
     setErrMsg("");
     setTx(null);
     setSecondsLeft(300);
-    setStatus(authed ? "confirm" : "login");
+    setStatus("confirm");
   }, [authed]);
 
   const startPayment = async () => {
@@ -712,7 +712,7 @@ function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () 
               </div>
               <div className="flex items-center justify-between gap-4">
                 <span className="text-xs text-black/60">Wallet បច្ចុប្បន្ន</span>
-                <span className="text-sm font-semibold text-black">{coins.toLocaleString()} Coins</span>
+                <span className="text-sm font-semibold text-black">{authed ? `${coins.toLocaleString()} Coins` : "សូមចូលគណនីសិន"}</span>
               </div>
             </div>
             <div className="text-xs text-black/60">ពិនិត្យព័ត៌មានខាងលើសិន មុនបង្កើត KHQR សម្រាប់ការទូទាត់នេះ។</div>
@@ -721,7 +721,7 @@ function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () 
                 បោះបង់
               </button>
               <button onClick={startPayment} className="inline-flex items-center justify-center rounded-full px-4 py-3 text-sm font-semibold text-white transition hover:opacity-90" style={{ background: "var(--gradient-hero)" }}>
-                បង្កើត KHQR
+                {authed ? "បង្កើត KHQR" : "បន្តទៅចូលគណនី"}
               </button>
             </div>
           </div>
