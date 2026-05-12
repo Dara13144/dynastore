@@ -1,7 +1,10 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState, useRef } from "react";
-import { Coins, ShoppingCart, Settings, LogIn, X, Plus, Minus, Trash2, Check, Star, Shield, Zap, Clock, Heart, Send, Gamepad2, Sparkles, ImageIcon } from "lucide-react";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useEffect, useMemo, useState, useRef } from "react";
+import { useServerFn } from "@tanstack/react-start";
+import QRCode from "qrcode";
+import { Coins, ShoppingCart, Settings, LogIn, LogOut, X, Plus, Minus, Trash2, Check, Star, Shield, Zap, Clock, Heart, Send, Gamepad2, Sparkles, ImageIcon } from "lucide-react";
 import { StoreProvider, useStore, GAMES, COIN_PACKS, gameFinalPrice, type CoinPack, type Game } from "@/lib/store";
+import { createTopup as createTopupFn, checkPayment as checkPaymentFn } from "@/lib/bakong.functions";
 import heroImg from "@/assets/hero-arcade.jpg";
 import logoD from "@/assets/dyna-logo.jpeg";
 
