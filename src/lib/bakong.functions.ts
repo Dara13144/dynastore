@@ -5,6 +5,28 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { buildKhqr, checkBakongMd5 } from "./khqr.server";
 import { COIN_PACK_PRICES, GAME_PRICES, finalGamePrice } from "./catalog";
 
+const maskAccount = (id: string) => {
+  if (!id) return "";
+  const [user, host] = id.split("@");
+  if (!host) return id.length <= 4 ? id : `${id.slice(0, 2)}***${id.slice(-2)}`;
+  const u = user.length <= 2 ? user : `${user.slice(0, 2)}***${user.slice(-1)}`;
+  return `${u}@${host}`;
+};
+
+export const getMerchantInfo = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async () => {
+    const accountIdRaw = process.env.BAKONG_ACCOUNT_ID || process.env.BAKONG_MERCHANT_ID || "";
+    return {
+      merchantName: process.env.BAKONG_MERCHANT_NAME || null,
+      merchantCity: process.env.BAKONG_MERCHANT_CITY || null,
+      merchantPhone: process.env.BAKONG_MERCHANT_PHONE || null,
+      acquiringBank: process.env.BAKONG_ACQUIRING_BANK || null,
+      bakongAccountId: accountIdRaw || null,
+      bakongAccountIdMasked: accountIdRaw ? maskAccount(accountIdRaw) : null,
+    };
+  });
+
 export const getWalletState = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
