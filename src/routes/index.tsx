@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState, useRef } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import QRCode from "qrcode/lib/browser";
-import { Coins, ShoppingCart, Settings, LogIn, LogOut, X, Trash2, Check, Star, Zap, Clock, Heart, Send, Gamepad2, Sparkles, ImageIcon, AlertTriangle, RefreshCw } from "lucide-react";
+import { Coins, ShoppingCart, Settings, LogIn, LogOut, X, Trash2, Check, Star, Zap, Clock, Heart, Send, Gamepad2, Sparkles, ImageIcon, AlertTriangle, RefreshCw, Download, Copy } from "lucide-react";
 import { StoreProvider, useStore, GAMES, COIN_PACKS, gameFinalPrice, type CoinPack, type Game } from "@/lib/store";
 import { createTopup as createTopupFn, checkPayment as checkPaymentFn } from "@/lib/bakong.functions";
 import heroImg from "@/assets/hero-arcade.jpg";
@@ -752,11 +752,52 @@ function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () 
       </p>
 
       {tx && (
-        <div className="mt-3 flex items-center gap-2 rounded-lg bg-background/40 p-2 ring-1 ring-border text-xs">
-          <span className="font-mono text-muted-foreground">MD5</span>
-          <span className="flex-1 truncate font-mono">{tx.md5}</span>
-          <button onClick={() => { navigator.clipboard?.writeText(tx.qrPayload); onToast("Copied KHQR"); }} className="rounded-md bg-secondary px-2 py-1 text-[10px]">Copy QR</button>
-        </div>
+        <>
+          <div className="mt-3 flex items-center gap-2 rounded-lg bg-background/40 p-2 ring-1 ring-border text-xs">
+            <span className="font-mono text-muted-foreground">MD5</span>
+            <span className="flex-1 truncate font-mono">{tx.md5}</span>
+          </div>
+          {qrDataUrl && status !== "error" && status !== "loading" && (
+            <div className="mt-2 grid grid-cols-2 gap-2">
+              <button
+                onClick={async () => {
+                  try {
+                    const img = new Image();
+                    img.crossOrigin = "anonymous";
+                    img.src = qrDataUrl;
+                    await new Promise<void>((res, rej) => { img.onload = () => res(); img.onerror = () => rej(new Error("load")); });
+                    const size = 720;
+                    const canvas = document.createElement("canvas");
+                    canvas.width = size; canvas.height = size;
+                    const ctx = canvas.getContext("2d");
+                    if (!ctx) throw new Error("canvas");
+                    ctx.fillStyle = "#fff";
+                    ctx.fillRect(0, 0, size, size);
+                    ctx.drawImage(img, 0, 0, size, size);
+                    const png = canvas.toDataURL("image/png");
+                    const a = document.createElement("a");
+                    a.href = png;
+                    a.download = `khqr-${pack.id}-${tx.md5.slice(0, 8)}.png`;
+                    document.body.appendChild(a); a.click(); a.remove();
+                    onToast("បានទាញយក QR (PNG)");
+                  } catch { onToast("ទាញយកបរាជ័យ"); }
+                }}
+                className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-secondary px-3 py-2 text-xs font-semibold hover:bg-secondary/80"
+              >
+                <Download className="h-3.5 w-3.5" /> ទាញយក PNG
+              </button>
+              <button
+                onClick={async () => {
+                  try { await navigator.clipboard.writeText(tx.qrPayload); onToast("បានចម្លង KHQR payload"); }
+                  catch { onToast("ចម្លងបរាជ័យ"); }
+                }}
+                className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-secondary px-3 py-2 text-xs font-semibold hover:bg-secondary/80"
+              >
+                <Copy className="h-3.5 w-3.5" /> ចម្លង KHQR
+              </button>
+            </div>
+          )}
+        </>
       )}
 
       {status === "qr" && (
