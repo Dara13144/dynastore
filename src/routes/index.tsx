@@ -32,7 +32,6 @@ export const Route = createFileRoute("/")({
 function Page() {
   const [cartOpen, setCartOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [adminOpen, setAdminOpen] = useState(false);
   const [paymentPack, setPaymentPack] = useState<CoinPack | null>(null);
   const [toast, setToast] = useState<string | null>(null);
 
@@ -43,7 +42,7 @@ function Page() {
 
   return (
     <div className="min-h-screen">
-      <Header onCart={() => setCartOpen(true)} onSettings={() => setSettingsOpen(true)} onAdmin={() => setAdminOpen(true)} />
+      <Header onCart={() => setCartOpen(true)} onSettings={() => setSettingsOpen(true)} />
       <Hero />
       <CoinShop onBuyPack={(p) => setPaymentPack(p)} />
       <GamesSection onToast={showToast} onOpenCart={() => setCartOpen(true)} />
@@ -54,7 +53,6 @@ function Page() {
 
       {cartOpen && <CartModal onClose={() => setCartOpen(false)} onToast={showToast} />}
       {settingsOpen && <SettingsModal onClose={() => setSettingsOpen(false)} onToast={showToast} />}
-      {adminOpen && <AdminModal onClose={() => setAdminOpen(false)} onToast={showToast} />}
       {paymentPack && <PaymentModal pack={paymentPack} onClose={() => setPaymentPack(null)} onToast={showToast} />}
 
       {toast && (
@@ -66,8 +64,8 @@ function Page() {
   );
 }
 
-function Header({ onCart, onSettings, onAdmin }: { onCart: () => void; onSettings: () => void; onAdmin: () => void }) {
-  const { coins, cart, isAdmin, authed, signOut } = useStore();
+function Header({ onCart, onSettings }: { onCart: () => void; onSettings: () => void }) {
+  const { coins, cart, authed, signOut } = useStore();
   const navigate = useNavigate();
   return (
     <header className="sticky top-0 z-50 glass border-b border-border/50">
@@ -113,11 +111,6 @@ function Header({ onCart, onSettings, onAdmin }: { onCart: () => void; onSetting
           <button onClick={onSettings} className="grid h-10 w-10 place-items-center rounded-full bg-secondary/70 ring-1 ring-border transition hover:bg-secondary" title="Settings" aria-label="Settings">
             <Settings className="h-4 w-4" />
           </button>
-          {isAdmin && (
-            <button onClick={onAdmin} className="hidden rounded-full bg-accent/20 px-3 py-2 text-xs font-medium text-accent ring-1 ring-accent/40 hover:bg-accent/30 md:inline-flex items-center gap-1.5" title="Admin">
-              <Shield className="h-3.5 w-3.5" /> Admin
-            </button>
-          )}
           <button onClick={onCart} className="relative grid h-10 w-10 place-items-center rounded-full bg-secondary/70 ring-1 ring-border transition hover:bg-secondary" aria-label={`កន្ត្រក ${cart.length}`}>
             <ShoppingCart className="h-4 w-4" />
             <span className="absolute -right-1 -top-1 grid h-5 w-5 place-items-center rounded-full bg-accent text-[10px] font-bold text-accent-foreground">{cart.length}</span>
