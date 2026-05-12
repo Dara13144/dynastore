@@ -3,7 +3,7 @@ import { useMemo, useState, useRef } from "react";
 import { Coins, ShoppingCart, Settings, LogIn, X, Plus, Minus, Trash2, Check, Star, Shield, Zap, Clock, Heart, Send, Gamepad2, Sparkles, ImageIcon } from "lucide-react";
 import { StoreProvider, useStore, GAMES, COIN_PACKS, gameFinalPrice, type CoinPack, type Game } from "@/lib/store";
 import heroImg from "@/assets/hero-arcade.jpg";
-import logoD from "@/assets/logo-d.png";
+import logoD from "@/assets/dyna-logo.jpeg";
 
 export const Route = createFileRoute("/")({
   head: () => ({
