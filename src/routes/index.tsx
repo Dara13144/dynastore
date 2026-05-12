@@ -599,6 +599,7 @@ function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () 
     setStatus("loading");
     setErrMsg("");
     setTx(null);
+    setQrDataUrl("");
     setSecondsLeft(300);
     setAttempt((a) => a + 1);
   };
