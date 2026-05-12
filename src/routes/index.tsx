@@ -5,6 +5,7 @@ import QRCode from "react-qr-code";
 import { Coins, ShoppingCart, Settings, LogIn, LogOut, X, Trash2, Check, Star, Zap, Clock, Heart, Send, Gamepad2, Sparkles, ImageIcon, AlertTriangle, RefreshCw, Download, Copy, Loader2, QrCode as QrCodeIcon } from "lucide-react";
 import { StoreProvider, useStore, GAMES, COIN_PACKS, gameFinalPrice, type CoinPack, type Game } from "@/lib/store";
 import { createTopup as createTopupFn, checkPayment as checkPaymentFn, getMerchantInfo as getMerchantInfoFn } from "@/lib/bakong.functions";
+import { md5Hex } from "@/lib/md5";
 import heroImg from "@/assets/hero-arcade.jpg";
 import logoD from "@/assets/dyna-logo.jpeg";
 
@@ -1060,6 +1061,42 @@ function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () 
                 </div>
                 <div className="mt-1 break-all font-mono text-[11px] text-foreground">{tx.md5}</div>
               </div>
+              {(() => {
+                const recomputed = md5Hex(tx.qrPayload);
+                const ok = recomputed === tx.md5;
+                return (
+                  <div
+                    className={`rounded p-2 ring-1 ${
+                      ok
+                        ? "bg-emerald-500/10 ring-emerald-500/40"
+                        : "bg-rose-500/10 ring-rose-500/40"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                        Client MD5 Verify
+                      </span>
+                      <span
+                        className={`ml-auto rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                          ok
+                            ? "bg-emerald-500/20 text-emerald-500 ring-1 ring-emerald-500/40"
+                            : "bg-rose-500/20 text-rose-500 ring-1 ring-rose-500/40"
+                        }`}
+                      >
+                        {ok ? "MATCH ✓" : "MISMATCH ✗"}
+                      </span>
+                    </div>
+                    <div className="mt-1 break-all font-mono text-[11px] text-foreground">
+                      {recomputed}
+                    </div>
+                    <div className="mt-1 text-[10px] text-muted-foreground">
+                      {ok
+                        ? "MD5 ដែលគណនាពី QR payload ផ្ទាល់ ត្រូវនឹង MD5 របស់ server។"
+                        : "MD5 ខុសគ្នា — QR payload អាចត្រូវបានកែប្រែ។"}
+                    </div>
+                  </div>
+                );
+              })()}
               <div className="rounded bg-background/40 p-2">
                 <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">QR Payload</div>
                 <div className="mt-1 max-h-24 overflow-auto break-all font-mono text-[10px] leading-relaxed">{tx.qrPayload}</div>
