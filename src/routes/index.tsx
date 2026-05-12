@@ -594,6 +594,9 @@ function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () 
   const [errMsg, setErrMsg] = useState<string>("");
   const [secondsLeft, setSecondsLeft] = useState<number>(300);
   const [refreshing, setRefreshing] = useState(false);
+  const [lastChecked, setLastChecked] = useState<number | null>(null);
+  const [pollTick, setPollTick] = useState(0);
+  const POLL_WINDOW_S = 300;
 
   const retry = () => {
     setStatus("confirm");
@@ -656,7 +659,9 @@ function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () 
   useEffect(() => {
     if (!tx || (status !== "qr" && status !== "verifying")) return;
     const startedAt = Date.now();
-    const WINDOW_MS = 5 * 60 * 1000;
+    const WINDOW_MS = POLL_WINDOW_S * 1000;
+    setLastChecked(null);
+    setPollTick(0);
     const tick = setInterval(() => {
       const left = Math.max(0, Math.ceil((WINDOW_MS - (Date.now() - startedAt)) / 1000));
       setSecondsLeft(left);
@@ -666,6 +671,8 @@ function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () 
       if (Date.now() - startedAt > WINDOW_MS) { clearInterval(poll); return; }
       try {
         const r = await checkPayment({ data: { md5: tx.md5 } });
+        setLastChecked(Date.now());
+        setPollTick((n) => n + 1);
         if (r.status === "paid") {
           setStatus("paid");
           onToast(`បានបន្ថែម ${tx.coins.toLocaleString()} Coins ✓`);
@@ -684,6 +691,8 @@ function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () 
     setStatus("verifying");
     try {
       const r = await checkPayment({ data: { md5: tx.md5 } });
+      setLastChecked(Date.now());
+      setPollTick((n) => n + 1);
       if (r.status === "paid") {
         setStatus("paid"); onToast("ការបង់ប្រាក់ជោគជ័យ ✓"); refresh();
         setTimeout(onClose, 1400);
@@ -805,11 +814,40 @@ function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () 
         {tx && status !== "error" && status !== "loading" && status !== "confirm" && status !== "login" && (
           <>
             <div className="mt-2 text-[11px] font-bold text-black tracking-wider">BAKONG KHQR · ${pack.price}</div>
-            {(status === "qr" || status === "verifying") && (
-              <div className="mt-1 text-[11px] text-black/60">
-                ផុតកំណត់ក្នុង {Math.floor(secondsLeft / 60)}:{String(secondsLeft % 60).padStart(2, "0")}
-              </div>
-            )}
+            {(status === "qr" || status === "verifying") && (() => {
+              const mm = String(Math.floor(secondsLeft / 60)).padStart(2, "0");
+              const ss = String(secondsLeft % 60).padStart(2, "0");
+              const pct = Math.max(0, Math.min(100, (secondsLeft / POLL_WINDOW_S) * 100));
+              const lcSec = lastChecked ? Math.max(0, Math.round((Date.now() - lastChecked) / 1000)) : null;
+              const _ = pollTick; // re-render trigger for "Xs ago"
+              const lowTime = secondsLeft <= 30;
+              return (
+                <div className="mt-3 w-full max-w-[260px]">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-semibold text-emerald-700 ring-1 ring-emerald-500/30">
+                      <span className="relative flex h-1.5 w-1.5">
+                        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-500 opacity-75" />
+                        <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                      </span>
+                      {status === "verifying" ? "កំពុងផ្ទៀងផ្ទាត់…" : "ផ្ទៀងផ្ទាត់ផ្ទាល់"}
+                    </div>
+                    <div className={`font-mono text-[12px] font-bold tabular-nums ${lowTime ? "text-destructive" : "text-black/80"}`}>
+                      {mm}:{ss}
+                    </div>
+                  </div>
+                  <div className="mt-1.5 h-1 w-full overflow-hidden rounded-full bg-black/10">
+                    <div
+                      className={`h-full transition-[width] duration-1000 ease-linear ${lowTime ? "bg-destructive" : "bg-emerald-500"}`}
+                      style={{ width: `${pct}%` }}
+                    />
+                  </div>
+                  <div className="mt-1 flex items-center justify-between text-[10px] text-black/50">
+                    <span>ពិនិត្យរៀងរាល់ ៤ វិនាទី</span>
+                    <span>{lcSec === null ? "កំពុងចាប់ផ្ដើម…" : `ពិនិត្យចុងក្រោយ ${lcSec}s មុន`}</span>
+                  </div>
+                </div>
+              );
+            })()}
           </>
         )}
       </div>
