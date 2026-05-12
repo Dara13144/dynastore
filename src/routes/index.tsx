@@ -609,6 +609,18 @@ function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () 
     setStatus("confirm");
   }, [authed]);
 
+  // Auto-refresh wallet whenever a payment fails/expires so user sees latest balance before retrying
+  useEffect(() => {
+    if (status !== "error" && status !== "expired") return;
+    if (!authed) return;
+    let cancelled = false;
+    setRefreshing(true);
+    refresh()
+      .catch(() => {})
+      .finally(() => { if (!cancelled) setRefreshing(false); });
+    return () => { cancelled = true; };
+  }, [status, authed, refresh]);
+
   const startPayment = async () => {
     if (!authed) {
       setStatus("login");
