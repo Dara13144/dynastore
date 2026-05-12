@@ -649,6 +649,7 @@ function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () 
 
     // Move current tx into history before regenerating
     setPrevTx(tx);
+    setMismatch(null);
     setStatus("loading");
     setErrMsg("");
     setTx(null);
