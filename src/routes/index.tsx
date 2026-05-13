@@ -1,25 +1,20 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import QRCode from "qrcode";
-import { Settings, LogIn, LogOut, Star, Send, Gamepad2, Sparkles, X, Plus, Library, Check, Loader2, AlertTriangle, RefreshCw, Wallet, Copy, ShieldCheck, Upload, Receipt as ReceiptIcon } from "lucide-react";
+import { Settings, LogIn, LogOut, Star, Send, Gamepad2, Sparkles, X, Library, Check, Loader2, Wallet } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { submitManualTopup } from "@/lib/topup.functions";
 import { StoreProvider, useStore, type Game } from "@/lib/store";
-import { createTopup, checkTopup, cancelTopup, purchaseGame } from "@/lib/payment.functions";
-import { decodeKhqr, type KhqrDecoded } from "@/lib/khqr-decode";
-import jsQR from "jsqr";
-import { Smartphone, ScanLine } from "lucide-react";
+import { purchaseGame } from "@/lib/payment.functions";
 import heroImg from "@/assets/hero-arcade.jpg";
 import logoD from "@/assets/dyna-logo.jpeg";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Dyna Store — ទិញហ្គេមដោយ KHQR" },
-      { name: "description", content: "ទិញហ្គេម PC និង Console ដោយ Bakong KHQR។ បន្ថែម Balance ហើយទាញយកហ្គេមបានភ្លាមៗបន្ទាប់ពីការទូទាត់។" },
-      { property: "og:title", content: "Dyna Store — ទិញហ្គេមដោយ KHQR" },
-      { property: "og:description", content: "ហាងហ្គេម PC និង Console ជាមួយការទូទាត់តាម Bakong KHQR, ABA និងធនាគារផ្សេងៗ — បន្ថែម Balance ភ្លាមៗ ហើយទាញយកហ្គេមបានភ្លាមៗ។" },
+      { title: "Dyna Store — ហាងហ្គេម PC និង Console" },
+      { name: "description", content: "ហាងហ្គេម PC និង Console នៅកម្ពុជា — ទាញយកហ្គេមបានភ្លាមៗបន្ទាប់ពីការទិញ។" },
+      { property: "og:title", content: "Dyna Store — ហាងហ្គេម PC និង Console" },
+      { property: "og:description", content: "ហាងហ្គេម PC និង Console នៅកម្ពុជា — ទាញយកហ្គេមបានភ្លាមៗបន្ទាប់ពីការទិញ។" },
       { property: "og:url", content: "https://dynastore.lovable.app/" },
     ],
     links: [
@@ -40,22 +35,20 @@ export const Route = createFileRoute("/")({
 function Page() {
   const [toast, setToast] = useState<string | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [topupOpen, setTopupOpen] = useState(false);
   const showToast = (m: string) => { setToast(m); window.setTimeout(() => setToast(null), 2400); };
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <Header onSettings={() => setSettingsOpen(true)} onTopup={() => setTopupOpen(true)} />
+      <Header onSettings={() => setSettingsOpen(true)} />
       <main>
         <Hero />
-        <GamesSection onToast={showToast} onTopup={() => setTopupOpen(true)} />
+        <GamesSection onToast={showToast} />
         <DealsBanner />
         <Recommendations onToast={showToast} />
       </main>
       <Footer />
 
       {settingsOpen && <SettingsModal onClose={() => setSettingsOpen(false)} onToast={showToast} />}
-      {topupOpen && <TopupModal onClose={() => setTopupOpen(false)} onToast={showToast} />}
 
       {toast && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[200] rounded-full bg-foreground text-background px-5 py-2 text-sm shadow-lg animate-in fade-in slide-in-from-bottom-2">
@@ -66,7 +59,7 @@ function Page() {
   );
 }
 
-function Header({ onSettings, onTopup }: { onSettings: () => void; onTopup: () => void }) {
+function Header({ onSettings }: { onSettings: () => void }) {
   const { authed, signOut, balance, isAdmin } = useStore();
   return (
     <header className="sticky top-0 z-40 backdrop-blur-md bg-background/70 border-b border-border/60">
@@ -79,18 +72,8 @@ function Header({ onSettings, onTopup }: { onSettings: () => void; onTopup: () =
           <a href="#games" className="hover:text-foreground transition">ហ្គេម</a>
           <a href="#deals" className="hover:text-foreground transition">ប្រូម៉ូសិន</a>
           <a href="#community" className="hover:text-foreground transition">សហគមន៍</a>
-          {authed && (
-            <button onClick={onTopup} className="hover:text-primary transition inline-flex items-center gap-1">
-              <Wallet className="h-3.5 w-3.5" /> បន្ថែម Balance
-            </button>
-          )}
         </nav>
         <div className="flex items-center gap-2">
-          {authed && (
-            <button onClick={onTopup} title="Topup" className="inline-flex items-center gap-1.5 rounded-full bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground hover:opacity-90">
-              <Plus className="h-3.5 w-3.5" /> Topup
-            </button>
-          )}
           {authed && (
             <span className="hidden sm:inline-flex items-center gap-1.5 rounded-full border border-primary/40 bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary">
               <Wallet className="h-3.5 w-3.5" /> {balance.toLocaleString()}
@@ -99,11 +82,6 @@ function Header({ onSettings, onTopup }: { onSettings: () => void; onTopup: () =
           {authed && (
             <Link to="/library" className="hidden sm:inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-xs font-medium hover:bg-accent">
               <Library className="h-3.5 w-3.5" /> បណ្ណាល័យ
-            </Link>
-          )}
-          {authed && (
-            <Link to="/payments" className="hidden sm:inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-xs font-medium hover:bg-accent">
-              ការទូទាត់
             </Link>
           )}
           <button onClick={onSettings} className="p-2 rounded-full hover:bg-accent transition" aria-label="Settings">
@@ -139,20 +117,20 @@ function Hero() {
       </div>
       <div className="relative container mx-auto px-4 py-20 md:py-28 max-w-4xl text-center">
         <div className="inline-flex items-center gap-2 rounded-full border border-border/60 bg-background/40 px-3 py-1 text-xs text-muted-foreground mb-5">
-          <Sparkles className="h-3.5 w-3.5 text-primary" /> បង់ប្រាក់ភ្លាមៗដោយ Bakong KHQR
+          <Sparkles className="h-3.5 w-3.5 text-primary" /> ហ្គេម PC និង Console
         </div>
         <h1 className="font-display text-4xl md:text-6xl tracking-tight">
           <span className="gradient-text">ទិញហ្គេម</span> ដោយ Balance
         </h1>
         <p className="mt-4 text-base md:text-lg text-muted-foreground">
-          បន្ថែម Balance តាម KHQR ហើយទិញហ្គេម PC/Console ភ្លាមៗ។ 1 USD = 1 Balance។
+          ទិញហ្គេម PC/Console ភ្លាមៗដោយ Balance របស់អ្នក។
         </p>
       </div>
     </section>
   );
 }
 
-function GamesSection({ onToast, onTopup }: { onToast: (m: string) => void; onTopup: () => void }) {
+function GamesSection({ onToast }: { onToast: (m: string) => void }) {
   const { games } = useStore();
   return (
     <section id="games" className="container mx-auto px-4 py-14">
@@ -164,13 +142,13 @@ function GamesSection({ onToast, onTopup }: { onToast: (m: string) => void; onTo
         <Gamepad2 className="h-6 w-6 text-primary hidden sm:block" />
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {games.map((g) => <GameCard key={g.id} game={g} onToast={onToast} onTopup={onTopup} />)}
+        {games.map((g) => <GameCard key={g.id} game={g} onToast={onToast} />)}
       </div>
     </section>
   );
 }
 
-function GameCard({ game, onToast, onTopup }: { game: Game; onToast: (m: string) => void; onTopup: () => void }) {
+function GameCard({ game, onToast }: { game: Game; onToast: (m: string) => void }) {
   const { authed, balance, library, toggleWishlist, refreshWallet, refreshLibrary } = useStore();
   const owned = library.some((l) => l.game_id === game.id && l.kind === "owned");
   const wished = library.some((l) => l.game_id === game.id && l.kind === "wishlist");
@@ -179,12 +157,12 @@ function GameCard({ game, onToast, onTopup }: { game: Game; onToast: (m: string)
 
   const buy = async () => {
     if (!authed) { onToast("សូមចូលគណនីជាមុនសិន"); return; }
-    if (balance < game.price_coins) { onToast("Balance មិនគ្រប់គ្រាន់ — សូមបន្ថែម"); onTopup(); return; }
+    if (balance < game.price_coins) { onToast("Balance មិនគ្រប់គ្រាន់"); return; }
     setBusy(true);
     try {
       const r = await purchaseFn({ data: { gameId: game.id } });
       if (r.ok) { onToast(r.message === "already_owned" ? "អ្នកមានហ្គេមនេះរួចហើយ" : "ទិញបានជោគជ័យ!"); await Promise.all([refreshWallet(), refreshLibrary()]); }
-      else if (r.message === "insufficient_balance") { onToast("Balance មិនគ្រប់គ្រាន់"); onTopup(); }
+      else if (r.message === "insufficient_balance") { onToast("Balance មិនគ្រប់គ្រាន់"); }
       else onToast(r.message || "បរាជ័យ");
     } catch (e) { onToast(e instanceof Error ? e.message : "បរាជ័យ"); }
     finally { setBusy(false); }
@@ -234,8 +212,8 @@ function GameCard({ game, onToast, onTopup }: { game: Game; onToast: (m: string)
             {owned ? (
               <button disabled className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 text-emerald-400 px-3 py-1.5 text-xs font-semibold">មាន</button>
             ) : authed && balance < game.price_coins ? (
-              <button onClick={onTopup} className="inline-flex items-center gap-1 rounded-full border border-amber-400/50 bg-amber-400/10 text-amber-300 px-3 py-1.5 text-xs font-semibold hover:bg-amber-400/20">
-                <Plus className="h-3.5 w-3.5" /> បន្ថែម Balance
+              <button disabled className="inline-flex items-center gap-1 rounded-full border border-amber-400/50 bg-amber-400/10 text-amber-300 px-3 py-1.5 text-xs font-semibold opacity-80">
+                Balance មិនគ្រប់គ្រាន់
               </button>
             ) : (
               <button onClick={buy} disabled={busy} className="inline-flex items-center gap-1 rounded-full bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-60">
@@ -363,576 +341,3 @@ function SettingsModal({ onClose, onToast }: { onClose: () => void; onToast: (m:
     </div>
   );
 }
-
-const PRESETS = [1, 5, 10, 20, 50];
-
-type TopupStage = "choose" | "creating" | "qr" | "checking" | "paid" | "expired" | "failed" | "cancelled";
-type FlashKind = "regenerated" | "paid" | "cancelled" | null;
-
-function TopupModal({ onClose, onToast }: { onClose: () => void; onToast: (m: string) => void }) {
-  const { authed, balance, refreshWallet } = useStore();
-  const [amount, setAmount] = useState(5);
-  const [method, setMethod] = useState<"khqr" | "manual">("khqr");
-  const [stage, setStage] = useState<TopupStage>("choose");
-  const [qr, setQr] = useState<string | null>(null);
-  const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
-  const [orderId, setOrderId] = useState<string | null>(null);
-  const [bakongMd5, setBakongMd5] = useState<string | null>(null);
-  const [coins, setCoins] = useState(0);
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [polling, setPolling] = useState(false);
-  const [expiresAt, setExpiresAt] = useState<number | null>(null);
-  const [issuedAt, setIssuedAt] = useState<number | null>(null);
-  const setTtlWindow = (expiresAtMs: number, issuedAtMs?: number) => {
-    setExpiresAt(expiresAtMs);
-    setIssuedAt(issuedAtMs ?? Date.now());
-  };
-  const [now, setNow] = useState(Date.now());
-  const pollRef = useRef<number | null>(null);
-  const [debug, setDebug] = useState<{ at: string; status: string; httpStatus: number | null; latencyMs: number | null; payload: unknown; providerMessage?: string | null } | null>(null);
-  const [attempts, setAttempts] = useState<Array<{ at: string; status: string; httpStatus: number | null; latencyMs: number | null; payload: unknown; providerMessage?: string | null }>>([]);
-  const [showDebug, setShowDebug] = useState(false);
-  const [pollCount, setPollCount] = useState(0);
-  const [flash, setFlash] = useState<FlashKind>(null);
-  useEffect(() => {
-    if (!flash) return;
-    const t = window.setTimeout(() => setFlash(null), 4000);
-    return () => window.clearTimeout(t);
-  }, [flash]);
-
-  const createFn = useServerFn(createTopup);
-  const checkFn = useServerFn(checkTopup);
-  const cancelFn = useServerFn(cancelTopup);
-  const [deleting, setDeleting] = useState(false);
-  const deleteQr = async () => {
-    if (!orderId || deleting) return;
-    setDeleting(true);
-    try {
-      await cancelFn({ data: { orderId } });
-      stopPoll();
-      setStage("cancelled"); setFlash("cancelled");
-      onToast("បានលុប QR");
-    } catch (e) {
-      onToast(e instanceof Error ? e.message : "បរាជ័យលុប");
-    } finally {
-      setDeleting(false);
-    }
-  };
-
-  const stopPoll = () => { if (pollRef.current) { window.clearInterval(pollRef.current); pollRef.current = null; } setPolling(false); };
-  useEffect(() => () => stopPoll(), []);
-  useEffect(() => {
-    if (stage !== "qr") return;
-    const t = window.setInterval(() => setNow(Date.now()), 1000);
-    return () => window.clearInterval(t);
-  }, [stage]);
-
-  // auto-mark expired when timer hits 0
-  useEffect(() => {
-    if (stage === "qr" && expiresAt && now >= expiresAt) { stopPoll(); setStage("expired"); }
-  }, [stage, expiresAt, now]);
-
-  const recordAttempt = (status: string, payload: unknown, httpStatus: number | null = null, latencyMs: number | null = null, providerMessage: string | null = null) => {
-    const entry = { at: new Date().toISOString(), status, httpStatus, latencyMs, payload, providerMessage };
-    setDebug(entry);
-    setAttempts((prev) => [entry, ...prev].slice(0, 10));
-  };
-
-  const start = async (forceNew = false) => {
-    if (!authed) { onToast("សូមចូលគណនីជាមុនសិន"); return; }
-    setErrorMsg(null);
-    setStage("creating");
-    try {
-      const r = await createFn({ data: { amountUsd: amount, forceNew } });
-      setQr(r.qr); setOrderId(r.orderId); setBakongMd5(r.bakongMd5); setCoins(r.balance); setTtlWindow(new Date(r.expiresAt).getTime(), r.issuedAt ? new Date(r.issuedAt).getTime() : undefined);
-      const dataUrl = await QRCode.toDataURL(r.qr, { width: 320, margin: 1 });
-      setQrDataUrl(dataUrl);
-      setStage("qr");
-      setPolling(true);
-      let activeOrderId = r.orderId;
-      pollRef.current = window.setInterval(async () => {
-        try {
-          const c: any = await checkFn({ data: { orderId: activeOrderId } });
-          setPollCount((n) => n + 1);
-          recordAttempt(c.status, c.debug ?? c, c.debug?.httpStatus ?? null, c.debug?.latencyMs ?? null, c.debug?.providerMessage ?? null);
-          if (c.status === "paid") {
-            stopPoll(); setStage("paid"); setFlash("paid"); await refreshWallet();
-            onToast(`បានបន្ថែម ${r.balance.toLocaleString()} Balance!`);
-          } else if (c.status === "expired") {
-            stopPoll(); setStage("expired");
-          } else if (c.status === "regenerated" && c.qr && c.orderId) {
-            activeOrderId = c.orderId;
-            setOrderId(c.orderId); setBakongMd5(c.bakongMd5 ?? ""); setQr(c.qr);
-            if (c.expiresAt) setTtlWindow(new Date(c.expiresAt).getTime(), c.issuedAt ? new Date(c.issuedAt).getTime() : undefined);
-            const dataUrl = await QRCode.toDataURL(c.qr, { width: 320, margin: 1 });
-            setQrDataUrl(dataUrl);
-            setFlash("regenerated");
-            onToast("បានបង្កើត QR ថ្មីដោយស្វ័យប្រវត្តិ");
-          }
-        } catch (e) {
-          recordAttempt("error", e instanceof Error ? e.message : String(e));
-        }
-      }, 2500) as unknown as number;
-    } catch (e) {
-      setErrorMsg(e instanceof Error ? e.message : "បរាជ័យបង្កើត KHQR");
-      setStage("failed");
-    }
-  };
-
-  // Realtime: flip the UI the moment the transaction row turns paid/completed,
-  // without waiting for the next poll tick.
-  useEffect(() => {
-    if (!orderId) return;
-    const channel = supabase
-      .channel(`tx-${orderId}`)
-      .on(
-        "postgres_changes",
-        { event: "UPDATE", schema: "public", table: "transactions", filter: `order_id=eq.${orderId}` },
-        async (payload) => {
-          const newStatus = (payload.new as { status?: string } | null)?.status;
-          if (newStatus === "paid" || newStatus === "completed") {
-            stopPoll();
-            await refreshWallet();
-            recordAttempt("paid", payload.new, null, null, "realtime_update");
-            setStage("paid"); setFlash("paid");
-            onToast(`បានបន្ថែម ${coins.toLocaleString()} Balance!`);
-          } else if (newStatus === "cancelled") {
-            stopPoll(); setStage("cancelled"); setFlash("cancelled");
-          } else if (newStatus === "expired" || newStatus === "failed") {
-            stopPoll();
-            setStage(newStatus === "expired" ? "expired" : "failed");
-          }
-        },
-      )
-      .subscribe();
-    return () => { supabase.removeChannel(channel); };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [orderId]);
-
-  const verifyNow = async () => {
-    if (!orderId) return;
-    setStage("checking");
-    try {
-      const c = await checkFn({ data: { orderId } });
-      setPollCount((n) => n + 1);
-      recordAttempt(c.status, c.debug ?? c, c.debug?.httpStatus ?? null, c.debug?.latencyMs ?? null, c.debug?.providerMessage ?? null);
-      if (c.status === "paid") { stopPoll(); setStage("paid"); await refreshWallet(); onToast(`បានបន្ថែម ${coins.toLocaleString()} Balance!`); }
-      else if (c.status === "regenerated") {
-        // Auto-refresh QR after expiry
-        setQr(c.qr); setOrderId(c.orderId); setBakongMd5(c.bakongMd5);
-        setCoins(c.coins); setTtlWindow(new Date(c.expiresAt).getTime(), c.issuedAt ? new Date(c.issuedAt).getTime() : undefined);
-        try { const QR = (await import("qrcode")).default; setQrDataUrl(await QR.toDataURL(c.qr, { margin: 1, scale: 8 })); } catch {}
-        setStage("qr");
-        onToast("QR ថ្មីបានបង្កើត — សូមស្កេនបន្ត");
-      }
-      else { setStage("qr"); onToast(c.debug?.providerMessage ?? "មិនទាន់ទទួលបានការបង់ប្រាក់"); }
-    } catch (e) {
-      recordAttempt("error", e instanceof Error ? e.message : String(e));
-      setErrorMsg(e instanceof Error ? e.message : "បរាជ័យផ្ទៀងផ្ទាត់");
-      setStage("failed");
-    }
-  };
-
-  const reset = () => { stopPoll(); setQr(null); setQrDataUrl(null); setOrderId(null); setBakongMd5(null); setCoins(0); setExpiresAt(null); setIssuedAt(null); setErrorMsg(null); setDebug(null); setAttempts([]); setPollCount(0); setStage("choose"); };
-
-  const copyQr = async () => {
-    if (!qr) return;
-    try { await navigator.clipboard.writeText(qr); onToast("ចម្លង QR string"); } catch { onToast("ចម្លងមិនបាន"); }
-  };
-
-  const remain = expiresAt ? Math.max(0, Math.floor((expiresAt - now) / 1000)) : 0;
-  const mm = String(Math.floor(remain / 60)).padStart(2, "0");
-  const ss = String(remain % 60).padStart(2, "0");
-
-  return (
-    <div className="fixed inset-0 z-[150] flex items-center justify-center bg-background/85 backdrop-blur-sm p-4" onClick={onClose}>
-      <div className="w-full max-w-md rounded-2xl glass border border-border/60 shadow-[var(--shadow-card)] overflow-hidden" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between px-5 py-3 border-b border-border/60">
-          <h3 className="text-sm font-semibold inline-flex items-center gap-2"><Wallet className="h-4 w-4 text-primary" /> បន្ថែម Balance</h3>
-          <div className="flex items-center gap-2">
-            <span className="text-[11px] text-muted-foreground hidden sm:inline">Balance:</span>
-            <span className="text-xs font-semibold text-primary inline-flex items-center gap-1"><Wallet className="h-3 w-3" /> {balance.toLocaleString()}</span>
-            <button onClick={onClose} className="rounded-full p-1.5 hover:bg-accent" aria-label="Close"><X className="h-4 w-4" /></button>
-          </div>
-        </div>
-
-        {/* Real-time KHQR status badge (Khmer) */}
-        {stage !== "choose" && (() => {
-          const map: Record<TopupStage, { label: string; cls: string; dot: string; pulse: boolean }> = {
-            choose: { label: "ត្រៀមរួច", cls: "", dot: "", pulse: false },
-            creating: { label: "កំពុងបង្កើត KHQR…", cls: "bg-sky-500/10 text-sky-300 border-sky-500/30", dot: "bg-sky-400", pulse: true },
-            qr: { label: "កំពុងរង់ចាំការបង់ប្រាក់", cls: "bg-amber-500/10 text-amber-300 border-amber-500/30", dot: "bg-amber-400", pulse: true },
-            checking: { label: "កំពុងផ្ទៀងផ្ទាត់…", cls: "bg-sky-500/10 text-sky-300 border-sky-500/30", dot: "bg-sky-400", pulse: true },
-            paid: { label: "ទូទាត់ជោគជ័យ", cls: "bg-emerald-500/10 text-emerald-300 border-emerald-500/30", dot: "bg-emerald-400", pulse: false },
-            expired: { label: "QR ផុតកំណត់", cls: "bg-amber-500/10 text-amber-300 border-amber-500/30", dot: "bg-amber-400", pulse: false },
-            failed: { label: "បរាជ័យ", cls: "bg-destructive/10 text-destructive border-destructive/30", dot: "bg-destructive", pulse: false },
-            cancelled: { label: "បានលុប QR", cls: "bg-muted/40 text-muted-foreground border-border", dot: "bg-muted-foreground", pulse: false },
-          };
-          const s = map[stage];
-          return (
-            <div className="px-5 pt-3">
-              <div className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-[11px] font-semibold ${s.cls}`}>
-                <span className={`h-2 w-2 rounded-full ${s.dot} ${s.pulse ? "animate-pulse" : ""}`} />
-                <span>ស្ថានភាព: {s.label}</span>
-                {stage === "qr" && expiresAt && <span className="font-mono opacity-80">• {mm}:{ss}</span>}
-              </div>
-            </div>
-          );
-        })()}
-
-        {flash && (() => {
-          const fmap = {
-            regenerated: { label: "បានបង្កើត QR ថ្មីដោយស្វ័យប្រវត្តិ", cls: "bg-sky-500/10 text-sky-300 border-sky-500/30" },
-            paid: { label: "បានទទួលការទូទាត់ — Balance ត្រូវបានបន្ថែម", cls: "bg-emerald-500/10 text-emerald-300 border-emerald-500/30" },
-            cancelled: { label: "ប្រតិបត្តិការត្រូវបានលុប", cls: "bg-muted/40 text-muted-foreground border-border" },
-          } as const;
-          const f = fmap[flash];
-          return (
-            <div className="px-5 pt-2">
-              <div className={`rounded-lg border px-3 py-2 text-[12px] font-medium ${f.cls}`}>{f.label}</div>
-            </div>
-          );
-        })()}
-
-        {stage === "choose" && (
-          <div className="p-5 space-y-4">
-            <div className="flex gap-1 rounded-xl bg-muted/30 p-1">
-              <button onClick={() => setMethod("khqr")} className={`flex-1 rounded-lg px-3 py-1.5 text-xs font-semibold ${method === "khqr" ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}>KHQR ស្វ័យប្រវត្តិ</button>
-              <button onClick={() => setMethod("manual")} className={`flex-1 rounded-lg px-3 py-1.5 text-xs font-semibold inline-flex items-center justify-center gap-1 ${method === "manual" ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}><Upload className="h-3 w-3" /> ផ្ញើវិក័យបត្រ</button>
-            </div>
-            <p className="text-xs text-muted-foreground">{method === "khqr" ? "1 USD = 1 Balance។ បង់ប្រាក់ភ្លាមៗតាម Bakong KHQR។ QR មានសុពលភាព 5 នាទី។" : "បង់ប្រាក់ដោយដៃ បន្ទាប់មកផ្ទុកវិក័យបត្រ — Admin នឹងផ្ទៀងផ្ទាត់ និងបន្ថែម Balance។"}</p>
-            <div className="grid grid-cols-5 gap-2">
-              {PRESETS.map((p) => (
-                <button key={p} onClick={() => setAmount(p)} className={`rounded-xl border px-2 py-2 text-sm font-semibold ${amount === p ? "border-primary bg-primary/10 text-primary" : "border-border hover:bg-accent"}`}>${p}</button>
-              ))}
-            </div>
-            <div>
-              <label className="text-xs text-muted-foreground">ឬចំនួនផ្ទាល់ខ្លួន (USD)</label>
-              <input type="number" min={1} max={1000} value={amount} onChange={(e) => setAmount(Math.max(1, Math.min(1000, Number(e.target.value) || 1)))}
-                className="mt-1 w-full rounded-xl bg-input px-4 py-2.5 text-sm outline-none ring-1 ring-border focus:ring-primary" />
-            </div>
-            <div className="rounded-xl bg-accent/40 px-3 py-2 text-xs flex items-center justify-between">
-              <span>នឹងទទួលបាន</span>
-              <span className="font-semibold inline-flex items-center gap-1 text-primary"><Wallet className="h-3.5 w-3.5" /> {amount.toLocaleString()}</span>
-            </div>
-            {method === "khqr" ? (
-              <button onClick={() => start()} className="w-full rounded-xl bg-primary py-2.5 text-sm font-semibold text-primary-foreground hover:opacity-90 inline-flex items-center justify-center gap-2">
-                បង្កើត KHQR
-              </button>
-            ) : (
-              <ManualTopupForm amount={amount} onClose={onClose} onToast={onToast} />
-            )}
-          </div>
-        )}
-
-        {stage === "creating" && (
-          <div className="p-10 text-center space-y-3">
-            <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
-            <div className="text-sm text-muted-foreground">កំពុងបង្កើត KHQR…</div>
-          </div>
-        )}
-
-        {stage === "qr" && qrDataUrl && (() => {
-          // Real TTL window from backend (expires_at - issued_at). Falls back to remaining seconds.
-          const totalTtl = issuedAt && expiresAt
-            ? Math.max(1, Math.round((expiresAt - issuedAt) / 1000))
-            : Math.max(1, remain);
-          const pct = Math.max(0, Math.min(100, (remain / totalTtl) * 100));
-          const isExpired = remain <= 0;
-          const isUrgent = remain > 0 && remain <= 30;
-          const barColor = isExpired ? "bg-red-500" : isUrgent ? "bg-amber-500" : "bg-emerald-500";
-          const textColor = isExpired ? "text-red-300" : isUrgent ? "text-amber-200" : "text-emerald-200";
-          return (
-            <div className="p-5 space-y-3 text-center">
-              <div className="text-xs text-muted-foreground inline-flex items-center gap-1.5"><ShieldCheck className="h-3.5 w-3.5 text-emerald-400" /> ស្កេនជាមួយ Bakong / ABA / ធនាគារផ្សេងៗ</div>
-              <div className={`mx-auto inline-block rounded-xl bg-white p-3 transition-opacity ${isExpired ? "opacity-40 grayscale" : ""}`}>
-                <img src={qrDataUrl} alt={`KHQR Code សម្រាប់ការបង់ប្រាក់ ${amount} USD`} className="h-64 w-64" />
-              </div>
-              <div className="text-sm font-semibold">${amount} → {coins.toLocaleString()} Balance</div>
-
-              <KhqrDetails qr={qr} />
-
-              {/* Countdown card */}
-              <div className={`rounded-xl border px-3 py-2.5 mx-auto ${isExpired ? "bg-red-500/10 border-red-500/40" : isUrgent ? "bg-amber-500/10 border-amber-500/40" : "bg-emerald-500/10 border-emerald-500/30"}`}>
-                <div className={`flex items-center justify-between gap-2 text-xs ${textColor}`}>
-                  <span className="inline-flex items-center gap-1.5">
-                    <Loader2 className={`h-3.5 w-3.5 ${polling && !isExpired ? "animate-spin" : ""}`} />
-                    {isExpired ? "QR ផុតសុពលភាព — កំពុងបង្កើតថ្មី…" : "កំពុងរង់ចាំការបង់ប្រាក់"}
-                  </span>
-                  <span className="font-mono text-base tabular-nums">{mm}:{ss}</span>
-                </div>
-                <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-background/40">
-                  <div className={`h-full ${barColor} transition-all duration-1000 ease-linear`} style={{ width: `${pct}%` }} />
-                </div>
-              </div>
-
-              <div className="flex gap-2">
-                <a
-                  href={qr && !isExpired ? `bakong://qr?data=${encodeURIComponent(qr)}` : "#"}
-                  onClick={(e) => { if (!qr || isExpired) e.preventDefault(); }}
-                  aria-disabled={isExpired}
-                  className={`flex-1 rounded-xl py-2 text-xs font-semibold inline-flex items-center justify-center gap-1.5 ${isExpired ? "bg-muted text-muted-foreground cursor-not-allowed opacity-60" : "bg-emerald-500 text-white hover:opacity-90"}`}
-                >
-                  <Smartphone className="h-3.5 w-3.5" /> បើក Bakong
-                </a>
-                <button
-                  onClick={verifyNow}
-                  disabled={isExpired}
-                  className={`flex-1 rounded-xl py-2 text-xs font-semibold inline-flex items-center justify-center gap-1.5 ${isExpired ? "bg-muted text-muted-foreground cursor-not-allowed opacity-60" : "bg-primary text-primary-foreground hover:opacity-90"}`}
-                >
-                  <RefreshCw className="h-3.5 w-3.5" /> ផ្ទៀងផ្ទាត់
-                </button>
-                <button
-                  onClick={copyQr}
-                  disabled={isExpired}
-                  className={`flex-1 rounded-xl border border-border py-2 text-xs inline-flex items-center justify-center gap-1.5 ${isExpired ? "opacity-50 cursor-not-allowed" : "hover:bg-accent"}`}
-                >
-                  <Copy className="h-3.5 w-3.5" /> ចម្លង
-                </button>
-              </div>
-              {isExpired && (
-                <button
-                  onClick={() => start(true)}
-                  className="w-full rounded-xl bg-primary py-2.5 text-sm font-semibold text-primary-foreground hover:opacity-90 inline-flex items-center justify-center gap-2"
-                >
-                  <RefreshCw className="h-4 w-4" /> បង្កើត QR ថ្មី
-                </button>
-              )}
-              <button onClick={() => reset()} className="w-full text-xs text-muted-foreground hover:text-foreground py-1">បោះបង់ហើយចាប់ផ្តើមឡើងវិញ</button>
-            </div>
-          );
-        })()}
-
-
-        {stage === "checking" && (
-          <div className="p-10 text-center space-y-3">
-            <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
-            <div className="text-sm text-muted-foreground">កំពុងផ្ទៀងផ្ទាត់ការបង់ប្រាក់…</div>
-          </div>
-        )}
-
-        {stage === "expired" && (
-          <div className="p-8 text-center space-y-3">
-            <div className="mx-auto h-14 w-14 rounded-full bg-amber-500/20 grid place-items-center"><AlertTriangle className="h-7 w-7 text-amber-400" /></div>
-            <div className="font-display text-xl">QR ផុតកំណត់</div>
-            <div className="text-sm text-muted-foreground">មិនទាន់ទទួលបានការបង់ប្រាក់ក្នុងរយៈពេលកំណត់ទេ។ បង្កើត QR ថ្មីដើម្បីសាកល្បងម្តងទៀត។</div>
-            <div className="flex gap-2">
-              <button onClick={() => reset()} className="flex-1 rounded-xl border border-border py-2.5 text-xs hover:bg-accent">បិទ</button>
-              <button onClick={() => start(true)} className="flex-1 rounded-xl bg-primary py-2.5 text-xs font-semibold text-primary-foreground hover:opacity-90 inline-flex items-center justify-center gap-1.5">
-                <RefreshCw className="h-3.5 w-3.5" /> បង្កើតថ្មី
-              </button>
-            </div>
-          </div>
-        )}
-
-        {stage === "failed" && (
-          <div className="p-8 text-center space-y-3">
-            <div className="mx-auto h-14 w-14 rounded-full bg-destructive/20 grid place-items-center"><AlertTriangle className="h-7 w-7 text-destructive" /></div>
-            <div className="font-display text-xl">មានបញ្ហា</div>
-            <div className="text-sm text-muted-foreground break-words">{errorMsg ?? "មិនអាចភ្ជាប់ទៅប្រព័ន្ធបង់ប្រាក់បានទេ។"}</div>
-            <div className="flex gap-2">
-              <button onClick={() => reset()} className="flex-1 rounded-xl border border-border py-2.5 text-xs hover:bg-accent">បោះបង់</button>
-              <button onClick={() => start(true)} className="flex-1 rounded-xl bg-primary py-2.5 text-xs font-semibold text-primary-foreground hover:opacity-90 inline-flex items-center justify-center gap-1.5">
-                <RefreshCw className="h-3.5 w-3.5" /> សាកល្បងម្តងទៀត
-              </button>
-            </div>
-          </div>
-        )}
-
-        {stage === "paid" && (
-          <div className="p-8 text-center space-y-3">
-            <div className="mx-auto h-14 w-14 rounded-full bg-emerald-500/20 grid place-items-center"><Check className="h-7 w-7 text-emerald-400" /></div>
-            <div className="font-display text-xl">បន្ថែមជោគជ័យ!</div>
-            <div className="text-sm text-muted-foreground">បាន {coins.toLocaleString()} Balance ត្រូវបានបន្ថែមទៅ Balance របស់អ្នក។</div>
-            <div className="rounded-xl bg-emerald-500/10 border border-emerald-500/30 px-3 py-2 text-xs inline-flex items-center gap-1.5 text-emerald-300 mx-auto">
-              <Wallet className="h-3.5 w-3.5" /> Balance ថ្មី: <span className="font-semibold">{balance.toLocaleString()}</span>
-            </div>
-            <div className="flex gap-2">
-              <button onClick={() => reset()} className="flex-1 rounded-xl border border-border py-2.5 text-xs hover:bg-accent">បន្ថែមទៀត</button>
-              <button onClick={onClose} className="flex-1 rounded-xl bg-primary py-2.5 text-xs font-semibold text-primary-foreground hover:opacity-90">បិទ</button>
-            </div>
-          </div>
-        )}
-
-        {stage === "cancelled" && (
-          <div className="p-8 text-center space-y-3">
-            <div className="mx-auto h-14 w-14 rounded-full bg-muted/40 grid place-items-center"><X className="h-7 w-7 text-muted-foreground" /></div>
-            <div className="font-display text-xl">បានលុប QR</div>
-            <div className="text-sm text-muted-foreground">ប្រតិបត្តិការនេះត្រូវបានបោះបង់។ អ្នកអាចបង្កើត QR ថ្មីបាន។</div>
-            <div className="flex gap-2">
-              <button onClick={() => reset()} className="flex-1 rounded-xl border border-border py-2.5 text-xs hover:bg-accent">បិទ</button>
-              <button onClick={() => start(true)} className="flex-1 rounded-xl bg-primary py-2.5 text-xs font-semibold text-primary-foreground hover:opacity-90 inline-flex items-center justify-center gap-1.5">
-                <RefreshCw className="h-3.5 w-3.5" /> បង្កើតថ្មី
-              </button>
-            </div>
-          </div>
-        )}
-        {(stage === "qr" || stage === "checking" || stage === "paid" || stage === "expired" || stage === "failed") && orderId && (
-          <div className="border-t border-border/60 px-5 py-3 text-[11px]">
-            <button onClick={() => setShowDebug((v) => !v)} className="w-full flex items-center justify-between text-muted-foreground hover:text-foreground">
-              <span className="inline-flex items-center gap-1.5 font-semibold">
-                <span className={`h-1.5 w-1.5 rounded-full ${debug?.status === "paid" ? "bg-emerald-400" : debug?.status === "expired" ? "bg-amber-400" : debug?.status === "error" ? "bg-destructive" : "bg-sky-400"}`} />
-                Debug • polls: {pollCount}{debug?.status ? ` • last: ${debug.status}` : ""}
-              </span>
-              <span>{showDebug ? "▾" : "▸"}</span>
-            </button>
-            {showDebug && (
-              <div className="mt-2 space-y-1.5">
-                <div className="flex justify-between gap-2"><span className="text-muted-foreground">order_id</span><span className="font-mono truncate max-w-[240px]" title={orderId}>{orderId}</span></div>
-                <div className="flex justify-between gap-2"><span className="text-muted-foreground">bakong md5</span><span className="font-mono truncate max-w-[240px]" title={bakongMd5 ?? ""}>{bakongMd5 ?? "—"}</span></div>
-                <div className="flex justify-between gap-2"><span className="text-muted-foreground">checked at</span><span className="font-mono">{debug?.at ?? "—"}</span></div>
-                <div className="flex justify-between gap-2"><span className="text-muted-foreground">Bakong HTTP</span><span className="font-mono">{debug?.httpStatus ?? "—"}</span></div>
-                <div className="flex justify-between gap-2"><span className="text-muted-foreground">Latency</span><span className="font-mono">{debug?.latencyMs != null ? `${debug.latencyMs} ms` : "—"}</span></div>
-                <div className="flex justify-between gap-2"><span className="text-muted-foreground">expires at</span><span className="font-mono">{expiresAt ? new Date(expiresAt).toISOString() : "—"}</span></div>
-                <div>
-                  <div className="text-muted-foreground mb-1">poll attempts</div>
-                  <div className="space-y-1">
-                    {attempts.length === 0 ? <div className="text-muted-foreground">(no poll yet)</div> : attempts.map((a, i) => (
-                      <div key={`${a.at}-${i}`} className="flex items-center justify-between gap-2 rounded-lg border border-border/40 bg-muted/20 px-2 py-1 font-mono text-[10px]">
-                        <span>{a.status}</span>
-                        <span>{a.httpStatus ?? "—"}</span>
-                        <span>{a.latencyMs != null ? `${a.latencyMs}ms` : "—"}</span>
-                        <span className="truncate max-w-[120px]">{new Date(a.at).toLocaleTimeString()}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                <div>
-                  <div className="text-muted-foreground mb-1">last payload</div>
-                  <pre className="max-h-48 overflow-auto rounded-lg bg-muted/30 border border-border/40 p-2 font-mono text-[10px] whitespace-pre-wrap break-all">{debug ? JSON.stringify(debug.payload, null, 2) : "(no poll yet)"}</pre>
-                </div>
-                <button onClick={() => { if (debug) navigator.clipboard.writeText(JSON.stringify(debug, null, 2)); }} className="text-primary hover:underline">ចម្លងព័ត៌មាន Debug</button>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-function ManualTopupForm({ amount, onClose, onToast }: { amount: number; onClose: () => void; onToast: (m: string) => void }) {
-  const [file, setFile] = useState<File | null>(null);
-  const [note, setNote] = useState("");
-  const [busy, setBusy] = useState(false);
-  const submit = useServerFn(submitManualTopup);
-
-  const onSubmit = async () => {
-    if (!file) { onToast("សូមជ្រើសរើសរូបវិក័យបត្រ"); return; }
-    if (file.size > 8 * 1024 * 1024) { onToast("ទំហំធំជាង 8MB"); return; }
-    setBusy(true);
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("សូមចូលគណនី");
-      const ext = file.name.split(".").pop() || "jpg";
-      const path = `${user.id}/${crypto.randomUUID()}.${ext}`;
-      const up = await supabase.storage.from("topup-receipts").upload(path, file, { contentType: file.type, upsert: false });
-      if (up.error) throw new Error(up.error.message);
-      await submit({ data: { amountUsd: amount, receiptPath: path, note } });
-      onToast("បានផ្ញើសំណើ — រង់ចាំ Admin អនុម័ត");
-      onClose();
-    } catch (e) { onToast(e instanceof Error ? e.message : "បរាជ័យ"); }
-    finally { setBusy(false); }
-  };
-
-  return (
-    <div className="space-y-3">
-      <label className="block">
-        <span className="text-xs text-muted-foreground">រូបវិក័យបត្រ (JPG/PNG/PDF, max 8MB)</span>
-        <input type="file" accept="image/*,application/pdf" onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-          className="mt-1 block w-full text-xs file:mr-3 file:rounded-lg file:border-0 file:bg-primary file:text-primary-foreground file:px-3 file:py-1.5 file:text-xs file:font-semibold" />
-        {file && <div className="mt-1 text-[11px] text-muted-foreground inline-flex items-center gap-1"><ReceiptIcon className="h-3 w-3" /> {file.name} ({(file.size / 1024).toFixed(0)} KB)</div>}
-      </label>
-      <label className="block">
-        <span className="text-xs text-muted-foreground">កំណត់ចំណាំ (ស្រេចចិត្ត)</span>
-        <textarea value={note} onChange={(e) => setNote(e.target.value)} maxLength={500} rows={2}
-          className="mt-1 w-full rounded-xl bg-input px-3 py-2 text-sm outline-none ring-1 ring-border focus:ring-primary" />
-      </label>
-      <button onClick={onSubmit} disabled={busy || !file} className="w-full rounded-xl bg-primary py-2.5 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-60 inline-flex items-center justify-center gap-2">
-        {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-        ផ្ញើសំណើ
-      </button>
-    </div>
-  );
-}
-
-function KhqrDetails({ qr }: { qr: string | null }) {
-  const [open, setOpen] = useState(false);
-  const [uploaded, setUploaded] = useState<KhqrDecoded | null>(null);
-  const [uploadErr, setUploadErr] = useState<string | null>(null);
-  const decoded = qr ? decodeKhqr(qr) : null;
-
-  const onFile = async (file: File) => {
-    setUploadErr(null); setUploaded(null);
-    try {
-      const url = URL.createObjectURL(file);
-      const img = new Image();
-      img.src = url;
-      await new Promise((res, rej) => { img.onload = res; img.onerror = rej; });
-      const c = document.createElement("canvas");
-      c.width = img.naturalWidth; c.height = img.naturalHeight;
-      const ctx = c.getContext("2d");
-      if (!ctx) throw new Error("Canvas not supported");
-      ctx.drawImage(img, 0, 0);
-      const data = ctx.getImageData(0, 0, c.width, c.height);
-      const code = jsQR(data.data, data.width, data.height);
-      URL.revokeObjectURL(url);
-      if (!code?.data) throw new Error("មិនអាចស្កេន QR ពីរូបនេះបានទេ");
-      setUploaded(decodeKhqr(code.data));
-    } catch (e) {
-      setUploadErr(e instanceof Error ? e.message : String(e));
-    }
-  };
-
-  const Row = ({ k, v, mono = false }: { k: string; v?: string; mono?: boolean }) => (
-    <div className="flex justify-between gap-2 text-[11px]">
-      <span className="text-muted-foreground">{k}</span>
-      <span className={`${mono ? "font-mono" : ""} truncate max-w-[200px] text-right`} title={v ?? ""}>{v || "—"}</span>
-    </div>
-  );
-  const Card = ({ d, title }: { d: KhqrDecoded; title: string }) => (
-    <div className="rounded-xl border border-border/60 bg-muted/20 p-3 space-y-1 text-left">
-      <div className="text-xs font-semibold mb-1">{title}</div>
-      <Row k="Merchant" v={d.merchantName} />
-      <Row k="Account" v={d.merchantAccount} mono />
-      <Row k="City" v={d.merchantCity} />
-      <Row k="Amount" v={d.amount ? `${d.amount} ${d.currencyLabel ?? ""}` : undefined} mono />
-      <Row k="Order ID" v={d.billNumber} mono />
-      <Row k="Reference" v={d.reference} mono />
-      <Row k="Bakong MD5" v={d.md5} mono />
-      <Row k="Country" v={d.country} />
-      <div className="flex justify-between gap-2 text-[11px]">
-        <span className="text-muted-foreground">CRC</span>
-        <span className="font-mono">
-          {d.crc ?? "—"}{" "}
-          {d.crc && (
-            <span className={d.crcValid ? "text-emerald-400" : "text-destructive"}>
-              {d.crcValid ? "✓" : "✗"}
-            </span>
-          )}
-        </span>
-      </div>
-    </div>
-  );
-
-  return (
-    <div className="space-y-2">
-      <button onClick={() => setOpen(v => !v)} className="text-[11px] text-primary hover:underline inline-flex items-center gap-1">
-        <ScanLine className="h-3 w-3" /> {open ? "បិទព័ត៌មាន KHQR" : "បង្ហាញព័ត៌មាន KHQR / អាប់ឡូត QR"}
-      </button>
-      {open && (
-        <div className="space-y-2">
-          {decoded && <Card d={decoded} title="QR បច្ចុប្បន្ន" />}
-          <label className="block text-left">
-            <span className="text-[11px] text-muted-foreground">ផ្ទៀងផ្ទាត់ — អាប់ឡូតរូប QR ដើម្បីឌិកូដ</span>
-            <input type="file" accept="image/*" onChange={(e) => { const f = e.target.files?.[0]; if (f) onFile(f); }}
-              className="mt-1 block w-full text-[11px] file:mr-2 file:rounded-lg file:border-0 file:bg-primary file:text-primary-foreground file:px-2 file:py-1 file:text-[11px]" />
-          </label>
-          {uploadErr && <div className="text-[11px] text-destructive">{uploadErr}</div>}
-          {uploaded && <Card d={uploaded} title="QR ដែលបានអាប់ឡូត" />}
-        </div>
-      )}
-    </div>
-  );
-}
-

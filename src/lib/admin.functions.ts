@@ -15,10 +15,7 @@ export const getAppSettings = createServerFn({ method: "GET" })
     await assertAdmin(context.userId);
     const { data, error } = await supabaseAdmin.from("app_settings").select("*").eq("id", 1).maybeSingle();
     if (error) throw new Error(error.message);
-    return data ?? {
-      id: 1, coins_per_usd: 1, tx_ttl_min: 5,
-      bakong_account_id: "", bakong_merchant_name: "", bakong_merchant_city: "", bakong_merchant_phone: "",
-    };
+    return data ?? { id: 1, coins_per_usd: 1, tx_ttl_min: 5 };
   });
 
 export const updateAppSettings = createServerFn({ method: "POST" })
@@ -26,18 +23,11 @@ export const updateAppSettings = createServerFn({ method: "POST" })
   .inputValidator((i) => z.object({
     coins_per_usd: z.number().int().min(1).max(100000),
     tx_ttl_min: z.number().int().min(1).max(60),
-    bakong_account_id: z.string().max(200).nullable().optional(),
-    bakong_merchant_name: z.string().max(100).nullable().optional(),
-    bakong_merchant_city: z.string().max(100).nullable().optional(),
-    bakong_merchant_phone: z.string().max(50).nullable().optional(),
   }).parse(i))
   .handler(async ({ data, context }) => {
     await assertAdmin(context.userId);
     const { data: prev } = await supabaseAdmin.from("app_settings").select("*").eq("id", 1).maybeSingle();
-    const fields: Array<keyof typeof data> = [
-      "coins_per_usd", "tx_ttl_min",
-      "bakong_account_id", "bakong_merchant_name", "bakong_merchant_city", "bakong_merchant_phone",
-    ];
+    const fields: Array<keyof typeof data> = ["coins_per_usd", "tx_ttl_min"];
     const auditRows = fields
       .map((f) => {
         const oldVal = prev ? (prev as Record<string, unknown>)[f] : null;
@@ -107,46 +97,4 @@ export const listBalanceChanges = createServerFn({ method: "POST" })
       : { data: [] as { user_id: string; display_name: string }[] };
     const nameMap = new Map((admins ?? []).map((a) => [a.user_id, a.display_name]));
     return (rows ?? []).map((r) => ({ ...r, changed_by_name: nameMap.get(r.changed_by) ?? "Admin" }));
-  });
-
-export const listMyTransactions = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
-    const { data, error } = await supabaseAdmin
-      .from("transactions")
-      .select("id, order_id, bakong_md5, amount_usd, coins, status, created_at, expires_at, paid_at, completed_at, payment_method")
-      .eq("user_id", context.userId)
-      .order("created_at", { ascending: false })
-      .limit(100);
-    if (error) throw new Error(error.message);
-    return data ?? [];
-  });
-
-export const listAllTransactions = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
-    await assertAdmin(context.userId);
-    const { data, error } = await supabaseAdmin
-      .from("transactions")
-      .select("id, user_id, order_id, bakong_md5, amount_usd, coins, status, created_at, expires_at, paid_at, completed_at, payment_method")
-      .order("created_at", { ascending: false })
-      .limit(200);
-    if (error) throw new Error(error.message);
-    const rows = data ?? [];
-    const ids = Array.from(new Set(rows.map((r) => r.user_id).filter(Boolean)));
-    let nameMap = new Map<string, string>();
-    let walletMap = new Map<string, number>();
-    if (ids.length) {
-      const [{ data: profs }, { data: wals }] = await Promise.all([
-        supabaseAdmin.from("profiles").select("user_id, display_name").in("user_id", ids),
-        supabaseAdmin.from("wallets").select("user_id, balance").in("user_id", ids),
-      ]);
-      nameMap = new Map((profs ?? []).map((p: any) => [p.user_id, p.display_name as string]));
-      walletMap = new Map((wals ?? []).map((w: any) => [w.user_id, w.balance as number]));
-    }
-    return rows.map((r) => ({
-      ...r,
-      user_name: nameMap.get(r.user_id) ?? "—",
-      user_balance: walletMap.get(r.user_id) ?? 0,
-    }));
   });
