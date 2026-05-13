@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { ArrowLeft, Loader2, Wallet, Star, Check, Download, ShieldCheck, Package } from "lucide-react";
+import { ArrowLeft, Loader2, Wallet, Star, Check, Download, ShieldCheck, Package, Link as LinkIcon } from "lucide-react";
 import { useStore, StoreProvider, type Game } from "@/lib/store";
 import { purchaseGame } from "@/lib/payment.functions";
 import { getGameDownloadUrl } from "@/lib/games.functions";
@@ -92,10 +92,30 @@ function GameDetailPage() {
 
             <div className="flex flex-wrap gap-2">
               {owned ? (
-                <button onClick={download} disabled={downloading} className="inline-flex items-center gap-2 rounded-xl bg-emerald-500 text-white px-5 py-2.5 text-sm font-semibold hover:opacity-90 disabled:opacity-60">
-                  {downloading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
-                  ទាញយកឯកសារ (.zip)
-                </button>
+                <>
+                  <button onClick={download} disabled={downloading} className="inline-flex items-center gap-2 rounded-xl bg-emerald-500 text-white px-5 py-2.5 text-sm font-semibold hover:opacity-90 disabled:opacity-60">
+                    {downloading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+                    ទាញយកឯកសារ (.zip)
+                  </button>
+                  <button
+                    onClick={async () => {
+                      setDownloading(true);
+                      try {
+                        const { url } = await downloadFn({ data: { gameId: game.id } });
+                        window.open(url, "_blank", "noopener,noreferrer");
+                        toast.success("បើកតំណទាញយក…");
+                      } catch (e) {
+                        const msg = e instanceof Error ? e.message : "បរាជ័យ";
+                        toast.error(msg === "file_unavailable" ? "មិនទាន់មានឯកសារ — សូមទាក់ទង Admin" : msg);
+                      } finally { setDownloading(false); }
+                    }}
+                    disabled={downloading}
+                    className="inline-flex items-center gap-2 rounded-xl border border-emerald-500/60 text-emerald-300 px-5 py-2.5 text-sm font-semibold hover:bg-emerald-500/10 disabled:opacity-60"
+                  >
+                    {downloading ? <Loader2 className="h-4 w-4 animate-spin" /> : <LinkIcon className="h-4 w-4" />}
+                    Download By Link
+                  </button>
+                </>
               ) : (
                 <button onClick={buy} disabled={busy} className="inline-flex items-center gap-2 rounded-xl bg-primary text-primary-foreground px-5 py-2.5 text-sm font-semibold hover:opacity-90 disabled:opacity-60">
                   {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Package className="h-4 w-4" />}
