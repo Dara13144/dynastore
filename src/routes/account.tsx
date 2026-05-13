@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { ArrowLeft, Save, LogOut, Copy, Check, User as UserIcon, Wallet, RefreshCw } from "lucide-react";
 import { StoreProvider, useStore } from "@/lib/store";
 import { useSession } from "@/hooks/use-session";
-import { TopupModal } from "@/components/TopupModal";
+
 import logoD from "@/assets/dyna-logo.jpeg";
 
 export const Route = createFileRoute("/account")({
