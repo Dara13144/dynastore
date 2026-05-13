@@ -405,13 +405,13 @@ function GameRowEditor({ game, busy, onSave, onDelete, onReplaceFile }: {
         </div>
       </td>
       <td className="px-4 py-3 text-center">
-        <button disabled={busy} onClick={() => onSave({ visible: !game.visible })} className="rounded-full p-1.5 hover:bg-accent" title={game.visible ? "Hide" : "Show"}>
+        <button disabled={busy} onClick={() => onSave({ visible: !game.visible })} className="rounded-full p-1.5 hover:bg-accent" title={game.visible ? "លាក់" : "បង្ហាញ"}>
           {game.visible ? <Eye className="h-4 w-4 text-primary" /> : <EyeOff className="h-4 w-4 text-muted-foreground" />}
         </button>
       </td>
       <td className="px-4 py-3 text-right">
         <div className="inline-flex gap-1">
-          <button disabled={!dirty || busy} onClick={() => onSave({ title: edit.title, category: edit.category, badge: edit.badge || null, price_coins: edit.price_coins, image_url: edit.image_url || null })} className="inline-flex items-center gap-1 rounded-full bg-primary/10 text-primary px-3 py-1 text-[11px] font-semibold disabled:opacity-30"><Save className="h-3 w-3" /> Save</button>
+          <button disabled={!dirty || busy} onClick={() => onSave({ title: edit.title, category: edit.category, badge: edit.badge || null, price_coins: edit.price_coins, image_url: edit.image_url || null })} className="inline-flex items-center gap-1 rounded-full bg-primary/10 text-primary px-3 py-1 text-[11px] font-semibold disabled:opacity-30"><Save className="h-3 w-3" /> រក្សាទុក</button>
           <button disabled={busy} onClick={onDelete} className="rounded-full bg-destructive/10 text-destructive px-2 py-1 text-[11px] font-semibold"><Trash2 className="h-3 w-3" /></button>
         </div>
       </td>
