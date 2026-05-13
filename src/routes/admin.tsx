@@ -930,9 +930,11 @@ type TxRow = {
 
 function TransactionsTab() {
   const listFn = useServerFn(listTransactions);
+  const confirmFn = useServerFn(adminConfirmTopup);
   const [rows, setRows] = useState<TxRow[]>([]);
   const [status, setStatus] = useState<"all" | "pending" | "paid" | "expired">("all");
   const [busy, setBusy] = useState(false);
+  const [confirming, setConfirming] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setBusy(true);
@@ -945,6 +947,22 @@ function TransactionsTab() {
       setBusy(false);
     }
   }, [listFn, status]);
+
+  const confirmRow = async (md5: string) => {
+    if (!confirm("Confirm this top-up and credit coins to the user?")) return;
+    setConfirming(md5);
+    try {
+      const r = await confirmFn({ data: { md5 } });
+      if (r.message === "credited") toast.success(`Credited ✓ — new balance ${r.new_balance.toLocaleString()}`);
+      else if (r.message === "already_credited") toast(`Already credited (balance ${r.new_balance.toLocaleString()})`);
+      else toast.error(`Cannot credit: ${r.message}`);
+      await load();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed");
+    } finally {
+      setConfirming(null);
+    }
+  };
 
   useEffect(() => { load(); }, [load]);
 
