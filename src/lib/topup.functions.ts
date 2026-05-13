@@ -68,6 +68,10 @@ export const createTopupRequest = createServerFn({ method: "POST" })
       note: data.note ?? null,
     }).select("id, created_at, status, amount_usd, coins").single();
     if (error) throw new Error(error.message);
+    const who = await userLabel(context.userId);
+    await notifyTelegram(
+      `🆕 <b>New Topup Request</b>\n👤 ${who}\n💵 $${Number(data.amount_usd).toFixed(2)} → <b>${coins.toLocaleString()} coins</b>${data.note ? `\n📝 ${data.note}` : ""}\n🆔 <code>${row.id}</code>`,
+    );
     return row;
   });
 
