@@ -1,5 +1,6 @@
 import { createFileRoute, Link, redirect } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { getAdminPayments, lookupTransactionByMd5 } from "@/lib/admin.functions";
 
@@ -186,9 +187,14 @@ function AdminDashboard() {
               <span>Raw row (all selected columns)</span>
               <button
                 type="button"
-                onClick={(e) => {
+                onClick={async (e) => {
                   e.preventDefault();
-                  navigator.clipboard.writeText(JSON.stringify(lookupResult.raw, null, 2));
+                  try {
+                    await navigator.clipboard.writeText(JSON.stringify(lookupResult.raw, null, 2));
+                    toast.success("Raw row JSON copied to clipboard");
+                  } catch (err: any) {
+                    toast.error(`Copy failed: ${err?.message || String(err)}`);
+                  }
                 }}
                 className="px-2 py-0.5 text-[10px] rounded border border-border hover:bg-muted"
               >
