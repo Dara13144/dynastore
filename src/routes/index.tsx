@@ -36,6 +36,24 @@ function Page() {
   const [paymentPack, setPaymentPack] = useState<CoinPack | null>(null);
   const [toast, setToast] = useState<string | null>(null);
 
+  // Restore pending topup after page refresh so polling resumes automatically.
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("bakong:pendingTopup");
+      if (!raw) return;
+      const data = JSON.parse(raw) as { packId: string; expiresAt: number };
+      if (!data?.packId || !data?.expiresAt || Date.now() >= data.expiresAt) {
+        localStorage.removeItem("bakong:pendingTopup");
+        return;
+      }
+      const pack = COIN_PACKS.find((p) => p.id === data.packId);
+      if (pack) setPaymentPack(pack);
+      else localStorage.removeItem("bakong:pendingTopup");
+    } catch {
+      try { localStorage.removeItem("bakong:pendingTopup"); } catch {}
+    }
+  }, []);
+
   const showToast = (msg: string) => {
     setToast(msg);
     setTimeout(() => setToast(null), 2400);
