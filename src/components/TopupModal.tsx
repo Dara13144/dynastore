@@ -170,6 +170,25 @@ export function TopupModal({
               <Copy className="h-3.5 w-3.5" /> ចម្លង QR string
             </button>
             <p className="text-[11px] text-muted-foreground">បើក Bakong/ABA/Wing → Scan QR → បង់ → រង់ចាំ ៤–៦ វិនាទី។</p>
+
+            <div className="pt-2 border-t border-border/40 mt-2">
+              <p className="text-[11px] text-muted-foreground mb-2">បើបង់រួចហើយ ផ្ញើរូប slip ទៅ Admin (Telegram)</p>
+              <input
+                ref={fileRef}
+                type="file"
+                accept="image/png,image/jpeg,image/webp"
+                hidden
+                onChange={(e) => { const f = e.target.files?.[0]; if (f) onPickProof(f); e.currentTarget.value = ""; }}
+              />
+              <button
+                onClick={() => fileRef.current?.click()}
+                disabled={uploading}
+                className="inline-flex items-center gap-1.5 rounded-full border border-primary/40 bg-primary/10 px-4 py-1.5 text-xs font-semibold text-primary hover:bg-primary/20 disabled:opacity-60"
+              >
+                {uploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
+                {proofSent ? "ផ្ញើរួច ✓ ផ្ញើម្តងទៀត" : "ផ្ទុករូប slip"}
+              </button>
+            </div>
           </div>
         )}
 
