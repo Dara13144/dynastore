@@ -256,7 +256,7 @@ function PendingTopupsPanel({ onResume }: { onResume: (pack: CoinPack) => void }
         <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
           <div className="flex items-center gap-2">
             <Clock className="h-4 w-4 text-primary" />
-            <h3 className="text-sm font-semibold">Pending Bakong Topups ({entries.length})</h3>
+            <h3 className="text-sm font-semibold">Pending Add Balance ({entries.length})</h3>
           </div>
           {latestPack && (
             <button
@@ -958,7 +958,7 @@ function SettingsModal({ onClose, onToast }: { onClose: () => void; onToast: (m:
               onClick={() => { onClose(); setTimeout(() => { document.getElementById("coins")?.scrollIntoView({ behavior: "smooth" }); }, 50); }}
               className="inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold text-coin-foreground transition hover:scale-105"
               style={{ background: "var(--gradient-coin)" }}>
-              <Coins className="h-4 w-4" /> Topup Coins
+              <Coins className="h-4 w-4" /> Add Balance
             </button>
           </div>
           <div className="mt-4 grid grid-cols-4 gap-2">
@@ -1000,16 +1000,16 @@ function CoinShop({ onBuyPack }: { onBuyPack: (p: CoinPack) => void }) {
     <section id="coins" className="mx-auto max-w-7xl px-4 py-16 md:px-6 md:py-20">
       <div className="mx-auto max-w-2xl text-center">
         <div className="inline-flex items-center gap-2 rounded-full bg-coin/15 px-3 py-1 text-xs font-medium text-coin ring-1 ring-coin/30">
-          <Coins className="h-3.5 w-3.5" /> Coin Shop
+          <Coins className="h-3.5 w-3.5" /> Add Balance
         </div>
-        <h2 className="mt-4 font-display text-4xl md:text-5xl">Topup <span className="text-coin">Coins</span></h2>
+        <h2 className="mt-4 font-display text-4xl md:text-5xl">Add <span className="text-coin">Balance</span></h2>
         <p className="mt-3 text-muted-foreground">ជ្រើសរើសកញ្ចប់តម្លៃ ហើយបង់ប្រាក់តាម Bakong KHQR។ Coins នឹងចូល Wallet បន្ទាប់ពីការបង់ប្រាក់ត្រូវបានផ្ទៀងផ្ទាត់។</p>
       </div>
       {hasError && (
         <div className="mx-auto mt-6 max-w-3xl rounded-2xl border border-destructive/40 bg-destructive/10 p-4 text-sm flex items-start gap-3">
           <AlertTriangle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
           <div className="min-w-0">
-            <div className="font-semibold text-destructive">Topups disabled — Bakong configuration error</div>
+            <div className="font-semibold text-destructive">Add Balance disabled — Bakong configuration error</div>
             <div className="text-xs text-muted-foreground mt-1 break-words">{errorSummary || "See banner above for details."}</div>
           </div>
         </div>
@@ -1035,7 +1035,7 @@ function CoinShop({ onBuyPack }: { onBuyPack: (p: CoinPack) => void }) {
                   className="inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-semibold text-coin-foreground transition hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
                   style={{ background: "var(--gradient-coin)" }}
                 >
-                  <Coins className="h-4 w-4" /> {hasError ? "Disabled" : `Topup $${p.price}`}
+                  <Coins className="h-4 w-4" /> {hasError ? "Disabled" : `Add $${p.price}`}
                 </button>
               </div>
               {i === 1 && <span className="absolute -top-3 right-0 rounded-full bg-accent px-2 py-0.5 text-[10px] font-bold text-accent-foreground">POPULAR</span>}
