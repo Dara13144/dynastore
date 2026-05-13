@@ -5,8 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useStore } from "@/lib/store";
 import { ArrowLeft, Plus, Eye, EyeOff, Trash2, Save, Loader2, Users, Gamepad2, FileArchive, Settings as SettingsIcon, Pencil, History, ChevronDown, ChevronUp, Search, Check, Wallet } from "lucide-react";
 import { StoreProvider } from "@/lib/store";
-import { getAppSettings, updateAppSettings, adminSetUserBalance, listBalanceChanges, listSettingsAudit, listTransactions } from "@/lib/admin.functions";
-import { adminConfirmTopup } from "@/lib/topup.functions";
+import { getAppSettings, updateAppSettings, adminSetUserBalance, listBalanceChanges, listSettingsAudit } from "@/lib/admin.functions";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 
