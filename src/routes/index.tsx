@@ -77,9 +77,14 @@ function Header({ onSettings, onTopup }: { onSettings: () => void; onTopup: () =
         </nav>
         <div className="flex items-center gap-2">
           {authed && (
-            <button onClick={onTopup} title="បន្ថែម Balance" className="inline-flex items-center gap-1.5 rounded-full border border-primary/40 bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary hover:bg-primary/20">
-              <Wallet className="h-3.5 w-3.5" /> {balance.toLocaleString()} <Plus className="h-3 w-3" />
+            <button onClick={onTopup} title="Topup" className="inline-flex items-center gap-1.5 rounded-full bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground hover:opacity-90">
+              <Plus className="h-3.5 w-3.5" /> Topup
             </button>
+          )}
+          {authed && (
+            <span className="hidden sm:inline-flex items-center gap-1.5 rounded-full border border-primary/40 bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary">
+              <Wallet className="h-3.5 w-3.5" /> {balance.toLocaleString()}
+            </span>
           )}
           {authed && (
             <Link to="/library" className="hidden sm:inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-xs font-medium hover:bg-accent">
