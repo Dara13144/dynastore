@@ -416,6 +416,7 @@ function GameRowEditor({ game, busy, onSave, onDelete, onReplaceFile, validateFi
             <input type="file" accept="image/*" className="hidden" onChange={async (e) => { const f = e.target.files?.[0]; if (!f) return; const url = await onUploadCover(f); if (url) setEdit((p) => ({ ...p, image_url: url })); e.target.value = ""; }} />
           </label>
         </div>
+      </td>
       <td className="px-4 py-3"><input value={edit.category} onChange={(e) => setEdit({ ...edit, category: e.target.value })} className="w-24 bg-transparent outline-none focus:ring-1 focus:ring-primary rounded px-1" /></td>
       <td className="px-4 py-3 text-right"><input type="number" value={edit.price_coins} onChange={(e) => setEdit({ ...edit, price_coins: Number(e.target.value) || 0 })} className="w-20 text-right bg-transparent outline-none focus:ring-1 focus:ring-primary rounded px-1" /></td>
       <td className="px-4 py-3 text-center">
