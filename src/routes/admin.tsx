@@ -234,6 +234,7 @@ function GamesTab() {
         description: draft.description ?? "", badge: draft.badge ?? "",
         price_coins: Number(draft.price_coins) || 0, visible: draft.visible,
         image_url: draft.image_url ?? "",
+        file_url: draft.file_path ?? null,
       },
       draftFile,
       {
@@ -353,6 +354,18 @@ function GamesTab() {
                   <div className="h-full bg-primary transition-all" style={{ width: `${uploadPct}%` }} />
                 </div>
               )}
+              <span className="block text-[10px] uppercase tracking-wider text-muted-foreground mt-3 mb-1">ឬ​បិទភ្ជាប់​តំណ (URL)</span>
+              <input
+                type="url"
+                placeholder="https://… link to zip/installer"
+                value={draft.file_path ?? ""}
+                onChange={(e) => setDraft({ ...draft, file_path: e.target.value || null })}
+                disabled={!!draftFile}
+                className="w-full rounded-lg bg-muted/40 px-3 py-2 text-xs outline-none focus:ring-1 focus:ring-primary disabled:opacity-50"
+              />
+              {draft.file_path && !draftFile && (
+                <span className="text-[10px] text-emerald-400 mt-1 block">តំណបានកំណត់ — នឹងរក្សាទុកជា file_path</span>
+              )}
             </label>
           </div>
           <label className="inline-flex items-center gap-2 text-xs">
@@ -438,6 +451,10 @@ function GameRowEditor({ game, busy, onSave, onDelete, onReplaceFile, validateFi
             <button
               type="button"
               onClick={async () => {
+                if (/^https?:\/\//i.test(game.file_path!)) {
+                  window.open(game.file_path!, "_blank");
+                  return;
+                }
                 const { data, error } = await supabase.storage.from("game-files").createSignedUrl(game.file_path!, 300, { download: true });
                 if (error || !data?.signedUrl) return;
                 window.open(data.signedUrl, "_blank");

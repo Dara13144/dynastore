@@ -108,6 +108,31 @@ describe("submitCreateGame - valid path calls upload + insert exactly once", () 
     }));
   });
 
+  it("uses file_url as file_path when no file is uploaded (no upload, single insert)", async () => {
+    const url = "https://cdn.example.com/games/g1.zip";
+    const r = await submitCreateGame(validDraft({ file_url: url }), null, deps);
+    expect(r.ok).toBe(true);
+    expect(deps.uploadFile).not.toHaveBeenCalled();
+    expect(deps.insertGame).toHaveBeenCalledTimes(1);
+    expect(deps.insertGame).toHaveBeenCalledWith(expect.objectContaining({
+      file_path: url, file_size_bytes: null,
+    }));
+  });
+
+  it("prefers uploaded file over file_url when both are provided", async () => {
+    const r = await submitCreateGame(
+      validDraft({ file_url: "https://cdn.example.com/ignored.zip" }),
+      { name: "g.zip", size: MIN_GAME_FILE_BYTES },
+      deps,
+    );
+    expect(r.ok).toBe(true);
+    expect(deps.uploadFile).toHaveBeenCalledTimes(1);
+    expect(deps.insertGame).toHaveBeenCalledWith(expect.objectContaining({
+      file_path: "g1/g.zip", file_size_bytes: MIN_GAME_FILE_BYTES,
+    }));
+  });
+
+
   it("aborts insert when uploadFile fails", async () => {
     const upload = vi.fn(async () => null);
     const insert = vi.fn(async () => ({ error: null }));
