@@ -1000,11 +1000,12 @@ function TransactionsTab() {
               <th className="text-left p-3">Ref</th>
               <th className="text-left p-3">Created</th>
               <th className="text-left p-3">Paid</th>
+              <th className="text-right p-3">Action</th>
             </tr>
           </thead>
           <tbody>
             {rows.length === 0 && !busy && (
-              <tr><td colSpan={7} className="p-6 text-center text-muted-foreground text-xs">គ្មានប្រតិបត្តិការ</td></tr>
+              <tr><td colSpan={8} className="p-6 text-center text-muted-foreground text-xs">គ្មានប្រតិបត្តិការ</td></tr>
             )}
             {rows.map((r) => (
               <tr key={r.id} className="border-t border-border/40">
@@ -1024,6 +1025,17 @@ function TransactionsTab() {
                 <td className="p-3 text-xs font-mono truncate max-w-[160px]" title={r.bakong_ref ?? ""}>{r.bakong_ref ?? "—"}</td>
                 <td className="p-3 text-xs text-muted-foreground">{fmt(r.created_at)}</td>
                 <td className="p-3 text-xs text-muted-foreground">{fmt(r.paid_at)}</td>
+                <td className="p-3 text-right">
+                  {r.status === "pending" ? (
+                    <button
+                      onClick={() => confirmRow(r.md5)}
+                      disabled={confirming === r.md5}
+                      className="inline-flex items-center gap-1 rounded-full bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 px-3 py-1 text-[11px] font-semibold disabled:opacity-50"
+                    >
+                      {confirming === r.md5 ? <Loader2 className="h-3 w-3 animate-spin" /> : "Confirm"}
+                    </button>
+                  ) : <span className="text-[11px] text-muted-foreground">—</span>}
+                </td>
               </tr>
             ))}
           </tbody>
