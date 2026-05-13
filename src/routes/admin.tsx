@@ -297,15 +297,15 @@ function GamesTab() {
         <div className="rounded-2xl glass p-5 space-y-3">
           <h3 className="font-semibold text-sm">បន្ថែមហ្គេមថ្មី</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <Field label="ID (slug)" value={draft.id} onChange={(v) => setDraft({ ...draft, id: v })} />
-            <Field label="Title" value={draft.title} onChange={(v) => setDraft({ ...draft, title: v })} />
-            <Field label="Category" value={draft.category} onChange={(v) => setDraft({ ...draft, category: v })} />
-            <Field label="Badge" value={draft.badge ?? ""} onChange={(v) => setDraft({ ...draft, badge: v })} />
-            <Field label="Description" value={draft.description ?? ""} onChange={(v) => setDraft({ ...draft, description: v })} />
+            <Field label="លេខសម្គាល់ (slug)" value={draft.id} onChange={(v) => setDraft({ ...draft, id: v })} />
+            <Field label="ចំណងជើង" value={draft.title} onChange={(v) => setDraft({ ...draft, title: v })} />
+            <Field label="ប្រភេទ" value={draft.category} onChange={(v) => setDraft({ ...draft, category: v })} />
+            <Field label="ស្លាក" value={draft.badge ?? ""} onChange={(v) => setDraft({ ...draft, badge: v })} />
+            <Field label="ការពិពណ៌នា" value={draft.description ?? ""} onChange={(v) => setDraft({ ...draft, description: v })} />
             <Field label="តម្លៃ (Balance)" type="number" value={draft.price_coins ? String(draft.price_coins) : ""} placeholder="ឧ. 1500" onChange={(v) => setDraft({ ...draft, price_coins: Number(v) || 0 })} />
-            <Field label="Image URL (cover)" value={draft.image_url ?? ""} onChange={(v) => setDraft({ ...draft, image_url: v })} />
+            <Field label="URL រូបភាព (cover)" value={draft.image_url ?? ""} onChange={(v) => setDraft({ ...draft, image_url: v })} />
             <label className="block">
-              <span className="block text-[10px] uppercase tracking-wider text-muted-foreground mb-1">Game File (zip/installer)</span>
+              <span className="block text-[10px] uppercase tracking-wider text-muted-foreground mb-1">ឯកសារហ្គេម (zip/installer)</span>
               <input type="file" accept=".zip,.rar,.7z,.exe,.msi,.apk,.iso,.dmg,.pkg,.tar,.gz" onChange={(e) => { const f = e.target.files?.[0] ?? null; if (f) { const err = validateFile(f); if (err) { showToast(err); e.target.value = ""; return; } } setDraftFile(f); }} className="w-full text-xs file:mr-2 file:rounded-full file:border-0 file:bg-primary file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-primary-foreground" />
               {draftFile && <span className="text-[10px] text-muted-foreground mt-1 block">{draftFile.name} · {(draftFile.size / 1024 / 1024).toFixed(2)} MB</span>}
               {uploadPct !== null && (
