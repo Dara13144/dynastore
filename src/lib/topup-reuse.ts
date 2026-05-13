@@ -17,6 +17,7 @@ export type TopupResult =
       amountUsd: number;
       coins: number;
       packName: string;
+      billNumber: string | null;
       reused: true;
       reusedTx: ReusedTx;
     }
@@ -26,6 +27,7 @@ export type TopupResult =
       amountUsd: number;
       coins: number;
       packName: string;
+      billNumber: string | null;
       reused?: false;
     };
 
@@ -41,7 +43,7 @@ export type ExistingRow = {
 };
 
 export interface TopupDeps {
-  build: () => { md5: string; payload: string };
+  build: () => { md5: string; payload: string; billNumber: string };
   insert: (row: {
     user_id: string;
     md5: string;
@@ -68,10 +70,12 @@ export async function tryInsertOrReuseTopup(opts: {
   let lastErr: string | null = null;
   let md5 = "";
   let payload = "";
+  let billNumber: string | null = null;
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
     const built = deps.build();
     md5 = built.md5;
     payload = built.payload;
+    billNumber = built.billNumber;
     const { error } = await deps.insert({
       user_id: userId,
       md5,
@@ -101,6 +105,7 @@ export async function tryInsertOrReuseTopup(opts: {
           amountUsd: pack.price,
           coins: totalCoins,
           packName: pack.name,
+          billNumber: null, // reused row — original billNumber not available
           reused: true,
           reusedTx: {
             id: existing.id,
@@ -124,5 +129,6 @@ export async function tryInsertOrReuseTopup(opts: {
     amountUsd: pack.price,
     coins: totalCoins,
     packName: pack.name,
+    billNumber,
   };
 }

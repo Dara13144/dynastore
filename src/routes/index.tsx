@@ -1097,7 +1097,9 @@ function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () 
     return () => { cancelled = true; };
   }, [authed, getMerchantInfo]);
   const qrWrapRef = useRef<HTMLDivElement | null>(null);
-  type Tx = { md5: string; qrPayload: string; coins: number; createdAt: number; expiresAt: number };
+  type Tx = { md5: string; qrPayload: string; coins: number; createdAt: number; expiresAt: number; billNumber: string | null };
+  type ApiCall = { at: number; tick: number; md5: string; status: string; responseCode: any; responseMessage: any; raw: any; error?: string };
+  const [apiLog, setApiLog] = useState<ApiCall[]>([]);
   const [tx, setTx] = useState<Tx | null>(null);
   const [reusedInfo, setReusedInfo] = useState<{ id: string; createdAt: string; expiresAt: string; status: string; coins: number; amountUsd: number } | null>(null);
   const [prevTx, setPrevTx] = useState<Tx | null>(null);
@@ -1167,6 +1169,7 @@ function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () 
         coins: data.coins,
         createdAt: data.createdAt,
         expiresAt: data.expiresAt,
+        billNumber: null,
       });
       setSecondsLeft(Math.max(0, Math.ceil((data.expiresAt - Date.now()) / 1000)));
       setStatus("qr");
@@ -1226,6 +1229,7 @@ function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () 
     setSecondsLeft(POLL_WINDOW_S);
     setEvents([]);
     setReusedInfo(null);
+    setApiLog([]);
 
     try {
       const res = await createTopup({ data: { packId: pack.id } });
@@ -1240,6 +1244,7 @@ function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () 
         coins: res.coins,
         createdAt: createdAtMs,
         expiresAt: expiresAtMs,
+        billNumber: (res as any).billNumber ?? null,
       });
       setReusedInfo(reused && reusedTx ? reusedTx : null);
       pushEvent({
@@ -1278,6 +1283,18 @@ function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () 
         if (cancelled) return;
         setLastChecked(Date.now());
         setPollTick((n) => n + 1);
+        setApiLog((prev) => [
+          ...prev,
+          {
+            at: Date.now(),
+            tick: prev.length + 1,
+            md5: checkingMd5,
+            status: (r as any).status,
+            responseCode: (r as any).responseCode ?? null,
+            responseMessage: (r as any).responseMessage ?? null,
+            raw: r,
+          },
+        ].slice(-25));
         setTx((cur) => {
           if (!cur || cur.md5 !== checkingMd5) return cur;
           if (Date.now() >= cur.expiresAt) { setStatus("expired"); return cur; }
@@ -1300,7 +1317,21 @@ function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () 
           }
           return cur;
         });
-      } catch {}
+      } catch (err: any) {
+        setApiLog((prev) => [
+          ...prev,
+          {
+            at: Date.now(),
+            tick: prev.length + 1,
+            md5: checkingMd5,
+            status: "error",
+            responseCode: null,
+            responseMessage: null,
+            raw: null,
+            error: err?.message || String(err),
+          },
+        ].slice(-25));
+      }
     };
 
     // Immediate poll, then every 2s for fast PAID flip.
@@ -1738,6 +1769,8 @@ function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () 
                 ["Bakong Account", merchantInfo?.bakongAccountIdMasked],
                 ["Amount", `$${pack.price} USD`],
                 ["Coins", `${(pack.coins + (pack.bonus ?? 0)).toLocaleString()}`],
+                ["Bill Number", tx.billNumber ?? "— reused/restored —"],
+                ["Polling MD5", tx.md5],
                 ["Tx Created", new Date(tx.createdAt).toLocaleTimeString()],
                 ["Tx Expires", new Date(tx.expiresAt).toLocaleTimeString()],
               ].map(([k, v]) => (
@@ -1801,6 +1834,58 @@ function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () 
               <div className="rounded bg-background/40 p-2">
                 <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">QR Payload</div>
                 <div className="mt-1 max-h-24 overflow-auto break-all font-mono text-[10px] leading-relaxed">{tx.qrPayload}</div>
+              </div>
+              <div className="rounded bg-background/40 p-2">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">checkPayment API log</span>
+                  <span className="ml-auto rounded-full bg-secondary px-2 py-0.5 text-[10px] font-bold">{apiLog.length}</span>
+                  {apiLog.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        try { await navigator.clipboard.writeText(JSON.stringify(apiLog, null, 2)); onToast("បានចម្លង API log"); }
+                        catch { onToast("ចម្លងបរាជ័យ"); }
+                      }}
+                      className="inline-flex items-center gap-1 rounded bg-secondary px-1.5 py-0.5 text-[10px] font-semibold hover:bg-secondary/80"
+                    >
+                      <Copy className="h-2.5 w-2.5" /> Copy
+                    </button>
+                  )}
+                </div>
+                {apiLog.length === 0 ? (
+                  <div className="text-[10px] text-muted-foreground italic">No checkPayment calls yet — polling starts when QR is shown.</div>
+                ) : (
+                  <ol className="grid gap-1 max-h-56 overflow-auto">
+                    {[...apiLog].reverse().map((c, i) => {
+                      const color =
+                        c.status === "paid" ? "ring-emerald-500/40 bg-emerald-500/5" :
+                        c.status === "expired" ? "ring-amber-500/40 bg-amber-500/5" :
+                        c.status === "error" ? "ring-rose-500/40 bg-rose-500/5" :
+                        "ring-border/60 bg-background/30";
+                      return (
+                        <li key={`${c.at}-${i}`} className={`rounded ring-1 p-1.5 text-[10px] font-mono ${color}`}>
+                          <div className="flex items-center gap-2">
+                            <span className="rounded bg-background/60 px-1.5 py-0.5 font-bold">#{c.tick}</span>
+                            <span className="uppercase tracking-wider">{c.status}</span>
+                            <span className="text-muted-foreground ml-auto">{new Date(c.at).toLocaleTimeString()}</span>
+                          </div>
+                          <div className="mt-1 text-muted-foreground truncate">md5 {c.md5.slice(0, 16)}…</div>
+                          {(c.responseCode != null || c.responseMessage) && (
+                            <div className="mt-0.5">
+                              code=<span className="text-foreground">{String(c.responseCode ?? "—")}</span>
+                              {c.responseMessage && <> · msg=<span className="text-foreground">{String(c.responseMessage)}</span></>}
+                            </div>
+                          )}
+                          {c.error && <div className="mt-0.5 text-rose-500 break-all">err: {c.error}</div>}
+                          <details className="mt-1">
+                            <summary className="cursor-pointer text-muted-foreground select-none">raw</summary>
+                            <pre className="mt-1 max-h-40 overflow-auto whitespace-pre-wrap break-all text-[10px] leading-snug">{JSON.stringify(c.raw, null, 2)}</pre>
+                          </details>
+                        </li>
+                      );
+                    })}
+                  </ol>
+                )}
               </div>
             </div>
           </details>

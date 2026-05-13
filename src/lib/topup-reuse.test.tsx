@@ -15,7 +15,7 @@ const FIXED_MD5 = "a".repeat(32);
 const NOW = new Date("2026-05-13T10:00:00Z").getTime();
 
 function makeBuild(md5 = FIXED_MD5) {
-  return vi.fn(() => ({ md5, payload: `KHQR_PAYLOAD_${md5.slice(0, 6)}` }));
+  return vi.fn(() => ({ md5, payload: `KHQR_PAYLOAD_${md5.slice(0, 6)}`, billNumber: `BILL_${md5.slice(0, 6)}` }));
 }
 
 describe("tryInsertOrReuseTopup — md5 collision handling", () => {
@@ -69,8 +69,8 @@ describe("tryInsertOrReuseTopup — md5 collision handling", () => {
     };
     const build = vi
       .fn()
-      .mockReturnValueOnce({ md5: "b".repeat(32), payload: "P1" })
-      .mockReturnValueOnce({ md5: "c".repeat(32), payload: "P2" });
+      .mockReturnValueOnce({ md5: "b".repeat(32), payload: "P1", billNumber: "BILL_B" })
+      .mockReturnValueOnce({ md5: "c".repeat(32), payload: "P2", billNumber: "BILL_C" });
     const insert = vi
       .fn()
       .mockResolvedValueOnce({ error: DUP_ERR })
@@ -101,8 +101,8 @@ describe("tryInsertOrReuseTopup — md5 collision handling", () => {
     };
     const build = vi
       .fn()
-      .mockReturnValueOnce({ md5: "d".repeat(32), payload: "P1" })
-      .mockReturnValueOnce({ md5: "e".repeat(32), payload: "P2" });
+      .mockReturnValueOnce({ md5: "d".repeat(32), payload: "P1", billNumber: "BILL_D" })
+      .mockReturnValueOnce({ md5: "e".repeat(32), payload: "P2", billNumber: "BILL_E" });
     const insert = vi
       .fn()
       .mockResolvedValueOnce({ error: DUP_ERR })
