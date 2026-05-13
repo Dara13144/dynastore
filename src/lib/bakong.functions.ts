@@ -21,10 +21,35 @@ const readBakongAccountId = () =>
 
 const sanitizePhone = (value?: string | null) => value?.replace(/\D+/g, "") || undefined;
 
+type ConfigIssue = { key: string; severity: "error" | "warning"; message: string };
+
+function validateBakongConfig(): ConfigIssue[] {
+  const issues: ConfigIssue[] = [];
+  const accountId = readBakongAccountId();
+  const name = process.env.BAKONG_MERCHANT_NAME;
+  const city = process.env.BAKONG_MERCHANT_CITY;
+  const phone = process.env.BAKONG_MERCHANT_PHONE;
+  const token = process.env.BAKONG_DEVELOPER_TOKEN;
+
+  if (!accountId) {
+    issues.push({ key: "BAKONG_ACCOUNT_ID", severity: "error", message: "Bakong account ID is missing (set BAKONG_ACCOUNT_ID, BAKONG_MERCHANT_ID, or BAKONG_MERCHANT_ACCOUNT_NUMBER)." });
+  } else if (!/^[a-z0-9._-]+@[a-z0-9._-]+$/i.test(accountId)) {
+    issues.push({ key: "BAKONG_ACCOUNT_ID", severity: "error", message: `Bakong account ID "${accountId}" is not in user@bank format.` });
+  }
+  if (!name) issues.push({ key: "BAKONG_MERCHANT_NAME", severity: "error", message: "Merchant name is missing." });
+  else if (name.length > 25) issues.push({ key: "BAKONG_MERCHANT_NAME", severity: "warning", message: "Merchant name exceeds 25 chars; KHQR will truncate it." });
+  if (!city) issues.push({ key: "BAKONG_MERCHANT_CITY", severity: "error", message: "Merchant city is missing." });
+  else if (city.length > 15) issues.push({ key: "BAKONG_MERCHANT_CITY", severity: "warning", message: "Merchant city exceeds 15 chars; KHQR will truncate it." });
+  if (!token) issues.push({ key: "BAKONG_DEVELOPER_TOKEN", severity: "error", message: "Bakong developer token is missing — payment verification will fail." });
+  if (phone && !/^\+?[\d\s-]{6,}$/.test(phone)) issues.push({ key: "BAKONG_MERCHANT_PHONE", severity: "warning", message: "Merchant phone format looks invalid." });
+  return issues;
+}
+
 export const getMerchantInfo = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async () => {
     const accountIdRaw = readBakongAccountId();
+    const issues = validateBakongConfig();
     return {
       merchantName: process.env.BAKONG_MERCHANT_NAME || null,
       merchantCity: process.env.BAKONG_MERCHANT_CITY || null,
@@ -32,6 +57,8 @@ export const getMerchantInfo = createServerFn({ method: "GET" })
       acquiringBank: process.env.BAKONG_ACQUIRING_BANK || null,
       bakongAccountId: accountIdRaw || null,
       bakongAccountIdMasked: accountIdRaw ? maskAccount(accountIdRaw) : null,
+      configIssues: issues,
+      configOk: issues.every((i) => i.severity !== "error"),
     };
   });
 
