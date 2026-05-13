@@ -130,7 +130,7 @@ function Hero() {
           <span className="gradient-text">ទិញហ្គេម</span> ដោយ Balance
         </h1>
         <p className="mt-4 text-base md:text-lg text-muted-foreground">
-          បន្ថែម Balance តាម KHQR ហើយទិញហ្គេម PC/Console ភ្លាមៗ។ 1 USD = 1 Balance។
+          បន្ថែម Balance តាម KHQR ហើយទិញហ្គេម PC/Console ភ្លាមៗ។ 1 USD = 100 Balance។
         </p>
       </div>
     </section>
@@ -437,7 +437,7 @@ function TopupModal({ onClose, onToast }: { onClose: () => void; onToast: (m: st
 
         {stage === "choose" && (
           <div className="p-5 space-y-4">
-            <p className="text-xs text-muted-foreground">1 USD = 1 Balance។ បង់ប្រាក់ភ្លាមៗតាម Bakong KHQR។ QR មានសុពលភាព 5 នាទី។</p>
+            <p className="text-xs text-muted-foreground">1 USD = 100 Balance។ បង់ប្រាក់ភ្លាមៗតាម Bakong KHQR។ QR មានសុពលភាព 5 នាទី។</p>
             <div className="grid grid-cols-5 gap-2">
               {PRESETS.map((p) => (
                 <button key={p} onClick={() => setAmount(p)} className={`rounded-xl border px-2 py-2 text-sm font-semibold ${amount === p ? "border-primary bg-primary/10 text-primary" : "border-border hover:bg-accent"}`}>${p}</button>
@@ -450,7 +450,7 @@ function TopupModal({ onClose, onToast }: { onClose: () => void; onToast: (m: st
             </div>
             <div className="rounded-xl bg-accent/40 px-3 py-2 text-xs flex items-center justify-between">
               <span>នឹងទទួលបាន</span>
-              <span className="font-semibold inline-flex items-center gap-1 text-primary"><Wallet className="h-3.5 w-3.5" /> {amount.toLocaleString()}</span>
+              <span className="font-semibold inline-flex items-center gap-1 text-primary"><Wallet className="h-3.5 w-3.5" /> {(amount * 100).toLocaleString()}</span>
             </div>
             <button onClick={start} className="w-full rounded-xl bg-primary py-2.5 text-sm font-semibold text-primary-foreground hover:opacity-90 inline-flex items-center justify-center gap-2">
               បង្កើត KHQR

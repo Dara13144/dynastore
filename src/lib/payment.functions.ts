@@ -5,10 +5,10 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
 // @ts-ignore - bakong-khqr is plain js
 import { BakongKHQR, IndividualInfo, khqrData } from "bakong-khqr";
 
-const COINS_PER_USD = 1;
+const COINS_PER_USD = 100;
 const TX_TTL_MIN = 5;
 
-// 1 USD = 1 Balance
+// 1 USD = 100 Balance
 export const createTopup = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) => z.object({ amountUsd: z.number().min(1).max(1000) }).parse(i))
@@ -26,6 +26,7 @@ export const createTopup = createServerFn({ method: "POST" })
       mobileNumber: phone,
       storeLabel: "Dyna Store",
       terminalLabel: "topup",
+      expirationTimestamp: Date.now() + TX_TTL_MIN * 60_000,
     });
     let qr: string | undefined;
     let md5: string | undefined;
