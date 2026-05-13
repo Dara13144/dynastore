@@ -1098,6 +1098,7 @@ function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () 
   const qrWrapRef = useRef<HTMLDivElement | null>(null);
   type Tx = { md5: string; qrPayload: string; coins: number; createdAt: number; expiresAt: number };
   const [tx, setTx] = useState<Tx | null>(null);
+  const [reusedInfo, setReusedInfo] = useState<{ id: string; createdAt: string; expiresAt: string; status: string; coins: number; amountUsd: number } | null>(null);
   const [prevTx, setPrevTx] = useState<Tx | null>(null);
   const [status, setStatus] = useState<"confirm" | "loading" | "login" | "qr" | "verifying" | "paid" | "expired" | "error">("confirm");
   const [errMsg, setErrMsg] = useState<string>("");
