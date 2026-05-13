@@ -528,7 +528,7 @@ function UserRowEditor({ user, onUpdate }: { user: UserRow; onUpdate: (b: number
             <div className="inline-flex flex-col items-end gap-1">
               <span className="inline-flex items-center gap-1">
                 <input type="number" min={0} value={val} onChange={(e) => setVal(e.target.value)} className="w-24 text-right rounded bg-input px-2 py-1 text-xs ring-1 ring-border focus:ring-primary outline-none" />
-                <button disabled={busy} onClick={save} className="rounded-full bg-primary/10 text-primary px-2 py-1 text-[11px] font-semibold disabled:opacity-50">Save</button>
+                <button disabled={busy} onClick={save} className="rounded-full bg-primary/10 text-primary px-2 py-1 text-[11px] font-semibold disabled:opacity-50">រក្សាទុក</button>
                 <button onClick={() => { setEditing(false); setVal(String(user.balance)); setReason(""); }} className="text-[11px] text-muted-foreground">×</button>
               </span>
               <input type="text" maxLength={200} value={reason} onChange={(e) => setReason(e.target.value)} placeholder="មូលហេតុ (សេចក្តីពន្យល់)" className="w-56 text-left rounded bg-input px-2 py-1 text-[11px] ring-1 ring-border focus:ring-primary outline-none" />
