@@ -6,6 +6,7 @@ import { useStore } from "@/lib/store";
 import { ArrowLeft, Plus, Eye, EyeOff, Trash2, Save, Loader2, Users, Gamepad2, FileArchive, Settings as SettingsIcon, Receipt, Pencil, History, ChevronDown, ChevronUp, Search } from "lucide-react";
 import { StoreProvider } from "@/lib/store";
 import { getAppSettings, updateAppSettings, adminSetUserBalance, listAllTransactions, listBalanceChanges, listSettingsAudit } from "@/lib/admin.functions";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 export const Route = createFileRoute("/admin")({
   head: () => ({ meta: [{ title: "Admin — Dyna Store" }] }),
@@ -495,11 +496,17 @@ function UserRowEditor({ user, onUpdate }: { user: UserRow; onUpdate: (b: number
   const [val, setVal] = useState(String(user.balance));
   const [reason, setReason] = useState("");
   const [busy, setBusy] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [history, setHistory] = useState<Array<{ id: string; old_balance: number; new_balance: number; reason: string | null; created_at: string; changed_by_name: string }> | null>(null);
   const [loadingHist, setLoadingHist] = useState(false);
   const setBalance = useServerFn(adminSetUserBalance);
   const fetchHistory = useServerFn(listBalanceChanges);
+
+  const parsedNextBalance = Math.floor(Number(val));
+  const isValidNextBalance = Number.isFinite(parsedNextBalance) && parsedNextBalance >= 0;
+  const delta = isValidNextBalance ? parsedNextBalance - user.balance : 0;
+  const deltaLabel = `${delta > 0 ? "+" : ""}${delta.toLocaleString()}`;
 
   const loadHistory = useCallback(async () => {
     setLoadingHist(true);
@@ -517,13 +524,13 @@ function UserRowEditor({ user, onUpdate }: { user: UserRow; onUpdate: (b: number
   };
 
   const save = async () => {
-    const n = Number(val);
-    if (!Number.isFinite(n) || n < 0) return;
+    if (!isValidNextBalance) return;
     setBusy(true);
     try {
-      const r = await setBalance({ data: { user_id: user.user_id, new_balance: Math.floor(n), reason: reason.trim() || undefined } });
+      const r = await setBalance({ data: { user_id: user.user_id, new_balance: parsedNextBalance, reason: reason.trim() || undefined } });
       onUpdate(r.balance);
       setEditing(false);
+      setConfirmOpen(false);
       setReason("");
       if (showHistory) await loadHistory();
       else setHistory(null);
@@ -541,8 +548,8 @@ function UserRowEditor({ user, onUpdate }: { user: UserRow; onUpdate: (b: number
             <div className="inline-flex flex-col items-end gap-1">
               <span className="inline-flex items-center gap-1">
                 <input type="number" min={0} value={val} onChange={(e) => setVal(e.target.value)} className="w-24 text-right rounded bg-input px-2 py-1 text-xs ring-1 ring-border focus:ring-primary outline-none" />
-                <button disabled={busy} onClick={save} className="rounded-full bg-primary/10 text-primary px-2 py-1 text-[11px] font-semibold disabled:opacity-50">រក្សាទុក</button>
-                <button onClick={() => { setEditing(false); setVal(String(user.balance)); setReason(""); }} className="text-[11px] text-muted-foreground">×</button>
+                <button disabled={busy || !isValidNextBalance} onClick={() => setConfirmOpen(true)} className="rounded-full bg-primary/10 text-primary px-2 py-1 text-[11px] font-semibold disabled:opacity-50">រក្សាទុក</button>
+                <button onClick={() => { setEditing(false); setConfirmOpen(false); setVal(String(user.balance)); setReason(""); }} className="text-[11px] text-muted-foreground">×</button>
               </span>
               <input type="text" maxLength={200} value={reason} onChange={(e) => setReason(e.target.value)} placeholder="មូលហេតុ (សេចក្តីពន្យល់)" className="w-56 text-left rounded bg-input px-2 py-1 text-[11px] ring-1 ring-border focus:ring-primary outline-none" />
             </div>
@@ -564,6 +571,36 @@ function UserRowEditor({ user, onUpdate }: { user: UserRow; onUpdate: (b: number
           </button>
         </td>
       </tr>
+      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>បញ្ជាក់ការផ្លាស់ប្តូរ Balance</AlertDialogTitle>
+            <AlertDialogDescription>
+              សូមពិនិត្យព័ត៌មានខាងក្រោម មុនអនុវត្តការកែប្រែសមតុល្យរបស់អ្នកប្រើ។
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="grid gap-3 text-sm">
+            <div className="grid grid-cols-2 gap-2 rounded-md border border-border/60 bg-muted/20 p-3">
+              <span className="text-muted-foreground">អ្នកប្រើ</span>
+              <span className="text-right font-medium break-all">{user.display_name}</span>
+              <span className="text-muted-foreground">Balance បច្ចុប្បន្ន</span>
+              <span className="text-right font-medium">{user.balance.toLocaleString()}</span>
+              <span className="text-muted-foreground">Balance ថ្មី</span>
+              <span className="text-right font-medium">{isValidNextBalance ? parsedNextBalance.toLocaleString() : "—"}</span>
+              <span className="text-muted-foreground">Delta</span>
+              <span className={`text-right font-semibold ${delta > 0 ? "text-primary" : delta < 0 ? "text-destructive" : "text-foreground"}`}>{deltaLabel}</span>
+              <span className="text-muted-foreground">មូលហេតុ</span>
+              <span className="text-right break-words">{reason.trim() || "—"}</span>
+            </div>
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={busy}>បោះបង់</AlertDialogCancel>
+            <AlertDialogAction disabled={busy || !isValidNextBalance} onClick={(e) => { e.preventDefault(); void save(); }}>
+              {busy ? "កំពុងអនុវត្ត..." : "បញ្ជាក់"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
       {showHistory && (
         <tr className="border-t border-border/40 bg-muted/5">
           <td colSpan={7} className="px-4 py-3">
