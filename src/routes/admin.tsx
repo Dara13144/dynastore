@@ -41,7 +41,7 @@ function AdminPage() {
   const { authed, loading } = useStore();
   const navigate = useNavigate();
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
-  const [tab, setTab] = useState<"games" | "users" | "payments" | "topups" | "settings">("games");
+  const [tab, setTab] = useState<"games" | "users" | "payments" | "topups" | "content" | "settings">("games");
 
   useEffect(() => {
     if (loading) return;
@@ -82,6 +82,7 @@ function AdminPage() {
             <TabBtn active={tab === "users"} onClick={() => setTab("users")} icon={<Users className="h-3.5 w-3.5" />} label="អ្នកប្រើ" />
             <TabBtn active={tab === "payments"} onClick={() => setTab("payments")} icon={<Receipt className="h-3.5 w-3.5" />} label="ការទូទាត់" />
             <TabBtn active={tab === "topups"} onClick={() => setTab("topups")} icon={<Inbox className="h-3.5 w-3.5" />} label="សំណើបញ្ចូលលុយ" />
+            <TabBtn active={tab === "content"} onClick={() => setTab("content")} icon={<Pencil className="h-3.5 w-3.5" />} label="មាតិកា" />
             <TabBtn active={tab === "settings"} onClick={() => setTab("settings")} icon={<SettingsIcon className="h-3.5 w-3.5" />} label="កំណត់" />
           </nav>
         </div>
@@ -92,6 +93,7 @@ function AdminPage() {
         {tab === "users" && <UsersTab />}
         {tab === "payments" && <PaymentsTab />}
         {tab === "topups" && <TopupRequestsTab />}
+        {tab === "content" && <ContentTab />}
         {tab === "settings" && <SettingsTab />}
       </main>
     </div>
@@ -1004,5 +1006,168 @@ function TopupRequestsTab() {
         </AlertDialogContent>
       </AlertDialog>
     </div>
+  );
+}
+
+/* ============ CONTENT TAB ============ */
+type Promo = { id: string; title: string; subtitle: string | null; visible: boolean; created_at: string };
+type Testi = { id: string; name: string; game: string | null; text: string; visible: boolean; created_at: string };
+
+function ContentTab() {
+  const [promos, setPromos] = useState<Promo[]>([]);
+  const [testis, setTestis] = useState<Testi[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [pTitle, setPTitle] = useState(""); const [pSub, setPSub] = useState("");
+  const [tName, setTName] = useState(""); const [tGame, setTGame] = useState(""); const [tText, setTText] = useState("");
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    const [p, t] = await Promise.all([
+      supabase.from("promotions").select("*").order("created_at", { ascending: false }),
+      supabase.from("testimonials").select("*").order("created_at", { ascending: false }),
+    ]);
+    setPromos((p.data ?? []) as Promo[]);
+    setTestis((t.data ?? []) as Testi[]);
+    setLoading(false);
+  }, []);
+  useEffect(() => { load(); }, [load]);
+
+  const addPromo = async () => {
+    if (!pTitle.trim()) return;
+    const { error } = await supabase.from("promotions").insert({ title: pTitle.trim(), subtitle: pSub.trim() || null, visible: true });
+    if (error) return toast.error(error.message);
+    setPTitle(""); setPSub(""); toast.success("បន្ថែមរួច"); load();
+  };
+  const updPromo = async (id: string, patch: Partial<Promo>) => {
+    const { error } = await supabase.from("promotions").update(patch).eq("id", id);
+    if (error) return toast.error(error.message);
+    setPromos((rs) => rs.map((r) => r.id === id ? { ...r, ...patch } as Promo : r));
+  };
+  const delPromo = async (id: string) => {
+    if (!confirm("លុបប្រូម៉ូសិន?")) return;
+    const { error } = await supabase.from("promotions").delete().eq("id", id);
+    if (error) return toast.error(error.message);
+    setPromos((rs) => rs.filter((r) => r.id !== id));
+  };
+
+  const addTesti = async () => {
+    if (!tName.trim() || !tText.trim()) return;
+    const { error } = await supabase.from("testimonials").insert({ name: tName.trim(), game: tGame.trim() || null, text: tText.trim(), visible: true });
+    if (error) return toast.error(error.message);
+    setTName(""); setTGame(""); setTText(""); toast.success("បន្ថែមរួច"); load();
+  };
+  const updTesti = async (id: string, patch: Partial<Testi>) => {
+    const { error } = await supabase.from("testimonials").update(patch).eq("id", id);
+    if (error) return toast.error(error.message);
+    setTestis((rs) => rs.map((r) => r.id === id ? { ...r, ...patch } as Testi : r));
+  };
+  const delTesti = async (id: string) => {
+    if (!confirm("លុបមតិ?")) return;
+    const { error } = await supabase.from("testimonials").delete().eq("id", id);
+    if (error) return toast.error(error.message);
+    setTestis((rs) => rs.filter((r) => r.id !== id));
+  };
+
+  if (loading) return <div className="text-center py-12 text-muted-foreground"><Loader2 className="h-5 w-5 animate-spin inline" /></div>;
+
+  return (
+    <div className="space-y-8">
+      {/* Promotions */}
+      <section className="space-y-3">
+        <h2 className="font-display text-xl">ប្រូម៉ូសិន ({promos.length})</h2>
+        <div className="rounded-2xl glass p-4 grid gap-2 sm:grid-cols-[1fr_1fr_auto]">
+          <input value={pTitle} onChange={(e) => setPTitle(e.target.value)} placeholder="ចំណងជើង" className="rounded-xl bg-input px-3 py-2 text-sm ring-1 ring-border focus:ring-primary outline-none" />
+          <input value={pSub} onChange={(e) => setPSub(e.target.value)} placeholder="សេចក្តីរង (ស្រេច)" className="rounded-xl bg-input px-3 py-2 text-sm ring-1 ring-border focus:ring-primary outline-none" />
+          <button onClick={addPromo} className="inline-flex items-center justify-center gap-1 rounded-full bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground hover:opacity-90"><Plus className="h-3 w-3" /> បន្ថែម</button>
+        </div>
+        <div className="rounded-2xl glass overflow-hidden">
+          <table className="w-full text-sm">
+            <thead className="bg-muted/30 text-xs uppercase tracking-wider text-muted-foreground">
+              <tr>
+                <th className="text-left px-4 py-3">ចំណងជើង</th>
+                <th className="text-left px-4 py-3">សេចក្តីរង</th>
+                <th className="text-center px-4 py-3">បង្ហាញ</th>
+                <th className="text-right px-4 py-3">សកម្មភាព</th>
+              </tr>
+            </thead>
+            <tbody>
+              {promos.length === 0 && <tr><td colSpan={4} className="text-center py-6 text-xs text-muted-foreground">គ្មានទិន្នន័យ</td></tr>}
+              {promos.map((p) => <PromoRow key={p.id} p={p} onUpd={(patch) => updPromo(p.id, patch)} onDel={() => delPromo(p.id)} />)}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      {/* Testimonials */}
+      <section className="space-y-3">
+        <h2 className="font-display text-xl">មតិសហគមន៍ ({testis.length})</h2>
+        <div className="rounded-2xl glass p-4 grid gap-2 sm:grid-cols-[1fr_1fr_2fr_auto]">
+          <input value={tName} onChange={(e) => setTName(e.target.value)} placeholder="ឈ្មោះ" className="rounded-xl bg-input px-3 py-2 text-sm ring-1 ring-border focus:ring-primary outline-none" />
+          <input value={tGame} onChange={(e) => setTGame(e.target.value)} placeholder="ហ្គេម (ស្រេច)" className="rounded-xl bg-input px-3 py-2 text-sm ring-1 ring-border focus:ring-primary outline-none" />
+          <input value={tText} onChange={(e) => setTText(e.target.value)} placeholder="មតិ" className="rounded-xl bg-input px-3 py-2 text-sm ring-1 ring-border focus:ring-primary outline-none" />
+          <button onClick={addTesti} className="inline-flex items-center justify-center gap-1 rounded-full bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground hover:opacity-90"><Plus className="h-3 w-3" /> បន្ថែម</button>
+        </div>
+        <div className="rounded-2xl glass overflow-hidden">
+          <table className="w-full text-sm">
+            <thead className="bg-muted/30 text-xs uppercase tracking-wider text-muted-foreground">
+              <tr>
+                <th className="text-left px-4 py-3">ឈ្មោះ</th>
+                <th className="text-left px-4 py-3">ហ្គេម</th>
+                <th className="text-left px-4 py-3">មតិ</th>
+                <th className="text-center px-4 py-3">បង្ហាញ</th>
+                <th className="text-right px-4 py-3">សកម្មភាព</th>
+              </tr>
+            </thead>
+            <tbody>
+              {testis.length === 0 && <tr><td colSpan={5} className="text-center py-6 text-xs text-muted-foreground">គ្មានទិន្នន័យ</td></tr>}
+              {testis.map((t) => <TestiRow key={t.id} t={t} onUpd={(patch) => updTesti(t.id, patch)} onDel={() => delTesti(t.id)} />)}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function PromoRow({ p, onUpd, onDel }: { p: Promo; onUpd: (patch: Partial<Promo>) => void; onDel: () => void }) {
+  const [e, setE] = useState(p);
+  useEffect(() => setE(p), [p]);
+  const dirty = e.title !== p.title || e.subtitle !== p.subtitle;
+  return (
+    <tr className="border-t border-border/60 hover:bg-muted/10">
+      <td className="px-4 py-3"><input value={e.title} onChange={(ev) => setE({ ...e, title: ev.target.value })} className="w-full bg-transparent outline-none focus:ring-1 focus:ring-primary rounded px-1" /></td>
+      <td className="px-4 py-3"><input value={e.subtitle ?? ""} onChange={(ev) => setE({ ...e, subtitle: ev.target.value })} className="w-full bg-transparent outline-none focus:ring-1 focus:ring-primary rounded px-1" /></td>
+      <td className="px-4 py-3 text-center">
+        <button onClick={() => onUpd({ visible: !p.visible })} className="rounded-full p-1.5 hover:bg-accent">{p.visible ? <Eye className="h-4 w-4 text-primary" /> : <EyeOff className="h-4 w-4 text-muted-foreground" />}</button>
+      </td>
+      <td className="px-4 py-3 text-right">
+        <div className="inline-flex gap-1">
+          <button disabled={!dirty} onClick={() => onUpd({ title: e.title, subtitle: e.subtitle || null })} className="inline-flex items-center gap-1 rounded-full bg-primary/10 text-primary px-3 py-1 text-[11px] font-semibold disabled:opacity-30"><Save className="h-3 w-3" /> រក្សាទុក</button>
+          <button onClick={onDel} className="rounded-full bg-destructive/10 text-destructive px-2 py-1 text-[11px] font-semibold"><Trash2 className="h-3 w-3" /></button>
+        </div>
+      </td>
+    </tr>
+  );
+}
+
+function TestiRow({ t, onUpd, onDel }: { t: Testi; onUpd: (patch: Partial<Testi>) => void; onDel: () => void }) {
+  const [e, setE] = useState(t);
+  useEffect(() => setE(t), [t]);
+  const dirty = e.name !== t.name || e.game !== t.game || e.text !== t.text;
+  return (
+    <tr className="border-t border-border/60 hover:bg-muted/10">
+      <td className="px-4 py-3"><input value={e.name} onChange={(ev) => setE({ ...e, name: ev.target.value })} className="w-32 bg-transparent outline-none focus:ring-1 focus:ring-primary rounded px-1" /></td>
+      <td className="px-4 py-3"><input value={e.game ?? ""} onChange={(ev) => setE({ ...e, game: ev.target.value })} className="w-32 bg-transparent outline-none focus:ring-1 focus:ring-primary rounded px-1" /></td>
+      <td className="px-4 py-3"><input value={e.text} onChange={(ev) => setE({ ...e, text: ev.target.value })} className="w-full bg-transparent outline-none focus:ring-1 focus:ring-primary rounded px-1" /></td>
+      <td className="px-4 py-3 text-center">
+        <button onClick={() => onUpd({ visible: !t.visible })} className="rounded-full p-1.5 hover:bg-accent">{t.visible ? <Eye className="h-4 w-4 text-primary" /> : <EyeOff className="h-4 w-4 text-muted-foreground" />}</button>
+      </td>
+      <td className="px-4 py-3 text-right">
+        <div className="inline-flex gap-1">
+          <button disabled={!dirty} onClick={() => onUpd({ name: e.name, game: e.game || null, text: e.text })} className="inline-flex items-center gap-1 rounded-full bg-primary/10 text-primary px-3 py-1 text-[11px] font-semibold disabled:opacity-30"><Save className="h-3 w-3" /> រក្សាទុក</button>
+          <button onClick={onDel} className="rounded-full bg-destructive/10 text-destructive px-2 py-1 text-[11px] font-semibold"><Trash2 className="h-3 w-3" /></button>
+        </div>
+      </td>
+    </tr>
   );
 }
