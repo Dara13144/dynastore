@@ -485,28 +485,30 @@ function Page() {
   };
 
   return (
-    <div className="min-h-screen">
-      <Header onCart={() => setCartOpen(true)} onSettings={() => setSettingsOpen(true)} />
-      <Hero />
-      <BakongConfigBanner />
-      <PendingTopupsPanel onResume={(p) => setPaymentPack(p)} />
-      <CoinShop onBuyPack={(p) => setPaymentPack(p)} />
-      <GamesSection onToast={showToast} onOpenCart={() => setCartOpen(true)} />
-      <DealsBanner />
-      <Recommendations onToast={showToast} />
-      <PlusSection />
-      <Footer />
+    <BakongConfigProvider>
+      <div className="min-h-screen">
+        <Header onCart={() => setCartOpen(true)} onSettings={() => setSettingsOpen(true)} />
+        <Hero />
+        <BakongConfigBanner />
+        <PendingTopupsPanel onResume={(p) => setPaymentPack(p)} />
+        <CoinShop onBuyPack={(p) => setPaymentPack(p)} />
+        <GamesSection onToast={showToast} onOpenCart={() => setCartOpen(true)} />
+        <DealsBanner />
+        <Recommendations onToast={showToast} />
+        <PlusSection />
+        <Footer />
 
-      {cartOpen && <CartModal onClose={() => setCartOpen(false)} onToast={showToast} />}
-      {settingsOpen && <SettingsModal onClose={() => setSettingsOpen(false)} onToast={showToast} />}
-      {paymentPack && <PaymentModal pack={paymentPack} onClose={() => setPaymentPack(null)} onToast={showToast} />}
+        {cartOpen && <CartModal onClose={() => setCartOpen(false)} onToast={showToast} />}
+        {settingsOpen && <SettingsModal onClose={() => setSettingsOpen(false)} onToast={showToast} />}
+        {paymentPack && <PaymentModal pack={paymentPack} onClose={() => setPaymentPack(null)} onToast={showToast} />}
 
-      {toast && (
-        <div className="fixed bottom-6 left-1/2 z-[100] -translate-x-1/2 rounded-full glass px-5 py-3 text-sm shadow-[var(--shadow-card)] animate-in fade-in slide-in-from-bottom-4">
-          {toast}
-        </div>
-      )}
-    </div>
+        {toast && (
+          <div className="fixed bottom-6 left-1/2 z-[100] -translate-x-1/2 rounded-full glass px-5 py-3 text-sm shadow-[var(--shadow-card)] animate-in fade-in slide-in-from-bottom-4">
+            {toast}
+          </div>
+        )}
+      </div>
+    </BakongConfigProvider>
   );
 }
 
