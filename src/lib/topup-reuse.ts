@@ -132,5 +132,3 @@ export async function tryInsertOrReuseTopup(opts: {
     billNumber,
   };
 }
-  };
-}
