@@ -133,9 +133,14 @@ function GamesTab() {
   useEffect(() => { loadGames(); }, [loadGames]);
 
   const [uploadPct, setUploadPct] = useState<number | null>(null);
-  // Accept all file types and any size — limited only by storage backend.
+  // Game archive uploads must be between 100 MB and 500 MB.
+  const MIN_GAME_FILE_BYTES = 100 * 1024 * 1024;
+  const MAX_GAME_FILE_BYTES = 500 * 1024 * 1024;
   const validateFile = (file: File): string | null => {
     if (file.size <= 0) return "ឯកសារទទេ";
+    const mb = (file.size / 1024 / 1024).toFixed(1);
+    if (file.size < MIN_GAME_FILE_BYTES) return `ឯកសារតូចពេក (${mb}MB) — តម្រូវយ៉ាងតិច 100MB`;
+    if (file.size > MAX_GAME_FILE_BYTES) return `ឯកសារធំពេក (${mb}MB) — អតិបរមា 500MB`;
     return null;
   };
   const uploadFile = async (gameId: string, file: File): Promise<{ path: string; size: number } | null> => {
