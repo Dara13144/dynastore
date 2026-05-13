@@ -434,10 +434,10 @@ function TopupModal({ onClose, onToast }: { onClose: () => void; onToast: (m: st
     try {
       const c = await checkFn({ data: { orderId } });
       setPollCount((n) => n + 1);
-      recordAttempt(c.status, c.debug ?? c, c.debug?.httpStatus ?? null, c.debug?.latencyMs ?? null);
+      recordAttempt(c.status, c.debug ?? c, c.debug?.httpStatus ?? null, c.debug?.latencyMs ?? null, c.debug?.providerMessage ?? null);
       if (c.status === "paid") { stopPoll(); setStage("paid"); await refreshWallet(); onToast(`បានបន្ថែម ${coins.toLocaleString()} Balance!`); }
       else if (c.status === "expired") { stopPoll(); setStage("expired"); }
-      else { setStage("qr"); onToast("មិនទាន់ទទួលបានការបង់ប្រាក់"); }
+      else { setStage("qr"); onToast(c.debug?.providerMessage ?? "មិនទាន់ទទួលបានការបង់ប្រាក់"); }
     } catch (e) {
       recordAttempt("error", e instanceof Error ? e.message : String(e));
       setErrorMsg(e instanceof Error ? e.message : "បរាជ័យផ្ទៀងផ្ទាត់");
