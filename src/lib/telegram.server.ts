@@ -145,8 +145,7 @@ export async function notifyTelegramPhotoFromUrl(
   // Best-effort text fallback if any chat may have failed (sendPhoto by URL can be flaky for hotlinked images)
   // We send text only when no chats succeeded above is hard to track per-chat; instead we always append a link in caller if needed.
 }
-
-
+/**
  * Send a photo (or document fallback) from a Supabase Storage object to all Telegram chats.
  * Falls back to a plain text message if the file cannot be downloaded.
  */
