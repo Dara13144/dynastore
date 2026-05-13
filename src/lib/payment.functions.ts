@@ -3,8 +3,7 @@ import { z } from "zod";
 import { createHash } from "crypto";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
-// @ts-ignore - bakong-khqr is plain js
-import { BakongKHQR, IndividualInfo, khqrData } from "bakong-khqr";
+import { encodeKhqr } from "@/lib/khqr-encode";
 
 function md5Hex(input: string): string {
   return createHash("md5").update(input, "utf8").digest("hex");
@@ -62,21 +61,20 @@ async function generateKhqrForUser(opts: {
   for (let attempt = 0; attempt < 3; attempt++) {
     const orderId = `khqr_${crypto.randomUUID()}`;
     const nonce = `${userId.slice(0, 6)}-${Date.now().toString(36)}-${attempt}${Math.random().toString(36).slice(2, 6)}`;
-    const info = new IndividualInfo(accountId, merchantName, merchantCity, {
-      currency: khqrData.currency.usd, amount: Number(amountUsd.toFixed(2)),
-      mobileNumber: phone, storeLabel: "Dyna Store", terminalLabel: `tp-${userId.slice(0, 8)}`,
-      billNumber: nonce, expirationTimestamp: Date.now() + ttlMin * 60_000,
-    });
-    let qr: string | undefined; let md5: string | undefined;
+    let qr: string | undefined;
+    let md5: string | undefined;
     try {
-      const res = new BakongKHQR().generateIndividual(info);
-      if (res?.status && res.status.code !== 0) {
-        throw new Error(`KHQR generation rejected: ${res.status.message ?? "unknown"}`);
-      }
-      qr = res?.data?.qr;
-      // The bakong-khqr lib sometimes returns a stale/incorrect md5. Always recompute
-      // MD5(qr_string) ourselves — that is what Bakong's check_transaction_by_md5 expects.
-      md5 = qr ? md5Hex(qr) : undefined;
+      const res = encodeKhqr({
+        accountId, merchantName, merchantCity,
+        currency: "USD",
+        amount: Number(amountUsd.toFixed(2)),
+        mobileNumber: phone,
+        storeLabel: "Dyna Store",
+        terminalLabel: `tp-${userId.slice(0, 8)}`,
+        billNumber: nonce,
+      });
+      qr = res.qr;
+      md5 = md5Hex(qr);
     } catch (e) { throw new Error("បរាជ័យបង្កើត KHQR: " + khqrErrorMessage(e)); }
     if (!qr || !md5) throw new Error("KHQR មិនត្រឹមត្រូវ — សូមពិនិត្យ Bakong credentials");
     const { error } = await supabaseAdmin.from("transactions").insert({
@@ -137,24 +135,18 @@ export const createTopup = createServerFn({ method: "POST" })
     for (let attempt = 0; attempt < 3; attempt++) {
       const orderId = `khqr_${crypto.randomUUID()}`;
       const nonce = `${userId.slice(0, 6)}-${Date.now().toString(36)}-${attempt}${Math.random().toString(36).slice(2, 6)}`;
-      const info = new IndividualInfo(accountId, merchantName, merchantCity, {
-        currency: khqrData.currency.usd,
-        amount: Number(data.amountUsd.toFixed(2)),
-        mobileNumber: phone,
-        storeLabel: "Dyna Store",
-        terminalLabel: `tp-${userId.slice(0, 8)}`,
-        billNumber: nonce,
-        expirationTimestamp: Date.now() + ttlMin * 60_000,
-      });
       try {
-        const res = new BakongKHQR().generateIndividual(info);
-        // bakong-khqr returns { status: {...}, data: null } on failure WITHOUT throwing.
-        if (res?.status && res.status.code !== 0) {
-          throw new Error(`KHQR generation rejected: ${res.status.message ?? "unknown"}${res.status.errorCode ? ` (${res.status.errorCode})` : ""}`);
-        }
-        qr = res?.data?.qr;
-        // Always recompute MD5 from the QR string — bakong-khqr's md5 field is unreliable.
-        bakongMd5 = qr ? md5Hex(qr) : undefined;
+        const res = encodeKhqr({
+          accountId, merchantName, merchantCity,
+          currency: "USD",
+          amount: Number(data.amountUsd.toFixed(2)),
+          mobileNumber: phone,
+          storeLabel: "Dyna Store",
+          terminalLabel: `tp-${userId.slice(0, 8)}`,
+          billNumber: nonce,
+        });
+        qr = res.qr;
+        bakongMd5 = md5Hex(qr);
       } catch (e) {
         throw new Error("បរាជ័យបង្កើត KHQR: " + khqrErrorMessage(e));
       }
@@ -234,23 +226,16 @@ export const validateTopup = createServerFn({ method: "POST" })
     //    (catches missing / mis-configured BAKONG_ACCOUNT_ID, merchant name, city, etc.)
     try {
       const { accountId, merchantName, merchantCity, phone } = await loadSettings();
-      const probe = new IndividualInfo(accountId, merchantName, merchantCity, {
-        currency: khqrData.currency.usd,
+      const res = encodeKhqr({
+        accountId, merchantName, merchantCity,
+        currency: "USD",
         amount: Number(Number(tx.amount_usd).toFixed(2)),
         mobileNumber: phone,
         storeLabel: "Dyna Store",
         terminalLabel: `validate-${userId.slice(0, 8)}`,
         billNumber: `validate-${tx.order_id.slice(-12)}`,
       });
-      const res = new BakongKHQR().generateIndividual(probe);
-      if (res?.status && res.status.code !== 0) {
-        return {
-          ok: false as const,
-          code: "invalid_credentials",
-          message: `Bakong credentials ត្រូវបានបដិសេធ: ${res.status.message ?? "unknown"}`,
-        };
-      }
-      if (!res?.data?.qr || !res?.data?.md5) {
+      if (!res?.qr) {
         return { ok: false as const, code: "invalid_credentials", message: "Bakong credentials មិនត្រឹមត្រូវ" };
       }
     } catch (e) {
