@@ -114,12 +114,49 @@ function GamesTab() {
   }, []);
   useEffect(() => { loadGames(); }, [loadGames]);
 
+  const [uploadPct, setUploadPct] = useState<number | null>(null);
   const uploadFile = async (gameId: string, file: File): Promise<{ path: string; size: number } | null> => {
     const safe = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
     const path = `${gameId}/${Date.now()}_${safe}`;
-    const { error } = await supabase.storage.from("game-files").upload(path, file, { upsert: true });
-    if (error) { showToast(`Upload: ${error.message}`); return null; }
-    return { path, size: file.size };
+    const RESUMABLE_THRESHOLD = 6 * 1024 * 1024; // 6MB
+    if (file.size <= RESUMABLE_THRESHOLD) {
+      const { error } = await supabase.storage.from("game-files").upload(path, file, { upsert: true, contentType: file.type || "application/octet-stream" });
+      if (error) { showToast(`Upload: ${error.message}`); return null; }
+      return { path, size: file.size };
+    }
+    // Resumable upload via TUS for large files
+    const { tus } = await import("tus-js-client");
+    const { data: sess } = await supabase.auth.getSession();
+    const token = sess.session?.access_token;
+    if (!token) { showToast("Upload: not authenticated"); return null; }
+    const projectUrl = (import.meta as any).env.VITE_SUPABASE_URL as string;
+    return await new Promise((resolve) => {
+      setUploadPct(0);
+      const upload = new tus.Upload(file, {
+        endpoint: `${projectUrl}/storage/v1/upload/resumable`,
+        retryDelays: [0, 1000, 3000, 5000, 10000],
+        headers: {
+          authorization: `Bearer ${token}`,
+          "x-upsert": "true",
+        },
+        uploadDataDuringCreation: true,
+        removeFingerprintOnSuccess: true,
+        metadata: {
+          bucketName: "game-files",
+          objectName: path,
+          contentType: file.type || "application/octet-stream",
+          cacheControl: "3600",
+        },
+        chunkSize: 6 * 1024 * 1024,
+        onError: (err: Error) => { setUploadPct(null); showToast(`Upload: ${err.message}`); resolve(null); },
+        onProgress: (sent: number, total: number) => { setUploadPct(Math.round((sent / total) * 100)); },
+        onSuccess: () => { setUploadPct(null); resolve({ path, size: file.size }); },
+      });
+      upload.findPreviousUploads().then((prev: any[]) => {
+        if (prev.length) upload.resumeFromPreviousUpload(prev[0]);
+        upload.start();
+      });
+    });
   };
 
   const updateGame = async (id: string, patch: Partial<GameRow>) => {
