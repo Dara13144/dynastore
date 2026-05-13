@@ -96,6 +96,99 @@ function removePendingPayment(storageKey: string) {
   writePendingPayments(next);
 }
 
+function PendingTopupsPanel({ onResume }: { onResume: (pack: CoinPack) => void }) {
+  const [entries, setEntries] = useState<PendingPaymentEntry[]>([]);
+  const [now, setNow] = useState(() => Date.now());
+
+  const refresh = () => {
+    const list = Object.values(prunePendingPayments())
+      .filter((e) => e.kind === "topup" && e.packId)
+      .sort((a, b) => (b.updatedAt || b.createdAt) - (a.updatedAt || a.createdAt));
+    setEntries(list);
+  };
+
+  useEffect(() => {
+    refresh();
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === PENDING_PAYMENTS_STORAGE_KEY || e.key === null) refresh();
+    };
+    const onVis = () => { if (document.visibilityState === "visible") refresh(); };
+    window.addEventListener("storage", onStorage);
+    document.addEventListener("visibilitychange", onVis);
+    const tick = window.setInterval(() => { setNow(Date.now()); refresh(); }, 1000);
+    return () => {
+      window.removeEventListener("storage", onStorage);
+      document.removeEventListener("visibilitychange", onVis);
+      window.clearInterval(tick);
+    };
+  }, []);
+
+  if (entries.length === 0) return null;
+  const latest = entries[0];
+  const latestPack = COIN_PACKS.find((p) => p.id === latest.packId);
+
+  const fmtRemaining = (expiresAt: number) => {
+    const ms = Math.max(0, expiresAt - now);
+    const m = Math.floor(ms / 60000);
+    const s = Math.floor((ms % 60000) / 1000);
+    return `${m}:${s.toString().padStart(2, "0")}`;
+  };
+
+  return (
+    <section className="container mx-auto px-4 py-4">
+      <div className="glass rounded-2xl border border-border/60 p-4 shadow-[var(--shadow-card)]">
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
+          <div className="flex items-center gap-2">
+            <Clock className="h-4 w-4 text-primary" />
+            <h3 className="text-sm font-semibold">Pending Bakong Topups ({entries.length})</h3>
+          </div>
+          {latestPack && (
+            <button
+              onClick={() => onResume(latestPack)}
+              className="inline-flex items-center gap-2 rounded-full bg-primary px-4 py-1.5 text-xs font-semibold text-primary-foreground hover:opacity-90"
+            >
+              <RefreshCw className="h-3.5 w-3.5" /> Resume latest
+            </button>
+          )}
+        </div>
+        <ul className="space-y-2">
+          {entries.map((e) => {
+            const pack = COIN_PACKS.find((p) => p.id === e.packId);
+            return (
+              <li key={e.storageKey} className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-background/40 px-3 py-2 text-xs">
+                <div className="flex items-center gap-2 min-w-0">
+                  <Coins className="h-3.5 w-3.5 text-primary shrink-0" />
+                  <span className="font-medium truncate">{pack?.name ?? e.packId}</span>
+                  <span className="text-muted-foreground">· {e.coins} coins</span>
+                  <span className="text-muted-foreground hidden sm:inline">· md5 {e.md5.slice(0, 8)}…</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-muted-foreground tabular-nums">{fmtRemaining(e.expiresAt)}</span>
+                  {pack ? (
+                    <button
+                      onClick={() => onResume(pack)}
+                      className="rounded-full border border-border/70 px-3 py-1 hover:bg-accent"
+                    >
+                      Resume
+                    </button>
+                  ) : null}
+                  <button
+                    onClick={() => { removePendingPayment(e.storageKey); refresh(); }}
+                    className="rounded-full p-1 text-muted-foreground hover:text-destructive"
+                    aria-label="Discard"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      </div>
+    </section>
+  );
+}
+
 function Page() {
   const [cartOpen, setCartOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -120,6 +213,7 @@ function Page() {
     <div className="min-h-screen">
       <Header onCart={() => setCartOpen(true)} onSettings={() => setSettingsOpen(true)} />
       <Hero />
+      <PendingTopupsPanel onResume={(p) => setPaymentPack(p)} />
       <CoinShop onBuyPack={(p) => setPaymentPack(p)} />
       <GamesSection onToast={showToast} onOpenCart={() => setCartOpen(true)} />
       <DealsBanner />
