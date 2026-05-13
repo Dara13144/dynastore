@@ -787,13 +787,11 @@ function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () 
     if (Date.now() >= tx.expiresAt) { setStatus("expired"); return; }
     const checkingMd5 = tx.md5;
     setStatus("verifying");
+    pushEvent({ kind: "bakong", label: "Manual verify started" });
     try {
       const r = await checkPayment({ data: { md5: checkingMd5 } });
       setLastChecked(Date.now());
       setPollTick((n) => n + 1);
-      // Validate against the LIVE active QR (not the closure snapshot) so a
-      // late response from a previously-displayed KHQR cannot mark the new
-      // one as paid or trigger the auto-close receipt.
       let mismatched = false;
       let expired = false;
       setTx((cur) => {
@@ -802,13 +800,20 @@ function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () 
         if (r.status === "paid") {
           setStatus("paid");
           setPaidAt(Date.now());
-          setPaidInfo({ bakongRef: (r as any).bakongRef ?? null, newBalance: (r as any).newBalance ?? null, creditedNow: !!(r as any).creditedNow });
+          const ref = (r as any).bakongRef ?? null;
+          const nb = (r as any).newBalance ?? null;
+          const cn = !!(r as any).creditedNow;
+          setPaidInfo({ bakongRef: ref, newBalance: nb, creditedNow: cn });
+          pushEvent({ kind: "bakong", label: "Bakong check: SUCCESS", detail: `responseCode=${(r as any).responseCode ?? 0}${ref ? ` · ref ${String(ref).slice(0, 14)}…` : ""}` });
+          pushEvent({ kind: "credited", label: cn ? `Wallet credited (+${cur.coins})` : "Already credited (idempotent)", detail: nb != null ? `new balance ${nb} Coins` : undefined });
           onToast(`ការបង់ប្រាក់ជោគជ័យ ✓ — បន្ថែម ${cur.coins.toLocaleString()} Coins`);
           refresh();
         } else if (r.status === "expired") {
           setStatus("expired");
+          pushEvent({ kind: "expired", label: "MD5 expired (server)" });
         } else {
           setStatus("qr");
+          pushEvent({ kind: "bakong", label: "Bakong check: pending", detail: `responseCode=${(r as any).responseCode ?? "—"}` });
           onToast("មិនទាន់ទទួលការទូទាត់នៅឡើយទេ");
         }
         return cur;
@@ -820,7 +825,7 @@ function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () 
       } else if (expired) {
         setStatus("expired");
       }
-    } catch (e: any) { setStatus("qr"); onToast(e?.message || "ផ្ទៀងផ្ទាត់បរាជ័យ"); }
+    } catch (e: any) { setStatus("qr"); pushEvent({ kind: "error", label: "Manual verify error", detail: e?.message }); onToast(e?.message || "ផ្ទៀងផ្ទាត់បរាជ័យ"); }
   };
 
   return (
