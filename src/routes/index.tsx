@@ -96,6 +96,83 @@ function removePendingPayment(storageKey: string) {
   writePendingPayments(next);
 }
 
+function BakongConfigBanner() {
+  const { authed } = useStore();
+  const getMerchantInfo = useServerFn(getMerchantInfoFn);
+  const [info, setInfo] = useState<Awaited<ReturnType<typeof getMerchantInfoFn>> | null>(null);
+  const [fetchErr, setFetchErr] = useState<string | null>(null);
+  const [dismissed, setDismissed] = useState(false);
+
+  const load = () => {
+    setFetchErr(null);
+    getMerchantInfo()
+      .then(setInfo)
+      .catch((e: any) => setFetchErr(e?.message || "Failed to load Bakong config"));
+  };
+
+  useEffect(() => {
+    if (!authed) { setInfo(null); return; }
+    load();
+  }, [authed]);
+
+  if (!authed || dismissed) return null;
+
+  if (fetchErr) {
+    return (
+      <section className="container mx-auto px-4 pt-4">
+        <div className="rounded-2xl border border-destructive/40 bg-destructive/10 p-4 flex items-start gap-3">
+          <AlertTriangle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
+          <div className="flex-1 text-sm">
+            <div className="font-semibold text-destructive">Bakong config check failed</div>
+            <div className="text-muted-foreground mt-1 break-words">{fetchErr}</div>
+          </div>
+          <button onClick={load} className="text-xs rounded-full border px-3 py-1 hover:bg-accent">Retry</button>
+        </div>
+      </section>
+    );
+  }
+
+  const issues = info?.configIssues ?? [];
+  if (issues.length === 0) return null;
+  const hasError = issues.some((i) => i.severity === "error");
+
+  return (
+    <section className="container mx-auto px-4 pt-4">
+      <div className={`rounded-2xl border p-4 ${hasError ? "border-destructive/40 bg-destructive/10" : "border-yellow-500/40 bg-yellow-500/10"}`}>
+        <div className="flex items-start gap-3">
+          <AlertTriangle className={`h-5 w-5 shrink-0 mt-0.5 ${hasError ? "text-destructive" : "text-yellow-500"}`} />
+          <div className="flex-1 min-w-0">
+            <div className={`font-semibold text-sm ${hasError ? "text-destructive" : "text-yellow-600 dark:text-yellow-400"}`}>
+              {hasError ? "Bakong KHQR is not ready" : "Bakong configuration warnings"}
+            </div>
+            <ul className="mt-2 space-y-1 text-xs">
+              {issues.map((i, idx) => (
+                <li key={idx} className="flex flex-wrap gap-x-2">
+                  <span className={`font-mono ${i.severity === "error" ? "text-destructive" : "text-yellow-600 dark:text-yellow-400"}`}>
+                    {i.key}
+                  </span>
+                  <span className="text-muted-foreground">{i.message}</span>
+                </li>
+              ))}
+            </ul>
+            {hasError && (
+              <p className="mt-2 text-xs text-muted-foreground">
+                Set the missing values in Backend → Secrets, then click Retry. Topup will fail until all errors are resolved.
+              </p>
+            )}
+          </div>
+          <div className="flex flex-col gap-1">
+            <button onClick={load} className="text-xs rounded-full border px-3 py-1 hover:bg-accent">Retry</button>
+            {!hasError && (
+              <button onClick={() => setDismissed(true)} className="text-xs rounded-full px-3 py-1 text-muted-foreground hover:bg-accent">Dismiss</button>
+            )}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function PendingTopupsPanel({ onResume }: { onResume: (pack: CoinPack) => void }) {
   const [entries, setEntries] = useState<PendingPaymentEntry[]>([]);
   const [now, setNow] = useState(() => Date.now());
