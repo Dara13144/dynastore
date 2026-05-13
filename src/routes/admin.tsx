@@ -3,10 +3,12 @@ import { useEffect, useState, useCallback } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { useStore } from "@/lib/store";
-import { ArrowLeft, Plus, Eye, EyeOff, Trash2, Save, Loader2, Users, Gamepad2, FileArchive, Settings as SettingsIcon, Receipt, Pencil, History, ChevronDown, ChevronUp, Search } from "lucide-react";
+import { ArrowLeft, Plus, Eye, EyeOff, Trash2, Save, Loader2, Users, Gamepad2, FileArchive, Settings as SettingsIcon, Receipt, Pencil, History, ChevronDown, ChevronUp, Search, Inbox, ExternalLink, Check, X as XIcon } from "lucide-react";
 import { StoreProvider } from "@/lib/store";
 import { getAppSettings, updateAppSettings, adminSetUserBalance, listAllTransactions, listBalanceChanges, listSettingsAudit } from "@/lib/admin.functions";
+import { adminListManualTopups, adminApproveManualTopup, adminRejectManualTopup, adminGetReceiptUrl } from "@/lib/topup.functions";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/admin")({
   head: () => ({ meta: [{ title: "Admin — Dyna Store" }] }),
@@ -29,7 +31,7 @@ function AdminPage() {
   const { authed, loading } = useStore();
   const navigate = useNavigate();
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
-  const [tab, setTab] = useState<"games" | "users" | "payments" | "settings">("games");
+  const [tab, setTab] = useState<"games" | "users" | "payments" | "topups" | "settings">("games");
 
   useEffect(() => {
     if (loading) return;
@@ -69,6 +71,7 @@ function AdminPage() {
             <TabBtn active={tab === "games"} onClick={() => setTab("games")} icon={<Gamepad2 className="h-3.5 w-3.5" />} label="ហ្គេម" />
             <TabBtn active={tab === "users"} onClick={() => setTab("users")} icon={<Users className="h-3.5 w-3.5" />} label="អ្នកប្រើ" />
             <TabBtn active={tab === "payments"} onClick={() => setTab("payments")} icon={<Receipt className="h-3.5 w-3.5" />} label="ការទូទាត់" />
+            <TabBtn active={tab === "topups"} onClick={() => setTab("topups")} icon={<Inbox className="h-3.5 w-3.5" />} label="សំណើបញ្ចូលលុយ" />
             <TabBtn active={tab === "settings"} onClick={() => setTab("settings")} icon={<SettingsIcon className="h-3.5 w-3.5" />} label="កំណត់" />
           </nav>
         </div>
@@ -78,6 +81,7 @@ function AdminPage() {
         {tab === "games" && <GamesTab />}
         {tab === "users" && <UsersTab />}
         {tab === "payments" && <PaymentsTab />}
+        {tab === "topups" && <TopupRequestsTab />}
         {tab === "settings" && <SettingsTab />}
       </main>
     </div>
@@ -822,4 +826,118 @@ export function StatusPill({ s }: { s: string }) {
     : s === "pending" ? "bg-amber-500/15 text-amber-400"
     : "bg-muted text-muted-foreground";
   return <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold ${cls}`}>{s}</span>;
+}
+
+/* ============ MANUAL TOPUP REQUESTS TAB ============ */
+type TopupReq = {
+  id: string; user_id: string; user_name: string; amount_usd: number; coins: number;
+  receipt_path: string; note: string | null; status: "pending" | "approved" | "rejected";
+  reject_reason: string | null; created_at: string; reviewed_at: string | null;
+};
+
+function TopupRequestsTab() {
+  const [rows, setRows] = useState<TopupReq[]>([]);
+  const [busy, setBusy] = useState(true);
+  const [filter, setFilter] = useState<"pending" | "all">("pending");
+  const list = useServerFn(adminListManualTopups);
+  const approve = useServerFn(adminApproveManualTopup);
+  const reject = useServerFn(adminRejectManualTopup);
+  const sign = useServerFn(adminGetReceiptUrl);
+  const [rejectFor, setRejectFor] = useState<string | null>(null);
+  const [reason, setReason] = useState("");
+
+  const refresh = useCallback(async () => {
+    setBusy(true);
+    try { const r = await list({}); setRows(r as TopupReq[]); }
+    catch (e) { toast.error(e instanceof Error ? e.message : "បរាជ័យ"); }
+    finally { setBusy(false); }
+  }, [list]);
+  useEffect(() => { refresh(); }, [refresh]);
+
+  const view = async (path: string) => {
+    try { const { url } = await sign({ data: { receiptPath: path } }); window.open(url, "_blank", "noopener"); }
+    catch (e) { toast.error(e instanceof Error ? e.message : "បរាជ័យ"); }
+  };
+  const doApprove = async (id: string) => {
+    try { const r = await approve({ data: { id } });
+      if (r.ok) { toast.success(`បានបន្ថែម — Balance ថ្មី: ${r.balance.toLocaleString()}`); await refresh(); }
+      else toast.error(r.message || "បរាជ័យ");
+    } catch (e) { toast.error(e instanceof Error ? e.message : "បរាជ័យ"); }
+  };
+  const doReject = async () => {
+    if (!rejectFor) return;
+    try { await reject({ data: { id: rejectFor, reason } }); toast.success("បានបដិសេធ"); setRejectFor(null); setReason(""); await refresh(); }
+    catch (e) { toast.error(e instanceof Error ? e.message : "បរាជ័យ"); }
+  };
+
+  const filtered = filter === "pending" ? rows.filter((r) => r.status === "pending") : rows;
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center gap-2">
+        <button onClick={() => setFilter("pending")} className={`rounded-full px-3 py-1.5 text-xs font-semibold ${filter === "pending" ? "bg-primary text-primary-foreground" : "bg-muted/30"}`}>រង់ចាំ ({rows.filter((r) => r.status === "pending").length})</button>
+        <button onClick={() => setFilter("all")} className={`rounded-full px-3 py-1.5 text-xs font-semibold ${filter === "all" ? "bg-primary text-primary-foreground" : "bg-muted/30"}`}>ទាំងអស់</button>
+      </div>
+      {busy ? (
+        <div className="text-center py-16 text-muted-foreground"><Loader2 className="h-5 w-5 animate-spin inline" /></div>
+      ) : filtered.length === 0 ? (
+        <div className="text-center py-16 text-sm text-muted-foreground">មិនមានសំណើ</div>
+      ) : (
+        <div className="rounded-2xl glass overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-muted/30 text-xs uppercase tracking-wider text-muted-foreground">
+                <tr>
+                  <th className="text-left px-4 py-3">ពេលវេលា</th>
+                  <th className="text-left px-4 py-3">អ្នកប្រើ</th>
+                  <th className="text-right px-4 py-3">USD</th>
+                  <th className="text-right px-4 py-3">Balance</th>
+                  <th className="text-left px-4 py-3">កំណត់ចំណាំ</th>
+                  <th className="text-center px-4 py-3">ស្ថានភាព</th>
+                  <th className="text-right px-4 py-3">សកម្មភាព</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map((t) => (
+                  <tr key={t.id} className="border-t border-border/60 hover:bg-muted/10">
+                    <td className="px-4 py-3 text-xs">{new Date(t.created_at).toLocaleString()}</td>
+                    <td className="px-4 py-3">{t.user_name}</td>
+                    <td className="px-4 py-3 text-right">${Number(t.amount_usd).toFixed(2)}</td>
+                    <td className="px-4 py-3 text-right font-semibold text-primary">{t.coins.toLocaleString()}</td>
+                    <td className="px-4 py-3 text-xs text-muted-foreground max-w-[200px] truncate" title={t.note || ""}>{t.note || "—"}{t.reject_reason && <div className="text-destructive mt-0.5">បដិសេធ: {t.reject_reason}</div>}</td>
+                    <td className="px-4 py-3 text-center"><StatusPill s={t.status} /></td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center justify-end gap-1.5">
+                        <button onClick={() => view(t.receipt_path)} className="inline-flex items-center gap-1 rounded-full border border-border px-2.5 py-1 text-[11px] hover:bg-accent" title="មើលវិក័យបត្រ"><ExternalLink className="h-3 w-3" /> មើល</button>
+                        {t.status === "pending" && (
+                          <>
+                            <button onClick={() => doApprove(t.id)} className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 text-emerald-400 px-2.5 py-1 text-[11px] hover:bg-emerald-500/25"><Check className="h-3 w-3" /> អនុម័ត</button>
+                            <button onClick={() => { setRejectFor(t.id); setReason(""); }} className="inline-flex items-center gap-1 rounded-full bg-destructive/15 text-destructive px-2.5 py-1 text-[11px] hover:bg-destructive/25"><XIcon className="h-3 w-3" /> បដិសេធ</button>
+                          </>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      <AlertDialog open={!!rejectFor} onOpenChange={(o) => !o && setRejectFor(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>បដិសេធសំណើ?</AlertDialogTitle>
+            <AlertDialogDescription>បញ្ចូលមូលហេតុសម្រាប់អ្នកប្រើ (ស្រេចចិត្ត)។</AlertDialogDescription>
+          </AlertDialogHeader>
+          <input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="មូលហេតុ" className="w-full rounded-xl bg-input px-3 py-2 text-sm outline-none ring-1 ring-border focus:ring-primary" />
+          <AlertDialogFooter>
+            <AlertDialogCancel>បោះបង់</AlertDialogCancel>
+            <AlertDialogAction onClick={doReject} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">បដិសេធ</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
+  );
 }

@@ -2,7 +2,9 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import QRCode from "qrcode";
-import { Settings, LogIn, LogOut, Star, Send, Gamepad2, Sparkles, X, Plus, Library, Check, Loader2, AlertTriangle, RefreshCw, Wallet, Copy, ShieldCheck } from "lucide-react";
+import { Settings, LogIn, LogOut, Star, Send, Gamepad2, Sparkles, X, Plus, Library, Check, Loader2, AlertTriangle, RefreshCw, Wallet, Copy, ShieldCheck, Upload, Receipt as ReceiptIcon } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { submitManualTopup } from "@/lib/topup.functions";
 import { StoreProvider, useStore, type Game } from "@/lib/store";
 import { createTopup, checkTopup, purchaseGame } from "@/lib/payment.functions";
 import heroImg from "@/assets/hero-arcade.jpg";
@@ -189,14 +191,16 @@ function GameCard({ game, onToast, onTopup }: { game: Game; onToast: (m: string)
 
   return (
     <article className="group glass rounded-2xl border border-border/60 overflow-hidden transition hover:-translate-y-0.5 hover:shadow-[var(--shadow-card)]">
-      <div className="relative aspect-[16/10] overflow-hidden">
+      <Link to="/games/$id" params={{ id: game.id }} className="block relative aspect-[16/10] overflow-hidden">
         <img src={game.image} alt={game.title} className="h-full w-full object-cover transition group-hover:scale-105" />
         {game.badge && <span className="absolute top-3 left-3 rounded-full bg-primary px-2.5 py-0.5 text-[10px] font-semibold text-primary-foreground">{game.badge}</span>}
         {owned && <span className="absolute top-3 right-3 rounded-full bg-emerald-500 px-2.5 py-0.5 text-[10px] font-semibold text-white inline-flex items-center gap-1"><Check className="h-3 w-3" /> ជាកម្មសិទ្ធ</span>}
-      </div>
+      </Link>
       <div className="p-4">
         <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{game.category}</div>
-        <h3 className="font-display text-lg mt-0.5">{game.title}</h3>
+        <Link to="/games/$id" params={{ id: game.id }} className="block">
+          <h3 className="font-display text-lg mt-0.5 hover:text-primary transition">{game.title}</h3>
+        </Link>
         <p className="text-xs text-muted-foreground mt-1.5 line-clamp-2">{game.description}</p>
         <div className="mt-3 space-y-2">
           <div className="flex items-center justify-between text-xs">
@@ -348,6 +352,7 @@ type TopupStage = "choose" | "creating" | "qr" | "checking" | "paid" | "expired"
 function TopupModal({ onClose, onToast }: { onClose: () => void; onToast: (m: string) => void }) {
   const { authed, balance, refreshWallet } = useStore();
   const [amount, setAmount] = useState(5);
+  const [method, setMethod] = useState<"khqr" | "manual">("khqr");
   const [stage, setStage] = useState<TopupStage>("choose");
   const [qr, setQr] = useState<string | null>(null);
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
@@ -484,7 +489,11 @@ function TopupModal({ onClose, onToast }: { onClose: () => void; onToast: (m: st
 
         {stage === "choose" && (
           <div className="p-5 space-y-4">
-            <p className="text-xs text-muted-foreground">1 USD = 1 Balance។ បង់ប្រាក់ភ្លាមៗតាម Bakong KHQR។ QR មានសុពលភាព 5 នាទី។</p>
+            <div className="flex gap-1 rounded-xl bg-muted/30 p-1">
+              <button onClick={() => setMethod("khqr")} className={`flex-1 rounded-lg px-3 py-1.5 text-xs font-semibold ${method === "khqr" ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}>KHQR ស្វ័យប្រវត្តិ</button>
+              <button onClick={() => setMethod("manual")} className={`flex-1 rounded-lg px-3 py-1.5 text-xs font-semibold inline-flex items-center justify-center gap-1 ${method === "manual" ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}><Upload className="h-3 w-3" /> ផ្ញើវិក័យបត្រ</button>
+            </div>
+            <p className="text-xs text-muted-foreground">{method === "khqr" ? "1 USD = 1 Balance។ បង់ប្រាក់ភ្លាមៗតាម Bakong KHQR។ QR មានសុពលភាព 5 នាទី។" : "បង់ប្រាក់ដោយដៃ បន្ទាប់មកផ្ទុកវិក័យបត្រ — Admin នឹងផ្ទៀងផ្ទាត់ និងបន្ថែម Balance។"}</p>
             <div className="grid grid-cols-5 gap-2">
               {PRESETS.map((p) => (
                 <button key={p} onClick={() => setAmount(p)} className={`rounded-xl border px-2 py-2 text-sm font-semibold ${amount === p ? "border-primary bg-primary/10 text-primary" : "border-border hover:bg-accent"}`}>${p}</button>
@@ -499,9 +508,13 @@ function TopupModal({ onClose, onToast }: { onClose: () => void; onToast: (m: st
               <span>នឹងទទួលបាន</span>
               <span className="font-semibold inline-flex items-center gap-1 text-primary"><Wallet className="h-3.5 w-3.5" /> {amount.toLocaleString()}</span>
             </div>
-            <button onClick={() => start()} className="w-full rounded-xl bg-primary py-2.5 text-sm font-semibold text-primary-foreground hover:opacity-90 inline-flex items-center justify-center gap-2">
-              បង្កើត KHQR
-            </button>
+            {method === "khqr" ? (
+              <button onClick={() => start()} className="w-full rounded-xl bg-primary py-2.5 text-sm font-semibold text-primary-foreground hover:opacity-90 inline-flex items-center justify-center gap-2">
+                បង្កើត KHQR
+              </button>
+            ) : (
+              <ManualTopupForm amount={amount} onClose={onClose} onToast={onToast} />
+            )}
           </div>
         )}
 
@@ -624,6 +637,51 @@ function TopupModal({ onClose, onToast }: { onClose: () => void; onToast: (m: st
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+function ManualTopupForm({ amount, onClose, onToast }: { amount: number; onClose: () => void; onToast: (m: string) => void }) {
+  const [file, setFile] = useState<File | null>(null);
+  const [note, setNote] = useState("");
+  const [busy, setBusy] = useState(false);
+  const submit = useServerFn(submitManualTopup);
+
+  const onSubmit = async () => {
+    if (!file) { onToast("សូមជ្រើសរើសរូបវិក័យបត្រ"); return; }
+    if (file.size > 8 * 1024 * 1024) { onToast("ទំហំធំជាង 8MB"); return; }
+    setBusy(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("សូមចូលគណនី");
+      const ext = file.name.split(".").pop() || "jpg";
+      const path = `${user.id}/${crypto.randomUUID()}.${ext}`;
+      const up = await supabase.storage.from("topup-receipts").upload(path, file, { contentType: file.type, upsert: false });
+      if (up.error) throw new Error(up.error.message);
+      await submit({ data: { amountUsd: amount, receiptPath: path, note } });
+      onToast("បានផ្ញើសំណើ — រង់ចាំ Admin អនុម័ត");
+      onClose();
+    } catch (e) { onToast(e instanceof Error ? e.message : "បរាជ័យ"); }
+    finally { setBusy(false); }
+  };
+
+  return (
+    <div className="space-y-3">
+      <label className="block">
+        <span className="text-xs text-muted-foreground">រូបវិក័យបត្រ (JPG/PNG/PDF, max 8MB)</span>
+        <input type="file" accept="image/*,application/pdf" onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+          className="mt-1 block w-full text-xs file:mr-3 file:rounded-lg file:border-0 file:bg-primary file:text-primary-foreground file:px-3 file:py-1.5 file:text-xs file:font-semibold" />
+        {file && <div className="mt-1 text-[11px] text-muted-foreground inline-flex items-center gap-1"><ReceiptIcon className="h-3 w-3" /> {file.name} ({(file.size / 1024).toFixed(0)} KB)</div>}
+      </label>
+      <label className="block">
+        <span className="text-xs text-muted-foreground">កំណត់ចំណាំ (ស្រេចចិត្ត)</span>
+        <textarea value={note} onChange={(e) => setNote(e.target.value)} maxLength={500} rows={2}
+          className="mt-1 w-full rounded-xl bg-input px-3 py-2 text-sm outline-none ring-1 ring-border focus:ring-primary" />
+      </label>
+      <button onClick={onSubmit} disabled={busy || !file} className="w-full rounded-xl bg-primary py-2.5 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-60 inline-flex items-center justify-center gap-2">
+        {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+        ផ្ញើសំណើ
+      </button>
     </div>
   );
 }

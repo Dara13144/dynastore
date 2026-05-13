@@ -1,0 +1,24 @@
+import { createServerFn } from "@tanstack/react-start";
+import { z } from "zod";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { supabaseAdmin } from "@/integrations/supabase/client.server";
+
+export const getGameDownloadUrl = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i) => z.object({ gameId: z.string().min(1).max(64) }).parse(i))
+  .handler(async ({ data, context }) => {
+    const { userId } = context;
+    const { data: owned } = await supabaseAdmin
+      .from("library").select("id").eq("user_id", userId).eq("game_id", data.gameId).eq("kind", "owned").maybeSingle();
+    if (!owned) throw new Error("not_owned");
+
+    const { data: game } = await supabaseAdmin
+      .from("games").select("id, title, file_path, file_size_bytes").eq("id", data.gameId).maybeSingle();
+    if (!game?.file_path) throw new Error("file_unavailable");
+
+    const { data: signed, error } = await supabaseAdmin.storage
+      .from("game-files").createSignedUrl(game.file_path, 60 * 10, { download: `${game.title}.zip` });
+    if (error || !signed) throw new Error(error?.message || "sign_failed");
+
+    return { url: signed.signedUrl, sizeBytes: game.file_size_bytes ?? null, filePath: game.file_path };
+  });
