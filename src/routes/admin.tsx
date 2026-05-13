@@ -6,7 +6,7 @@ import { useStore } from "@/lib/store";
 import { ArrowLeft, Plus, Eye, EyeOff, Trash2, Save, Loader2, Users, Gamepad2, FileArchive, Settings as SettingsIcon, Pencil, History, ChevronDown, ChevronUp, Search, Check, Wallet, X } from "lucide-react";
 import { StoreProvider } from "@/lib/store";
 import { getAppSettings, updateAppSettings, adminSetUserBalance, listBalanceChanges, listSettingsAudit, adminSetUserRole } from "@/lib/admin.functions";
-import { validateGameFile } from "@/lib/validate-game-file";
+import { validateGameFile, validateGameFileUrl } from "@/lib/validate-game-file";
 import { submitCreateGame } from "@/lib/create-game";
 import { adminListTopupRequests, adminApproveTopup, adminRejectTopup } from "@/lib/topup.functions";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -125,6 +125,7 @@ function GamesTab() {
   });
   const [draftFile, setDraftFile] = useState<File | null>(null);
   const [draftFileError, setDraftFileError] = useState<string | null>(null);
+  const [draftUrlError, setDraftUrlError] = useState<string | null>(null);
 
   const showToast = (m: string) => { setToast(m); setTimeout(() => setToast(null), 2200); };
 
@@ -252,6 +253,7 @@ function GamesTab() {
     setDraft({ id: "", title: "", category: "", description: "", badge: "", price_coins: 0, visible: true, image_url: "", file_path: null, file_size_bytes: null });
     setDraftFile(null);
     setDraftFileError(null);
+    setDraftUrlError(null);
     loadGames();
     showToast("បន្ថែមរួច");
   };
@@ -359,11 +361,18 @@ function GamesTab() {
                 type="url"
                 placeholder="https://… link to zip/installer"
                 value={draft.file_path ?? ""}
-                onChange={(e) => setDraft({ ...draft, file_path: e.target.value || null })}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  setDraft({ ...draft, file_path: v || null });
+                  setDraftUrlError(v.trim() ? validateGameFileUrl(v) : null);
+                }}
                 disabled={!!draftFile}
                 className="w-full rounded-lg bg-muted/40 px-3 py-2 text-xs outline-none focus:ring-1 focus:ring-primary disabled:opacity-50"
               />
-              {draft.file_path && !draftFile && (
+              {draftUrlError && !draftFile && (
+                <span className="text-[10px] text-destructive mt-1 block">{draftUrlError}</span>
+              )}
+              {draft.file_path && !draftFile && !draftUrlError && (
                 <span className="text-[10px] text-emerald-400 mt-1 block">តំណបានកំណត់ — នឹងរក្សាទុកជា file_path</span>
               )}
             </label>
@@ -372,7 +381,7 @@ function GamesTab() {
             <input type="checkbox" checked={draft.visible} onChange={(e) => setDraft({ ...draft, visible: e.target.checked })} /> បង្ហាញលើ website
           </label>
           <div className="flex gap-2">
-            <button disabled={busy || !!draftFileError} onClick={createGame} className="rounded-full bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground disabled:opacity-50">
+            <button disabled={busy || !!draftFileError || !!draftUrlError} onClick={createGame} className="rounded-full bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground disabled:opacity-50">
               {busy ? "កំពុងផ្ទុកឡើង…" : "រក្សាទុក"}
             </button>
             <button onClick={() => setCreating(false)} className="rounded-full border border-border px-4 py-2 text-xs">បោះបង់</button>

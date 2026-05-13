@@ -1,6 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import {
   validateGameFile,
+  validateGameFileUrl,
+  GAME_FILE_URL_ERRORS,
   MIN_GAME_FILE_BYTES,
   MAX_GAME_FILE_BYTES,
   MIN_GAME_FILE_GB,
@@ -188,5 +190,76 @@ describe("createGame integration - boundary file sizes", () => {
     expect(r).toEqual({ ok: true, error: null });
     expect(h.upload).not.toHaveBeenCalled();
     expect(h.insert).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("validateGameFileUrl - exact error messages", () => {
+  // Imported inline to avoid touching the existing import block.
+  // (validateGameFileUrl + GAME_FILE_URL_ERRORS imported at top)
+
+  it("returns null for a valid https zip URL", () => {
+    expect(validateGameFileUrl("https://cdn.example.com/games/g1.zip")).toBeNull();
+  });
+  it("returns null for a valid http rar URL", () => {
+    expect(validateGameFileUrl("http://files.example.com/path/to/game.rar")).toBeNull();
+  });
+  it("accepts each allowed extension over https", () => {
+    for (const ext of [".zip", ".rar", ".7z", ".tar", ".gz", ".tgz"]) {
+      expect(validateGameFileUrl(`https://x.example.com/g${ext}`)).toBeNull();
+    }
+  });
+  it("accepts uppercase extensions in the URL path", () => {
+    expect(validateGameFileUrl("https://x.example.com/GAME.ZIP")).toBeNull();
+    expect(validateGameFileUrl("https://x.example.com/build.TAR.GZ")).toBeNull();
+  });
+
+  it("rejects empty string with EMPTY message", () => {
+    expect(validateGameFileUrl("")).toBe(GAME_FILE_URL_ERRORS.EMPTY);
+    expect(GAME_FILE_URL_ERRORS.EMPTY).toBe("តំណមិនអាចទទេ");
+  });
+  it("rejects whitespace-only with EMPTY message", () => {
+    expect(validateGameFileUrl("   ")).toBe(GAME_FILE_URL_ERRORS.EMPTY);
+  });
+  it("rejects null/undefined with EMPTY message", () => {
+    expect(validateGameFileUrl(null)).toBe(GAME_FILE_URL_ERRORS.EMPTY);
+    expect(validateGameFileUrl(undefined)).toBe(GAME_FILE_URL_ERRORS.EMPTY);
+  });
+
+  it("rejects a non-URL string with INVALID_URL message", () => {
+    expect(validateGameFileUrl("not a url")).toBe(GAME_FILE_URL_ERRORS.INVALID_URL);
+    expect(GAME_FILE_URL_ERRORS.INVALID_URL).toBe("តំណមិនត្រឹមត្រូវ");
+  });
+
+  it("rejects ftp:// with BAD_PROTOCOL message", () => {
+    expect(validateGameFileUrl("ftp://x.example.com/g.zip")).toBe(GAME_FILE_URL_ERRORS.BAD_PROTOCOL);
+    expect(GAME_FILE_URL_ERRORS.BAD_PROTOCOL).toBe("តម្រូវ http ឬ https ប៉ុណ្ណោះ");
+  });
+  it("rejects javascript: with BAD_PROTOCOL message", () => {
+    expect(validateGameFileUrl("javascript:alert(1)")).toBe(GAME_FILE_URL_ERRORS.BAD_PROTOCOL);
+  });
+  it("rejects data: with BAD_PROTOCOL message", () => {
+    expect(validateGameFileUrl("data:application/zip;base64,AAAA")).toBe(GAME_FILE_URL_ERRORS.BAD_PROTOCOL);
+  });
+  it("rejects file: with BAD_PROTOCOL message", () => {
+    expect(validateGameFileUrl("file:///tmp/g.zip")).toBe(GAME_FILE_URL_ERRORS.BAD_PROTOCOL);
+  });
+
+  it("rejects http URL ending with .exe with BAD_EXTENSION message", () => {
+    expect(validateGameFileUrl("https://x.example.com/g.exe")).toBe(GAME_FILE_URL_ERRORS.BAD_EXTENSION);
+    expect(GAME_FILE_URL_ERRORS.BAD_EXTENSION).toBe(
+      "តំណត្រូវបញ្ចប់ដោយ .zip, .rar, .7z, .tar, .gz, .tgz",
+    );
+  });
+  it("rejects URL whose path has no extension", () => {
+    expect(validateGameFileUrl("https://x.example.com/games/")).toBe(GAME_FILE_URL_ERRORS.BAD_EXTENSION);
+  });
+  it("ignores query string when checking extension (extension must be in pathname)", () => {
+    expect(validateGameFileUrl("https://x.example.com/g.zip?token=abc")).toBeNull();
+    expect(validateGameFileUrl("https://x.example.com/download?file=g.zip")).toBe(
+      GAME_FILE_URL_ERRORS.BAD_EXTENSION,
+    );
+  });
+  it("trims surrounding whitespace before validating", () => {
+    expect(validateGameFileUrl("  https://x.example.com/g.zip  ")).toBeNull();
   });
 });

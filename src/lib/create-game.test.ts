@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { submitCreateGame, type CreateGameDeps, type GameDraft } from "./create-game";
-import { MIN_GAME_FILE_BYTES, MAX_GAME_FILE_BYTES } from "./validate-game-file";
+import { MIN_GAME_FILE_BYTES, MAX_GAME_FILE_BYTES, GAME_FILE_URL_ERRORS } from "./validate-game-file";
 
 /**
  * Integration tests for the real createGame submit path used by admin.tsx.
@@ -160,5 +160,55 @@ describe("submitCreateGame - valid path calls upload + insert exactly once", () 
       expect(r.reason).toBe("insert_failed");
       expect(r.message).toBe("duplicate id");
     }
+  });
+});
+
+describe("submitCreateGame - URL validation gates the insert", () => {
+  function deps() {
+    return {
+      uploadFile: vi.fn(async () => ({ path: "p", size: 0 })),
+      insertGame: vi.fn(async () => ({ error: null })),
+      onError: vi.fn(),
+    };
+  }
+  const draft = (file_url: string): GameDraft => ({
+    id: "g1", title: "G1", category: "", description: "", badge: "",
+    price_coins: 0, visible: true, image_url: "", file_url,
+  });
+
+  it("rejects ftp:// link with BAD_PROTOCOL message and no insert", async () => {
+    const d = deps();
+    const r = await submitCreateGame(draft("ftp://x.example.com/g.zip"), null, d);
+    expect(r.ok).toBe(false);
+    if (!r.ok) {
+      expect(r.reason).toBe("invalid_url");
+      expect(r.message).toBe(GAME_FILE_URL_ERRORS.BAD_PROTOCOL);
+    }
+    expect(d.insertGame).not.toHaveBeenCalled();
+    expect(d.onError).toHaveBeenCalledWith(GAME_FILE_URL_ERRORS.BAD_PROTOCOL);
+  });
+
+  it("rejects link with .exe with BAD_EXTENSION message and no insert", async () => {
+    const d = deps();
+    const r = await submitCreateGame(draft("https://x.example.com/g.exe"), null, d);
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.message).toBe(GAME_FILE_URL_ERRORS.BAD_EXTENSION);
+    expect(d.insertGame).not.toHaveBeenCalled();
+  });
+
+  it("rejects malformed URL with INVALID_URL message and no insert", async () => {
+    const d = deps();
+    const r = await submitCreateGame(draft("not a url"), null, d);
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.message).toBe(GAME_FILE_URL_ERRORS.INVALID_URL);
+    expect(d.insertGame).not.toHaveBeenCalled();
+  });
+
+  it("accepts valid https zip URL and inserts it as file_path", async () => {
+    const d = deps();
+    const url = "https://cdn.example.com/g.zip";
+    const r = await submitCreateGame(draft(url), null, d);
+    expect(r.ok).toBe(true);
+    expect(d.insertGame).toHaveBeenCalledWith(expect.objectContaining({ file_path: url }));
   });
 });

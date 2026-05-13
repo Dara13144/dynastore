@@ -15,3 +15,33 @@ export function validateGameFile(file: { name: string; size: number }): string |
   if (file.size > MAX_GAME_FILE_BYTES) return `ឯកសារធំពេក (${file.size} bytes) — អតិបរមា ${MAX_GAME_FILE_BYTES} bytes`;
   return null;
 }
+
+// Exact error messages for the URL input — exported so tests can assert them.
+export const GAME_FILE_URL_ERRORS = {
+  EMPTY: "តំណមិនអាចទទេ",
+  INVALID_URL: "តំណមិនត្រឹមត្រូវ",
+  BAD_PROTOCOL: "តម្រូវ http ឬ https ប៉ុណ្ណោះ",
+  BAD_EXTENSION: `តំណត្រូវបញ្ចប់ដោយ ${ALLOWED_GAME_FILE_EXTS.join(", ")}`,
+} as const;
+
+/**
+ * Validate an external link to a game archive.
+ * Rules: non-empty, parseable URL, http/https only, pathname ends with an allowed extension.
+ */
+export function validateGameFileUrl(raw: string | null | undefined): string | null {
+  const value = (raw ?? "").trim();
+  if (!value) return GAME_FILE_URL_ERRORS.EMPTY;
+  let url: URL;
+  try {
+    url = new URL(value);
+  } catch {
+    return GAME_FILE_URL_ERRORS.INVALID_URL;
+  }
+  if (url.protocol !== "http:" && url.protocol !== "https:") {
+    return GAME_FILE_URL_ERRORS.BAD_PROTOCOL;
+  }
+  const path = url.pathname.toLowerCase();
+  const ok = ALLOWED_GAME_FILE_EXTS.some((ext) => path.endsWith(ext));
+  if (!ok) return GAME_FILE_URL_ERRORS.BAD_EXTENSION;
+  return null;
+}
