@@ -709,6 +709,7 @@ function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () 
           if (r.status === "paid") {
             setStatus("paid");
             setPaidAt(Date.now());
+            setPaidInfo({ bakongRef: (r as any).bakongRef ?? null, newBalance: (r as any).newBalance ?? null, creditedNow: !!(r as any).creditedNow });
             onToast(`បានបន្ថែម ${cur.coins.toLocaleString()} Coins ✓`);
             refresh();
           } else if (r.status === "expired") {
