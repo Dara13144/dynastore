@@ -5,7 +5,7 @@ import { Settings, LogIn, LogOut, Star, Send, Gamepad2, Sparkles, X, Library, Ch
 import { supabase } from "@/integrations/supabase/client";
 import { StoreProvider, useStore, type Game } from "@/lib/store";
 import { purchaseGame } from "@/lib/payment.functions";
-import { TopupModal } from "@/components/TopupModal";
+
 import heroImg from "@/assets/hero-arcade.jpg";
 import logoD from "@/assets/dyna-logo.jpeg";
 
