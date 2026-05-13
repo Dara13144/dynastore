@@ -36,11 +36,13 @@ export const Route = createFileRoute("/")({
 function Page() {
   const [toast, setToast] = useState<string | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [topupOpen, setTopupOpen] = useState(false);
+  const { refreshWallet } = useStore();
   const showToast = (m: string) => { setToast(m); window.setTimeout(() => setToast(null), 2400); };
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <Header onSettings={() => setSettingsOpen(true)} />
+      <Header onSettings={() => setSettingsOpen(true)} onTopup={() => setTopupOpen(true)} />
       <main>
         <Hero />
         <GamesSection onToast={showToast} />
@@ -50,6 +52,13 @@ function Page() {
       <Footer />
 
       {settingsOpen && <SettingsModal onClose={() => setSettingsOpen(false)} onToast={showToast} />}
+      {topupOpen && (
+        <TopupModal
+          onClose={() => setTopupOpen(false)}
+          onCredited={() => { refreshWallet(); }}
+          onToast={showToast}
+        />
+      )}
 
       {toast && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[200] rounded-full bg-foreground text-background px-5 py-2 text-sm shadow-lg animate-in fade-in slide-in-from-bottom-2">
