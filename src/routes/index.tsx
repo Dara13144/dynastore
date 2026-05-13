@@ -223,7 +223,7 @@ function GameCard({ game, onToast, onTopup }: { game: Game; onToast: (m: string)
             </div>
           )}
           <div className="flex items-center justify-end gap-1.5">
-            <button onClick={wish} className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1.5 text-xs hover:bg-accent ${wished ? "border-primary text-primary" : "border-border"}`}>
+            <button onClick={wish} aria-label={wished ? `ដកចេញពីបញ្ជីចង់លេង — ${game.title}` : `បន្ថែមទៅបញ្ជីចង់លេង — ${game.title}`} aria-pressed={wished} className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1.5 text-xs hover:bg-accent ${wished ? "border-primary text-primary" : "border-border"}`}>
               <Star className={`h-3.5 w-3.5 ${wished ? "fill-primary" : ""}`} />
             </button>
             {owned ? (
