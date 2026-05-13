@@ -30,12 +30,23 @@ describe("validateGameFile - boundaries", () => {
       `ឯកសារតូចពេក (${gb}GB) — តម្រូវយ៉ាងតិច ${MIN_GAME_FILE_GB}GB`,
     );
   });
-  it("rejects 1 byte over the maximum with exact Khmer string", () => {
+  it("rejects 1 byte over the maximum with exact Khmer string (bytes formatting)", () => {
     const size = MAX_GAME_FILE_BYTES + 1;
-    const gb = (size / 1024 / 1024 / 1024).toFixed(2);
     expect(validateGameFile({ name: "g.zip", size })).toBe(
-      `ឯកសារធំពេក (${gb}GB) — អតិបរមា ${MAX_GAME_FILE_GB}GB`,
+      `ឯកសារធំពេក (${size} bytes) — អតិបរមា ${MAX_GAME_FILE_BYTES} bytes`,
     );
+  });
+  it("rejects very large sizes with exact Khmer string (bytes formatting)", () => {
+    const size = MAX_GAME_FILE_BYTES * 2;
+    expect(validateGameFile({ name: "g.zip", size })).toBe(
+      `ឯកសារធំពេក (${size} bytes) — អតិបរមា ${MAX_GAME_FILE_BYTES} bytes`,
+    );
+  });
+  it("over-max error mentions 'bytes' and never 'GB' for the limit", () => {
+    const msg = validateGameFile({ name: "g.zip", size: MAX_GAME_FILE_BYTES + 1 })!;
+    expect(msg).toContain("bytes");
+    expect(msg).toContain("ធំពេក");
+    expect(msg).not.toMatch(/GB/);
   });
 });
 
