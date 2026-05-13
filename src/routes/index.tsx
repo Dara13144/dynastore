@@ -486,9 +486,11 @@ function TopupModal({ onClose, onToast }: { onClose: () => void; onToast: (m: st
             stopPoll();
             await refreshWallet();
             recordAttempt("paid", payload.new, null, null, "realtime_update");
-            setStage("paid");
+            setStage("paid"); setFlash("paid");
             onToast(`បានបន្ថែម ${coins.toLocaleString()} Balance!`);
-          } else if (newStatus === "expired" || newStatus === "cancelled" || newStatus === "failed") {
+          } else if (newStatus === "cancelled") {
+            stopPoll(); setStage("cancelled"); setFlash("cancelled");
+          } else if (newStatus === "expired" || newStatus === "failed") {
             stopPoll();
             setStage(newStatus === "expired" ? "expired" : "failed");
           }
