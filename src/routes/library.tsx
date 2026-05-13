@@ -4,6 +4,7 @@ import { ArrowLeft, Trash2, Star, Check, Wallet, Library as LibraryIcon, Downloa
 import { StoreProvider, useStore } from "@/lib/store";
 import { useSession } from "@/hooks/use-session";
 import { supabase } from "@/integrations/supabase/client";
+import { resolveDownloadUrl } from "@/lib/download-game-file";
 import { toast } from "sonner";
 import logoD from "@/assets/dyna-logo.jpeg";
 
@@ -28,21 +29,16 @@ function DownloadBtn({ filePath }: { filePath: string | null }) {
     return <span className="text-[11px] text-muted-foreground">មិនទាន់មានឯកសារ</span>;
   }
   const onClick = async () => {
-    // External links: open directly without going through Storage signed URLs.
-    if (/^https?:\/\//i.test(filePath)) {
-      window.open(filePath, "_blank", "noopener,noreferrer");
-      return;
-    }
     setBusy(true);
-    const { data, error } = await supabase.storage.from("game-files").createSignedUrl(filePath, 300);
+    const result = await resolveDownloadUrl(filePath, (path, exp, opts) =>
+      supabase.storage.from("game-files").createSignedUrl(path, exp, opts),
+    );
     setBusy(false);
-    if (error || !data?.signedUrl) {
-      toast.error("មិនអាចបង្កើតតំណទាញយកបាន", {
-        description: error?.message ?? "សូមសាកល្បងម្ដងទៀតបន្តិចក្រោយ។",
-      });
+    if (!result.ok) {
+      toast.error("មិនអាចបង្កើតតំណទាញយកបាន", { description: result.error });
       return;
     }
-    window.open(data.signedUrl, "_blank", "noopener,noreferrer");
+    window.open(result.url, "_blank", "noopener,noreferrer");
   };
   return (
     <button onClick={onClick} disabled={busy} className="inline-flex items-center gap-1 rounded-full bg-primary px-3 py-1 text-[11px] font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50">
