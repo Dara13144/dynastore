@@ -74,6 +74,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
+      { name: "google-site-verification", content: "8diCLufyhJnU_wOWfBHl8DvoEb3t8UxkPQ74uikgv74" },
       { title: "Dynastore Gaming" },
       { name: "description", content: "DynaStore Complete is a full-stack e-commerce platform replicating a website's functionality." },
       { name: "author", content: "Lovable" },
