@@ -9,7 +9,10 @@ export const Route = createFileRoute("/login")({
   head: () => ({
     meta: [
       { title: "ចូលប្រើ — Dyna Store" },
-      { name: "description", content: "ចូលគណនី Dyna Store ដើម្បីរក្សាទុកបញ្ជីហ្គេមរបស់អ្នក។" },
+      { name: "description", content: "ចូលគណនី ឬចុះឈ្មោះ Dyna Store ដើម្បីទិញហ្គេម និងរក្សាទុកបណ្ណាល័យរបស់អ្នក។" },
+      { property: "og:title", content: "ចូលប្រើ — Dyna Store" },
+      { property: "og:description", content: "ចូលប្រើដោយ Email ឬ Google ដើម្បីបន្ថែម Balance, ទិញហ្គេម, និងគ្រប់គ្រងបណ្ណាល័យរបស់អ្នកនៅ Dyna Store។" },
+      { property: "og:url", content: "https://dynastore.lovable.app/login" },
     ],
   }),
   component: LoginPage,
