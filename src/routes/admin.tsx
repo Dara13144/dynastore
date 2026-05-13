@@ -395,10 +395,11 @@ function Field({ label, value, onChange, type = "text", placeholder }: { label: 
   );
 }
 
-function GameRowEditor({ game, busy, onSave, onDelete, onReplaceFile, validateFile, onValidationError }: {
+function GameRowEditor({ game, busy, onSave, onDelete, onReplaceFile, validateFile, onValidationError, onUploadCover }: {
   game: GameRow; busy: boolean;
   onSave: (p: Partial<GameRow>) => void; onDelete: () => void; onReplaceFile: (f: File) => void;
   validateFile: (f: File) => string | null; onValidationError: (m: string) => void;
+  onUploadCover: (f: File) => Promise<string | null>;
 }) {
   const [edit, setEdit] = useState<GameRow>(game);
   useEffect(() => setEdit(game), [game]);
@@ -409,8 +410,12 @@ function GameRowEditor({ game, busy, onSave, onDelete, onReplaceFile, validateFi
       <td className="px-4 py-3 font-mono text-[11px] text-muted-foreground">{game.id}</td>
       <td className="px-4 py-3">
         <input value={edit.title} onChange={(e) => setEdit({ ...edit, title: e.target.value })} className="w-full bg-transparent outline-none focus:ring-1 focus:ring-primary rounded px-1" />
-        <input value={edit.image_url ?? ""} placeholder="URL រូបភាព" onChange={(e) => setEdit({ ...edit, image_url: e.target.value })} className="w-full text-[10px] text-muted-foreground bg-transparent outline-none focus:ring-1 focus:ring-primary rounded px-1 mt-0.5" />
-      </td>
+        <div className="flex items-center gap-1 mt-0.5">
+          <input value={edit.image_url ?? ""} placeholder="URL រូបភាព" onChange={(e) => setEdit({ ...edit, image_url: e.target.value })} className="flex-1 text-[10px] text-muted-foreground bg-transparent outline-none focus:ring-1 focus:ring-primary rounded px-1" />
+          <label className="text-[10px] text-primary cursor-pointer hover:underline shrink-0" title="ផ្ទុករូបឡើង">📷
+            <input type="file" accept="image/*" className="hidden" onChange={async (e) => { const f = e.target.files?.[0]; if (!f) return; const url = await onUploadCover(f); if (url) setEdit((p) => ({ ...p, image_url: url })); e.target.value = ""; }} />
+          </label>
+        </div>
       <td className="px-4 py-3"><input value={edit.category} onChange={(e) => setEdit({ ...edit, category: e.target.value })} className="w-24 bg-transparent outline-none focus:ring-1 focus:ring-primary rounded px-1" /></td>
       <td className="px-4 py-3 text-right"><input type="number" value={edit.price_coins} onChange={(e) => setEdit({ ...edit, price_coins: Number(e.target.value) || 0 })} className="w-20 text-right bg-transparent outline-none focus:ring-1 focus:ring-primary rounded px-1" /></td>
       <td className="px-4 py-3 text-center">
