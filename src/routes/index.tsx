@@ -1228,14 +1228,25 @@ function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () 
     try {
       const res = await createTopup({ data: { packId: pack.id } });
       const now = Date.now();
+      const reused = (res as any).reused === true;
+      const reusedTx = (res as any).reusedTx ?? null;
+      const expiresAtMs = reusedTx?.expiresAt ? new Date(reusedTx.expiresAt).getTime() : now + POLL_WINDOW_S * 1000;
+      const createdAtMs = reusedTx?.createdAt ? new Date(reusedTx.createdAt).getTime() : now;
       setTx({
         md5: res.md5,
         qrPayload: res.qrPayload,
         coins: res.coins,
-        createdAt: now,
-        expiresAt: now + POLL_WINDOW_S * 1000,
+        createdAt: createdAtMs,
+        expiresAt: expiresAtMs,
       });
-      pushEvent({ kind: "khqr", label: "KHQR generated", detail: `${res.coins} Coins · MD5 ${res.md5.slice(0, 10)}…` });
+      setReusedInfo(reused && reusedTx ? reusedTx : null);
+      pushEvent({
+        kind: "khqr",
+        label: reused ? "Reused existing pending KHQR ♻︎" : "KHQR generated",
+        detail: reused
+          ? `Tx ${reusedTx?.id?.slice(0, 8)}… · MD5 ${res.md5.slice(0, 10)}… · expires ${new Date(expiresAtMs).toLocaleTimeString()}`
+          : `${res.coins} Coins · MD5 ${res.md5.slice(0, 10)}…`,
+      });
       const clientMatch = md5Hex(res.qrPayload) === res.md5;
       pushEvent({ kind: "md5", label: clientMatch ? "Client MD5 match ✓" : "Client MD5 mismatch ✗", detail: clientMatch ? "payload hash = server md5" : "hash mismatch" });
       setStatus("qr");
