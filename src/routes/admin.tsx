@@ -281,7 +281,7 @@ function GamesTab() {
         <div className="inline-flex rounded-full bg-muted/30 p-1 text-[11px] font-semibold">
           {(["all", "visible", "hidden"] as const).map((v) => (
             <button key={v} onClick={() => setVisFilter(v)} className={`px-3 py-1 rounded-full ${visFilter === v ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}>
-              {v === "all" ? "All" : v === "visible" ? "Visible" : "Hidden"}
+              {v === "all" ? "ទាំងអស់" : v === "visible" ? "បង្ហាញ" : "លាក់"}
             </button>
           ))}
         </div>
