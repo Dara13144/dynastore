@@ -1,6 +1,7 @@
-import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useRef, useState, useCallback, type ReactNode } from "react";
 import { useSession } from "@/hooks/use-session";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import gtaImg from "@/assets/game-gta.jpg";
 import neonImg from "@/assets/game-neon.jpg";
 import rpgImg from "@/assets/game-rpg.jpg";
@@ -91,12 +92,32 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     setLibrary((data ?? []) as LibraryItem[]);
   }, []);
 
+  const prevBalance = useRef<number | null>(null);
   useEffect(() => {
-    if (!userId) { setProfile(GUEST_PROFILE); setBalance(0); setLibrary([]); setIsAdmin(false); return; }
+    if (!userId) { setProfile(GUEST_PROFILE); setBalance(0); setLibrary([]); setIsAdmin(false); prevBalance.current = null; return; }
     fetchProfile(userId); fetchWallet(userId); fetchLibrary(userId);
     supabase.from("user_roles").select("role").eq("user_id", userId).eq("role", "admin").maybeSingle()
       .then(({ data }) => setIsAdmin(!!data));
+
+    // Live wallet updates: notify user when admin credits coins
+    const ch = supabase
+      .channel(`wallet:${userId}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "wallets", filter: `user_id=eq.${userId}` },
+        (payload) => {
+          const next = Number((payload.new as { balance?: number })?.balance ?? 0);
+          const prev = prevBalance.current;
+          setBalance(next);
+          if (prev !== null && next > prev) {
+            toast.success(`💰 +${(next - prev).toLocaleString()} coins · balance ${next.toLocaleString()}`);
+          }
+          prevBalance.current = next;
+        })
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
   }, [userId, fetchProfile, fetchWallet, fetchLibrary]);
+
+  // Track balance for delta toast
+  useEffect(() => { prevBalance.current = balance; }, [balance]);
 
   const value: StoreCtx = {
     authed: !!session, isAdmin, loading, profile, games, balance, library, recs,
