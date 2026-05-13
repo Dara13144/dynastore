@@ -1,5 +1,34 @@
 // Server-only Telegram notifier. Forwards to TELEGRAM_CHAT_IDS + the default group.
+import { supabaseAdmin } from "@/integrations/supabase/client.server";
+
 const TELEGRAM_DEFAULT_GROUP = "-1003892184606";
+
+/** Escape special HTML chars for Telegram parse_mode=HTML. */
+export function tgEscape(s: string): string {
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+/** Format user identity consistently as "Name (email)" or "Name" if no email. */
+export function formatUser(name: string | null | undefined, email?: string | null): string {
+  const n = (name ?? "").trim() || "user";
+  const e = (email ?? "").trim();
+  return e ? `${tgEscape(n)} (<code>${tgEscape(e)}</code>)` : tgEscape(n);
+}
+
+/** Look up "Name (email)" for a userId — used by all notifiers for consistency. */
+export async function formatUserById(userId: string): Promise<string> {
+  let name = userId.slice(0, 8);
+  let email = "";
+  try {
+    const [{ data: prof }, { data: u }] = await Promise.all([
+      supabaseAdmin.from("profiles").select("display_name").eq("user_id", userId).maybeSingle(),
+      supabaseAdmin.auth.admin.getUserById(userId).catch(() => ({ data: null as any })),
+    ]);
+    if (prof?.display_name) name = prof.display_name;
+    email = u?.user?.email ?? "";
+  } catch { /* ignore */ }
+  return formatUser(name, email);
+}
 
 export async function notifyTelegram(text: string): Promise<void> {
   const token = process.env.TELEGRAM_BOT_TOKEN;

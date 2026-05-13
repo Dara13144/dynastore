@@ -2,7 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
-import { notifyTelegram } from "@/lib/telegram.server";
+import { notifyTelegram, formatUserById } from "@/lib/telegram.server";
 
 // Static KHQR payload for DynaStore (Bakong account: ben_sothida@bkr)
 export const KHQR_PAYLOAD =
@@ -15,16 +15,7 @@ async function assertAdmin(userId: string) {
 }
 
 
-async function userLabel(userId: string): Promise<string> {
-  const { data: prof } = await supabaseAdmin.from("profiles").select("display_name").eq("user_id", userId).maybeSingle();
-  const name = prof?.display_name ?? userId.slice(0, 8);
-  let email = "";
-  try {
-    const { data: u } = await supabaseAdmin.auth.admin.getUserById(userId);
-    email = u?.user?.email ?? "";
-  } catch { /* ignore */ }
-  return email ? `${name} (${email})` : name;
-}
+const userLabel = formatUserById;
 
 
 async function coinsPerUsd(): Promise<number> {
