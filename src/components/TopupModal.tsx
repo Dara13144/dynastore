@@ -35,33 +35,49 @@ export function TopupModal({
   const fileRef = useRef<HTMLInputElement | null>(null);
   const [uploading, setUploading] = useState(false);
   const [proofSent, setProofSent] = useState(false);
+  const [lastProof, setLastProof] = useState<{ b64: string; ct: "image/png" | "image/jpeg" | "image/webp" } | null>(null);
+  const [deliveryFailed, setDeliveryFailed] = useState(false);
 
-  const onPickProof = async (file: File) => {
+  const sendProof = async (b64: string, ct: "image/png" | "image/jpeg" | "image/webp") => {
     if (!tx) return;
-    if (file.size > 6_000_000) { onToast("File too large (max 6MB)"); return; }
     setUploading(true);
     try {
-      const buf = await file.arrayBuffer();
-      let bin = "";
-      const bytes = new Uint8Array(buf);
-      for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
-      const b64 = btoa(bin);
-      const ct = (file.type === "image/jpeg" || file.type === "image/webp") ? file.type : "image/png";
       const r = await proofFn({ data: { md5: tx.md5, imageBase64: b64, contentType: ct } });
       setProofSent(true);
       const t = r?.telegram;
-      if (t && t.sent > 0 && t.failed === 0) {
-        onToast(`✓ ផ្ញើទៅ Telegram ជោគជ័យ (${t.sent}/${t.total})`);
+      const allOk = !!t && t.sent > 0 && t.failed === 0;
+      setDeliveryFailed(!allOk);
+      if (allOk) {
+        onToast(`✓ ផ្ញើទៅ Telegram ជោគជ័យ (${t!.sent}/${t!.total})`);
       } else if (t && t.sent > 0) {
         onToast(`⚠ ផ្ញើបាន ${t.sent}/${t.total} — ${t.error ?? "មួយចំនួនបរាជ័យ"}`);
       } else {
         onToast(`✗ ផ្ញើទៅ Telegram បរាជ័យ — ${t?.error ?? "សូមទាក់ទង Admin"}`);
       }
     } catch (e) {
+      setDeliveryFailed(true);
       onToast(e instanceof Error ? e.message : "បរាជ័យ");
     } finally {
       setUploading(false);
     }
+  };
+
+  const onPickProof = async (file: File) => {
+    if (!tx) return;
+    if (file.size > 6_000_000) { onToast("File too large (max 6MB)"); return; }
+    const buf = await file.arrayBuffer();
+    let bin = "";
+    const bytes = new Uint8Array(buf);
+    for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+    const b64 = btoa(bin);
+    const ct: "image/png" | "image/jpeg" | "image/webp" =
+      file.type === "image/jpeg" || file.type === "image/webp" ? file.type : "image/png";
+    setLastProof({ b64, ct });
+    await sendProof(b64, ct);
+  };
+
+  const resendProof = async () => {
+    if (lastProof) await sendProof(lastProof.b64, lastProof.ct);
   };
 
   useEffect(() => {
