@@ -455,8 +455,8 @@ function UsersTab() {
             <thead className="bg-muted/30 text-xs uppercase tracking-wider text-muted-foreground">
               <tr>
                 <th className="text-left px-4 py-3">ឈ្មោះ</th>
-                <th className="text-left px-4 py-3">User ID</th>
-                <th className="text-right px-4 py-3">Balance</th>
+                <th className="text-left px-4 py-3">លេខអ្នកប្រើ</th>
+                <th className="text-right px-4 py-3">សមតុល្យ</th>
                 <th className="text-right px-4 py-3">ហ្គេមដែលបាន</th>
                 <th className="text-center px-4 py-3">តួនាទី</th>
                 <th className="text-left px-4 py-3">បង្កើត</th>
