@@ -154,6 +154,7 @@ export const adminApproveTopup = createServerFn({ method: "POST" })
     const who = await userLabel(claimed.user_id);
     await notifyTelegram(
       `✅ <b>Topup Approved</b>\n👤 ${who}\n💵 $${Number(claimed.amount_usd).toFixed(2)} → <b>+${Number(claimed.coins).toLocaleString()} coins</b>\n💼 New balance: ${bal.toLocaleString()}\n🆔 <code>${data.id}</code>`,
+      "topup_approved",
     );
     return {
       ok: true,
