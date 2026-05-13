@@ -126,7 +126,7 @@ export const createTopup = createServerFn({ method: "POST" })
             accountInformation: merchantPhone,
             merchantId: merchantId || undefined,
           });
-          return { md5: built.md5, payload: built.payload };
+          return { md5: built.md5, payload: built.payload, billNumber };
         },
         insert: async (row) => {
           const { error } = await supabaseAdmin.from("transactions").insert(row);
