@@ -11,6 +11,7 @@ import spaceImg from "@/assets/game-space.jpg";
 export type Game = {
   id: string; title: string; category: string; description: string;
   image: string; badge?: string | null; price_coins: number;
+  file_path?: string | null;
 };
 export type Recommendation = { id: string; name: string; game: string; text: string; initial: string };
 export type Profile = {
