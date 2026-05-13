@@ -203,14 +203,26 @@ export function TopupModal({
                 hidden
                 onChange={(e) => { const f = e.target.files?.[0]; if (f) onPickProof(f); e.currentTarget.value = ""; }}
               />
-              <button
-                onClick={() => fileRef.current?.click()}
-                disabled={uploading}
-                className="inline-flex items-center gap-1.5 rounded-full border border-primary/40 bg-primary/10 px-4 py-1.5 text-xs font-semibold text-primary hover:bg-primary/20 disabled:opacity-60"
-              >
-                {uploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
-                {proofSent ? "ផ្ញើរួច ✓ ផ្ញើម្តងទៀត" : "ផ្ទុករូប slip"}
-              </button>
+              <div className="flex items-center justify-center gap-2 flex-wrap">
+                <button
+                  onClick={() => fileRef.current?.click()}
+                  disabled={uploading}
+                  className="inline-flex items-center gap-1.5 rounded-full border border-primary/40 bg-primary/10 px-4 py-1.5 text-xs font-semibold text-primary hover:bg-primary/20 disabled:opacity-60"
+                >
+                  {uploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
+                  {proofSent ? "ផ្ញើរួច ✓ ផ្លាស់រូប" : "ផ្ទុករូប slip"}
+                </button>
+                {lastProof && deliveryFailed && (
+                  <button
+                    onClick={resendProof}
+                    disabled={uploading}
+                    className="inline-flex items-center gap-1.5 rounded-full border border-amber-500/50 bg-amber-500/15 px-4 py-1.5 text-xs font-semibold text-amber-300 hover:bg-amber-500/25 disabled:opacity-60"
+                    title="ផ្ញើរូបនិង caption ដដែលឡើងវិញទៅ Telegram"
+                  >
+                    {uploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "↻ Resend"}
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         )}
