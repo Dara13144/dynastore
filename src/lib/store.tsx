@@ -60,6 +60,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [balance, setBalance] = useState(0);
   const [library, setLibrary] = useState<LibraryItem[]>([]);
   const [recs, setRecs] = useState<Recommendation[]>(INITIAL_RECS);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   const userId = session?.user?.id ?? null;
 
