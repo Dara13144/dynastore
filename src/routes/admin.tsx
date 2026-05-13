@@ -376,7 +376,7 @@ function GameRowEditor({ game, busy, onSave, onDelete, onReplaceFile }: {
       <td className="px-4 py-3 font-mono text-[11px] text-muted-foreground">{game.id}</td>
       <td className="px-4 py-3">
         <input value={edit.title} onChange={(e) => setEdit({ ...edit, title: e.target.value })} className="w-full bg-transparent outline-none focus:ring-1 focus:ring-primary rounded px-1" />
-        <input value={edit.image_url ?? ""} placeholder="Image URL" onChange={(e) => setEdit({ ...edit, image_url: e.target.value })} className="w-full text-[10px] text-muted-foreground bg-transparent outline-none focus:ring-1 focus:ring-primary rounded px-1 mt-0.5" />
+        <input value={edit.image_url ?? ""} placeholder="URL រូបភាព" onChange={(e) => setEdit({ ...edit, image_url: e.target.value })} className="w-full text-[10px] text-muted-foreground bg-transparent outline-none focus:ring-1 focus:ring-primary rounded px-1 mt-0.5" />
       </td>
       <td className="px-4 py-3"><input value={edit.category} onChange={(e) => setEdit({ ...edit, category: e.target.value })} className="w-24 bg-transparent outline-none focus:ring-1 focus:ring-primary rounded px-1" /></td>
       <td className="px-4 py-3 text-right"><input type="number" value={edit.price_coins} onChange={(e) => setEdit({ ...edit, price_coins: Number(e.target.value) || 0 })} className="w-20 text-right bg-transparent outline-none focus:ring-1 focus:ring-primary rounded px-1" /></td>
