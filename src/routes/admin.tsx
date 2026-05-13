@@ -625,8 +625,15 @@ function UserRowEditor({ user, isMe, onUpdate, onRoleChange }: { user: UserRow; 
         </td>
         <td className="px-4 py-3 text-right">{user.owned}</td>
         <td className="px-4 py-3 text-center">
-          {user.is_admin ? <span className="inline-flex items-center rounded-full bg-primary/15 text-primary px-2 py-0.5 text-[10px] font-semibold">អ្នកគ្រប់គ្រង</span>
-            : <span className="text-[10px] text-muted-foreground">អ្នកប្រើ</span>}
+          <div className="inline-flex flex-col items-center gap-1">
+            {user.is_admin ? <span className="inline-flex items-center rounded-full bg-primary/15 text-primary px-2 py-0.5 text-[10px] font-semibold">អ្នកគ្រប់គ្រង</span>
+              : <span className="text-[10px] text-muted-foreground">អ្នកប្រើ</span>}
+            {!isMe && (
+              <button disabled={roleBusy} onClick={toggleAdmin} className={`rounded-full px-2 py-0.5 text-[10px] font-semibold disabled:opacity-50 ${user.is_admin ? "bg-destructive/10 text-destructive hover:bg-destructive/20" : "bg-primary/10 text-primary hover:bg-primary/20"}`}>
+                {roleBusy ? "..." : user.is_admin ? "ដក Admin" : "ផ្តល់ Admin"}
+              </button>
+            )}
+          </div>
         </td>
         <td className="px-4 py-3 text-xs text-muted-foreground">{new Date(user.created_at).toLocaleDateString()}</td>
         <td className="px-4 py-3 text-right">
