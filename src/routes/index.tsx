@@ -351,14 +351,16 @@ function TopupModal({ onClose, onToast }: { onClose: () => void; onToast: (m: st
   const [stage, setStage] = useState<TopupStage>("choose");
   const [qr, setQr] = useState<string | null>(null);
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
-  const [md5, setMd5] = useState<string | null>(null);
+  const [orderId, setOrderId] = useState<string | null>(null);
+  const [bakongMd5, setBakongMd5] = useState<string | null>(null);
   const [coins, setCoins] = useState(0);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [polling, setPolling] = useState(false);
   const [expiresAt, setExpiresAt] = useState<number | null>(null);
   const [now, setNow] = useState(Date.now());
   const pollRef = useRef<number | null>(null);
-  const [debug, setDebug] = useState<{ at: string; status: string; payload: unknown } | null>(null);
+  const [debug, setDebug] = useState<{ at: string; status: string; httpStatus: number | null; latencyMs: number | null; payload: unknown } | null>(null);
+  const [attempts, setAttempts] = useState<Array<{ at: string; status: string; httpStatus: number | null; latencyMs: number | null; payload: unknown }>>([]);
   const [showDebug, setShowDebug] = useState(false);
   const [pollCount, setPollCount] = useState(0);
 
@@ -378,22 +380,28 @@ function TopupModal({ onClose, onToast }: { onClose: () => void; onToast: (m: st
     if (stage === "qr" && expiresAt && now >= expiresAt) { stopPoll(); setStage("expired"); }
   }, [stage, expiresAt, now]);
 
+  const recordAttempt = (status: string, payload: unknown, httpStatus: number | null = null, latencyMs: number | null = null) => {
+    const entry = { at: new Date().toISOString(), status, httpStatus, latencyMs, payload };
+    setDebug(entry);
+    setAttempts((prev) => [entry, ...prev].slice(0, 10));
+  };
+
   const start = async () => {
     if (!authed) { onToast("សូមចូលគណនីជាមុនសិន"); return; }
     setErrorMsg(null);
     setStage("creating");
     try {
       const r = await createFn({ data: { amountUsd: amount } });
-      setQr(r.qr); setMd5(r.md5); setCoins(r.balance); setExpiresAt(new Date(r.expiresAt).getTime());
+      setQr(r.qr); setOrderId(r.orderId); setBakongMd5(r.bakongMd5); setCoins(r.balance); setExpiresAt(new Date(r.expiresAt).getTime());
       const dataUrl = await QRCode.toDataURL(r.qr, { width: 320, margin: 1 });
       setQrDataUrl(dataUrl);
       setStage("qr");
       setPolling(true);
       pollRef.current = window.setInterval(async () => {
         try {
-          const c = await checkFn({ data: { md5: r.md5 } });
+          const c = await checkFn({ data: { orderId: r.orderId } });
           setPollCount((n) => n + 1);
-          setDebug({ at: new Date().toISOString(), status: c.status, payload: c.debug ?? c });
+          recordAttempt(c.status, c.debug ?? c, c.debug?.httpStatus ?? null, c.debug?.latencyMs ?? null);
           if (c.status === "paid") {
             stopPoll(); setStage("paid"); await refreshWallet();
             onToast(`បានបន្ថែម ${r.balance.toLocaleString()} Balance!`);
@@ -401,7 +409,7 @@ function TopupModal({ onClose, onToast }: { onClose: () => void; onToast: (m: st
             stopPoll(); setStage("expired");
           }
         } catch (e) {
-          setDebug({ at: new Date().toISOString(), status: "error", payload: e instanceof Error ? e.message : String(e) });
+          recordAttempt("error", e instanceof Error ? e.message : String(e));
         }
       }, 3000) as unknown as number;
     } catch (e) {
@@ -411,23 +419,23 @@ function TopupModal({ onClose, onToast }: { onClose: () => void; onToast: (m: st
   };
 
   const verifyNow = async () => {
-    if (!md5) return;
+    if (!orderId) return;
     setStage("checking");
     try {
-      const c = await checkFn({ data: { md5 } });
+      const c = await checkFn({ data: { orderId } });
       setPollCount((n) => n + 1);
-      setDebug({ at: new Date().toISOString(), status: c.status, payload: c.debug ?? c });
+      recordAttempt(c.status, c.debug ?? c, c.debug?.httpStatus ?? null, c.debug?.latencyMs ?? null);
       if (c.status === "paid") { stopPoll(); setStage("paid"); await refreshWallet(); onToast(`បានបន្ថែម ${coins.toLocaleString()} Balance!`); }
       else if (c.status === "expired") { stopPoll(); setStage("expired"); }
       else { setStage("qr"); onToast("មិនទាន់ទទួលបានការបង់ប្រាក់"); }
     } catch (e) {
-      setDebug({ at: new Date().toISOString(), status: "error", payload: e instanceof Error ? e.message : String(e) });
+      recordAttempt("error", e instanceof Error ? e.message : String(e));
       setErrorMsg(e instanceof Error ? e.message : "បរាជ័យផ្ទៀងផ្ទាត់");
       setStage("failed");
     }
   };
 
-  const reset = () => { stopPoll(); setQr(null); setQrDataUrl(null); setMd5(null); setCoins(0); setExpiresAt(null); setErrorMsg(null); setDebug(null); setPollCount(0); setStage("choose"); };
+  const reset = () => { stopPoll(); setQr(null); setQrDataUrl(null); setOrderId(null); setBakongMd5(null); setCoins(0); setExpiresAt(null); setErrorMsg(null); setDebug(null); setAttempts([]); setPollCount(0); setStage("choose"); };
 
   const copyQr = async () => {
     if (!qr) return;
@@ -576,7 +584,7 @@ function TopupModal({ onClose, onToast }: { onClose: () => void; onToast: (m: st
         )}
 
         {/* Debug panel — last Bakong callback payload + poll result */}
-        {(stage === "qr" || stage === "checking" || stage === "paid" || stage === "expired" || stage === "failed") && md5 && (
+        {(stage === "qr" || stage === "checking" || stage === "paid" || stage === "expired" || stage === "failed") && orderId && (
           <div className="border-t border-border/60 px-5 py-3 text-[11px]">
             <button onClick={() => setShowDebug((v) => !v)} className="w-full flex items-center justify-between text-muted-foreground hover:text-foreground">
               <span className="inline-flex items-center gap-1.5 font-semibold">
@@ -587,9 +595,25 @@ function TopupModal({ onClose, onToast }: { onClose: () => void; onToast: (m: st
             </button>
             {showDebug && (
               <div className="mt-2 space-y-1.5">
-                <div className="flex justify-between gap-2"><span className="text-muted-foreground">md5</span><span className="font-mono truncate max-w-[240px]" title={md5}>{md5}</span></div>
+                <div className="flex justify-between gap-2"><span className="text-muted-foreground">order_id</span><span className="font-mono truncate max-w-[240px]" title={orderId}>{orderId}</span></div>
+                <div className="flex justify-between gap-2"><span className="text-muted-foreground">bakong md5</span><span className="font-mono truncate max-w-[240px]" title={bakongMd5 ?? ""}>{bakongMd5 ?? "—"}</span></div>
                 <div className="flex justify-between gap-2"><span className="text-muted-foreground">checked at</span><span className="font-mono">{debug?.at ?? "—"}</span></div>
+                <div className="flex justify-between gap-2"><span className="text-muted-foreground">Bakong HTTP</span><span className="font-mono">{debug?.httpStatus ?? "—"}</span></div>
+                <div className="flex justify-between gap-2"><span className="text-muted-foreground">Latency</span><span className="font-mono">{debug?.latencyMs != null ? `${debug.latencyMs} ms` : "—"}</span></div>
                 <div className="flex justify-between gap-2"><span className="text-muted-foreground">expires at</span><span className="font-mono">{expiresAt ? new Date(expiresAt).toISOString() : "—"}</span></div>
+                <div>
+                  <div className="text-muted-foreground mb-1">poll attempts</div>
+                  <div className="space-y-1">
+                    {attempts.length === 0 ? <div className="text-muted-foreground">(no poll yet)</div> : attempts.map((a, i) => (
+                      <div key={`${a.at}-${i}`} className="flex items-center justify-between gap-2 rounded-lg border border-border/40 bg-muted/20 px-2 py-1 font-mono text-[10px]">
+                        <span>{a.status}</span>
+                        <span>{a.httpStatus ?? "—"}</span>
+                        <span>{a.latencyMs != null ? `${a.latencyMs}ms` : "—"}</span>
+                        <span className="truncate max-w-[120px]">{new Date(a.at).toLocaleTimeString()}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
                 <div>
                   <div className="text-muted-foreground mb-1">last payload</div>
                   <pre className="max-h-48 overflow-auto rounded-lg bg-muted/30 border border-border/40 p-2 font-mono text-[10px] whitespace-pre-wrap break-all">{debug ? JSON.stringify(debug.payload, null, 2) : "(no poll yet)"}</pre>

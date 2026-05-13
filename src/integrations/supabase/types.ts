@@ -211,38 +211,71 @@ export type Database = {
       transactions: {
         Row: {
           amount_usd: number
+          bakong_md5: string
+          bakong_tx_ref: string | null
           coins: number
+          completed_at: string | null
           created_at: string
           expires_at: string
+          failure_reason: string | null
+          gateway_event_id: string | null
           id: string
-          md5: string
+          last_poll_http_status: number | null
+          last_poll_latency_ms: number | null
+          last_polled_at: string | null
+          order_id: string
           paid_at: string | null
+          payment_method: string
+          provider_payload: Json | null
           qr_string: string
           status: Database["public"]["Enums"]["tx_status"]
+          updated_at: string
           user_id: string
         }
         Insert: {
           amount_usd: number
+          bakong_md5: string
+          bakong_tx_ref?: string | null
           coins: number
+          completed_at?: string | null
           created_at?: string
           expires_at: string
+          failure_reason?: string | null
+          gateway_event_id?: string | null
           id?: string
-          md5: string
+          last_poll_http_status?: number | null
+          last_poll_latency_ms?: number | null
+          last_polled_at?: string | null
+          order_id: string
           paid_at?: string | null
+          payment_method?: string
+          provider_payload?: Json | null
           qr_string: string
           status?: Database["public"]["Enums"]["tx_status"]
+          updated_at?: string
           user_id: string
         }
         Update: {
           amount_usd?: number
+          bakong_md5?: string
+          bakong_tx_ref?: string | null
           coins?: number
+          completed_at?: string | null
           created_at?: string
           expires_at?: string
+          failure_reason?: string | null
+          gateway_event_id?: string | null
           id?: string
-          md5?: string
+          last_poll_http_status?: number | null
+          last_poll_latency_ms?: number | null
+          last_polled_at?: string | null
+          order_id?: string
           paid_at?: string | null
+          payment_method?: string
+          provider_payload?: Json | null
           qr_string?: string
           status?: Database["public"]["Enums"]["tx_status"]
+          updated_at?: string
           user_id?: string
         }
         Relationships: []
@@ -315,6 +348,61 @@ export type Database = {
         }
         Returns: boolean
       }
+      mark_transaction_poll_result: {
+        Args: {
+          _http_status: number
+          _latency_ms: number
+          _next_status?: Database["public"]["Enums"]["tx_status"]
+          _order_id: string
+          _provider_payload: Json
+        }
+        Returns: {
+          amount_usd: number
+          bakong_md5: string
+          bakong_tx_ref: string | null
+          coins: number
+          completed_at: string | null
+          created_at: string
+          expires_at: string
+          failure_reason: string | null
+          gateway_event_id: string | null
+          id: string
+          last_poll_http_status: number | null
+          last_poll_latency_ms: number | null
+          last_polled_at: string | null
+          order_id: string
+          paid_at: string | null
+          payment_method: string
+          provider_payload: Json | null
+          qr_string: string
+          status: Database["public"]["Enums"]["tx_status"]
+          updated_at: string
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "transactions"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      process_khqr_payment_atomic: {
+        Args: {
+          _bakong_tx_ref?: string
+          _gateway_event_id?: string
+          _order_id: string
+          _provider_payload?: Json
+        }
+        Returns: {
+          credited_coins: number
+          message: string
+          new_balance: number
+          ok: boolean
+          order_id: string
+          status: Database["public"]["Enums"]["tx_status"]
+          transaction_id: string
+        }[]
+      }
       purchase_game_atomic: {
         Args: { _game_id: string; _user_id: string }
         Returns: {
@@ -326,7 +414,13 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "user"
-      tx_status: "pending" | "paid" | "expired" | "cancelled"
+      tx_status:
+        | "pending"
+        | "paid"
+        | "expired"
+        | "cancelled"
+        | "completed"
+        | "failed"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -455,7 +549,14 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "user"],
-      tx_status: ["pending", "paid", "expired", "cancelled"],
+      tx_status: [
+        "pending",
+        "paid",
+        "expired",
+        "cancelled",
+        "completed",
+        "failed",
+      ],
     },
   },
 } as const
