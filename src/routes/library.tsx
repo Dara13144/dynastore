@@ -28,6 +28,11 @@ function DownloadBtn({ filePath }: { filePath: string | null }) {
     return <span className="text-[11px] text-muted-foreground">មិនទាន់មានឯកសារ</span>;
   }
   const onClick = async () => {
+    // External links: open directly without going through Storage signed URLs.
+    if (/^https?:\/\//i.test(filePath)) {
+      window.open(filePath, "_blank", "noopener,noreferrer");
+      return;
+    }
     setBusy(true);
     const { data, error } = await supabase.storage.from("game-files").createSignedUrl(filePath, 300);
     setBusy(false);
@@ -37,7 +42,7 @@ function DownloadBtn({ filePath }: { filePath: string | null }) {
       });
       return;
     }
-    window.open(data.signedUrl, "_blank");
+    window.open(data.signedUrl, "_blank", "noopener,noreferrer");
   };
   return (
     <button onClick={onClick} disabled={busy} className="inline-flex items-center gap-1 rounded-full bg-primary px-3 py-1 text-[11px] font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50">
