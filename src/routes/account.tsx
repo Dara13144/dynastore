@@ -295,3 +295,18 @@ function Info({ label, value, mono, onCopy, copied }: { label: string; value: st
     </div>
   );
 }
+
+function StatusPill({ status }: { status: string }) {
+  const map: Record<string, { label: string; cls: string; icon: React.ReactNode }> = {
+    paid: { label: "បានបង់", cls: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30", icon: <Check className="h-3 w-3" /> },
+    pending: { label: "កំពុងរង់ចាំ", cls: "bg-amber-500/15 text-amber-400 border-amber-500/30", icon: <Clock className="h-3 w-3" /> },
+    expired: { label: "ផុតកំណត់", cls: "bg-zinc-500/15 text-zinc-400 border-zinc-500/30", icon: <AlertTriangle className="h-3 w-3" /> },
+    failed: { label: "បរាជ័យ", cls: "bg-destructive/15 text-destructive border-destructive/30", icon: <AlertTriangle className="h-3 w-3" /> },
+  };
+  const v = map[status] ?? map.pending;
+  return (
+    <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-semibold ${v.cls}`}>
+      {v.icon} {v.label}
+    </span>
+  );
+}
