@@ -36,6 +36,24 @@ function Page() {
   const [paymentPack, setPaymentPack] = useState<CoinPack | null>(null);
   const [toast, setToast] = useState<string | null>(null);
 
+  // Restore pending topup after page refresh so polling resumes automatically.
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("bakong:pendingTopup");
+      if (!raw) return;
+      const data = JSON.parse(raw) as { packId: string; expiresAt: number };
+      if (!data?.packId || !data?.expiresAt || Date.now() >= data.expiresAt) {
+        localStorage.removeItem("bakong:pendingTopup");
+        return;
+      }
+      const pack = COIN_PACKS.find((p) => p.id === data.packId);
+      if (pack) setPaymentPack(pack);
+      else localStorage.removeItem("bakong:pendingTopup");
+    } catch {
+      try { localStorage.removeItem("bakong:pendingTopup"); } catch {}
+    }
+  }, []);
+
   const showToast = (msg: string) => {
     setToast(msg);
     setTimeout(() => setToast(null), 2400);
@@ -618,8 +636,19 @@ function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () 
   const [autoCloseIn, setAutoCloseIn] = useState<number>(0);
   const POLL_WINDOW_S = 300;
   const AUTO_CLOSE_S = 6;
+  const STORAGE_KEY = "bakong:pendingTopup";
+
+  const clearPersistedTx = () => {
+    try { localStorage.removeItem(STORAGE_KEY); } catch {}
+  };
+
+  const closeAndClear = () => {
+    clearPersistedTx();
+    onClose();
+  };
 
   const retry = () => {
+    clearPersistedTx();
     setStatus("confirm");
     setErrMsg("");
     setTx(null);
@@ -628,6 +657,7 @@ function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () 
 
   const retryAndRegenerate = async () => {
     if (!authed) { setStatus("login"); return; }
+    clearPersistedTx();
     setErrMsg("");
     setTx(null);
     setSecondsLeft(300);
@@ -643,6 +673,46 @@ function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () 
     setSecondsLeft(300);
     setStatus("confirm");
   }, [authed]);
+
+  // Restore tx from localStorage on mount (e.g. after page refresh)
+  useEffect(() => {
+    if (!authed) return;
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return;
+      const data = JSON.parse(raw) as Tx & { packId: string };
+      if (!data || data.packId !== pack.id) return;
+      if (!data.md5 || !data.qrPayload || !data.expiresAt) return;
+      if (Date.now() >= data.expiresAt) { clearPersistedTx(); return; }
+      setTx({
+        md5: data.md5,
+        qrPayload: data.qrPayload,
+        coins: data.coins,
+        createdAt: data.createdAt,
+        expiresAt: data.expiresAt,
+      });
+      setSecondsLeft(Math.max(0, Math.ceil((data.expiresAt - Date.now()) / 1000)));
+      setStatus("qr");
+      pushEvent({ kind: "khqr", label: "Restored from session", detail: `MD5 ${data.md5.slice(0, 10)}…` });
+    } catch {
+      clearPersistedTx();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Persist tx whenever it's active so refresh can resume polling
+  useEffect(() => {
+    if (!tx) return;
+    if (status === "paid" || status === "expired" || status === "error") return;
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...tx, packId: pack.id }));
+    } catch {}
+  }, [tx, status, pack.id]);
+
+  // Clear persisted tx on terminal states
+  useEffect(() => {
+    if (status === "paid" || status === "expired") clearPersistedTx();
+  }, [status]);
 
   // Auto-refresh wallet whenever a payment fails/expires so user sees latest balance before retrying
   useEffect(() => {
@@ -841,7 +911,7 @@ function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () 
   };
 
   return (
-    <ModalShell onClose={onClose} eyebrow="Bakong KHQR" title="ស្កេនដើម្បីបង់ប្រាក់">
+    <ModalShell onClose={closeAndClear} eyebrow="Bakong KHQR" title="ស្កេនដើម្បីបង់ប្រាក់">
       <div className="rounded-2xl bg-background/40 p-5 ring-1 ring-border">
         <div className="flex items-center justify-between">
           <div>
@@ -956,7 +1026,7 @@ function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () 
             </div>
             <div className="text-xs text-black/60">ពិនិត្យព័ត៌មានខាងលើសិន មុនបង្កើត KHQR សម្រាប់ការទូទាត់នេះ។</div>
             <div className="grid grid-cols-2 gap-2">
-              <button onClick={onClose} className="inline-flex items-center justify-center rounded-full bg-black/5 px-4 py-3 text-sm font-semibold text-black transition hover:bg-black/10">
+              <button onClick={closeAndClear} className="inline-flex items-center justify-center rounded-full bg-black/5 px-4 py-3 text-sm font-semibold text-black transition hover:bg-black/10">
                 បោះបង់
               </button>
               <button onClick={startPayment} className="inline-flex items-center justify-center rounded-full px-4 py-3 text-sm font-semibold text-white transition hover:opacity-90" style={{ background: "var(--gradient-hero)" }}>
