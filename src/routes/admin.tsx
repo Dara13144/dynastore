@@ -399,9 +399,21 @@ function GameRowEditor({ game, busy, onSave, onDelete, onReplaceFile, validateFi
               className="text-[10px] text-emerald-400 hover:underline"
             >ទាញយក</button>
           )}
-          <label>
+          <label title={`អនុញ្ញាត: ${allowedExt.join(", ")} • កំណត់ ${(maxBytes / 1024 ** 3).toFixed(0)}GB`}>
             <span className="text-[10px] text-primary cursor-pointer hover:underline">{game.file_path ? "ប្តូរ" : "ផ្ទុកឡើង"}</span>
-            <input type="file" accept=".zip,.rar,.7z,.exe,.msi,.apk,.iso,.dmg,.pkg,.tar,.gz" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) onReplaceFile(f); }} />
+            <input
+              type="file"
+              accept={allowedExt.map((e) => `.${e}`).join(",")}
+              className="hidden"
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (!f) return;
+                const err = validateFile(f);
+                if (err) { onValidationError(err); e.target.value = ""; return; }
+                onReplaceFile(f);
+                e.target.value = "";
+              }}
+            />
           </label>
         </div>
       </td>
