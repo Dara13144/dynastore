@@ -364,7 +364,7 @@ function GamesTab() {
             <input type="checkbox" checked={draft.visible} onChange={(e) => setDraft({ ...draft, visible: e.target.checked })} /> បង្ហាញលើ website
           </label>
           <div className="flex gap-2">
-            <button disabled={busy} onClick={createGame} className="rounded-full bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground disabled:opacity-50">
+            <button disabled={busy || !!draftFileError} onClick={createGame} className="rounded-full bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground disabled:opacity-50">
               {busy ? "កំពុងផ្ទុកឡើង…" : "រក្សាទុក"}
             </button>
             <button onClick={() => setCreating(false)} className="rounded-full border border-border px-4 py-2 text-xs">បោះបង់</button>
