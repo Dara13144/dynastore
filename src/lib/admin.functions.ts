@@ -99,29 +99,4 @@ export const listBalanceChanges = createServerFn({ method: "POST" })
     return (rows ?? []).map((r) => ({ ...r, changed_by_name: nameMap.get(r.changed_by) ?? "Admin" }));
   });
 
-export const listTransactions = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
-  .inputValidator((i) =>
-    z.object({
-      status: z.enum(["all", "pending", "paid", "expired"]).default("all"),
-      limit: z.number().int().min(1).max(500).default(100),
-    }).parse(i ?? {})
-  )
-  .handler(async ({ data, context }) => {
-    await assertAdmin(context.userId);
-    let q = supabaseAdmin
-      .from("transactions")
-      .select("id, user_id, md5, amount_usd, coins, status, bakong_ref, created_at, paid_at, expires_at")
-      .order("created_at", { ascending: false })
-      .limit(data.limit);
-    if (data.status !== "all") q = q.eq("status", data.status);
-    const { data: rows, error } = await q;
-    if (error) throw new Error(error.message);
-    const ids = Array.from(new Set((rows ?? []).map((r) => r.user_id)));
-    const { data: profs } = ids.length
-      ? await supabaseAdmin.from("profiles").select("user_id, display_name").in("user_id", ids)
-      : { data: [] as { user_id: string; display_name: string }[] };
-    const map = new Map((profs ?? []).map((p) => [p.user_id, p.display_name]));
-    return (rows ?? []).map((r) => ({ ...r, user_name: map.get(r.user_id) ?? "—" }));
-  });
 

@@ -3,10 +3,9 @@ import { useEffect, useState, useCallback } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { useStore } from "@/lib/store";
-import { ArrowLeft, Plus, Eye, EyeOff, Trash2, Save, Loader2, Users, Gamepad2, FileArchive, Settings as SettingsIcon, Pencil, History, ChevronDown, ChevronUp, Search, Check, Wallet } from "lucide-react";
+import { ArrowLeft, Plus, Eye, EyeOff, Trash2, Save, Loader2, Users, Gamepad2, FileArchive, Settings as SettingsIcon, Pencil, History, ChevronDown, ChevronUp, Search, Check } from "lucide-react";
 import { StoreProvider } from "@/lib/store";
-import { getAppSettings, updateAppSettings, adminSetUserBalance, listBalanceChanges, listSettingsAudit, listTransactions } from "@/lib/admin.functions";
-import { adminConfirmTopup } from "@/lib/topup.functions";
+import { getAppSettings, updateAppSettings, adminSetUserBalance, listBalanceChanges, listSettingsAudit } from "@/lib/admin.functions";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 
@@ -41,7 +40,7 @@ function AdminPage() {
   const { authed, loading } = useStore();
   const navigate = useNavigate();
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
-  const [tab, setTab] = useState<"games" | "users" | "transactions" | "content" | "settings">("games");
+  const [tab, setTab] = useState<"games" | "users" | "content" | "settings">("games");
 
   useEffect(() => {
     if (loading) return;
@@ -80,7 +79,6 @@ function AdminPage() {
           <nav className="flex gap-1 rounded-full bg-muted/30 p-1 overflow-x-auto">
             <TabBtn active={tab === "games"} onClick={() => setTab("games")} icon={<Gamepad2 className="h-3.5 w-3.5" />} label="ហ្គេម" />
             <TabBtn active={tab === "users"} onClick={() => setTab("users")} icon={<Users className="h-3.5 w-3.5" />} label="អ្នកប្រើ" />
-            <TabBtn active={tab === "transactions"} onClick={() => setTab("transactions")} icon={<Wallet className="h-3.5 w-3.5" />} label="ប្រតិបត្តិការ" />
             <TabBtn active={tab === "content"} onClick={() => setTab("content")} icon={<Pencil className="h-3.5 w-3.5" />} label="មាតិកា" />
             <TabBtn active={tab === "settings"} onClick={() => setTab("settings")} icon={<SettingsIcon className="h-3.5 w-3.5" />} label="កំណត់" />
           </nav>
@@ -90,7 +88,6 @@ function AdminPage() {
       <main className="container mx-auto px-4 py-6">
         {tab === "games" && <GamesTab />}
         {tab === "users" && <UsersTab />}
-        {tab === "transactions" && <TransactionsTab />}
         {tab === "content" && <ContentTab />}
         {tab === "settings" && <SettingsTab />}
       </main>
@@ -921,126 +918,3 @@ function TestiRow({ t, onUpd, onDel }: { t: Testi; onUpd: (patch: Partial<Testi>
   );
 }
 
-/* ============ TRANSACTIONS TAB ============ */
-type TxRow = {
-  id: string; user_id: string; user_name: string; md5: string;
-  amount_usd: number; coins: number; status: "pending" | "paid" | "expired";
-  bakong_ref: string | null; created_at: string; paid_at: string | null; expires_at: string;
-};
-
-function TransactionsTab() {
-  const listFn = useServerFn(listTransactions);
-  const confirmFn = useServerFn(adminConfirmTopup);
-  const [rows, setRows] = useState<TxRow[]>([]);
-  const [status, setStatus] = useState<"all" | "pending" | "paid" | "expired">("all");
-  const [busy, setBusy] = useState(false);
-  const [confirming, setConfirming] = useState<string | null>(null);
-
-  const load = useCallback(async () => {
-    setBusy(true);
-    try {
-      const r = await listFn({ data: { status, limit: 200 } });
-      setRows(r as unknown as TxRow[]);
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Failed to load");
-    } finally {
-      setBusy(false);
-    }
-  }, [listFn, status]);
-
-  const confirmRow = async (md5: string) => {
-    if (!confirm("Confirm this top-up and credit coins to the user?")) return;
-    setConfirming(md5);
-    try {
-      const r = await confirmFn({ data: { md5 } });
-      if (r.message === "credited") toast.success(`Credited ✓ — new balance ${r.new_balance.toLocaleString()}`);
-      else if (r.message === "already_credited") toast(`Already credited (balance ${r.new_balance.toLocaleString()})`);
-      else toast.error(`Cannot credit: ${r.message}`);
-      await load();
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Failed");
-    } finally {
-      setConfirming(null);
-    }
-  };
-
-  useEffect(() => { load(); }, [load]);
-
-  const fmt = (s: string | null) => s ? new Date(s).toLocaleString() : "—";
-
-  return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between gap-3">
-        <h2 className="font-display text-lg">ប្រតិបត្តិការទាំងអស់</h2>
-        <div className="flex items-center gap-2">
-          <select
-            value={status}
-            onChange={(e) => setStatus(e.target.value as typeof status)}
-            className="rounded-full bg-input px-3 py-1.5 text-xs ring-1 ring-border outline-none"
-          >
-            <option value="all">ទាំងអស់</option>
-            <option value="pending">Pending</option>
-            <option value="paid">Paid</option>
-            <option value="expired">Expired</option>
-          </select>
-          <button onClick={load} className="inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-xs hover:bg-accent">
-            {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Refresh"}
-          </button>
-        </div>
-      </div>
-
-      <div className="rounded-2xl border border-border/60 overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead className="bg-muted/30 text-xs text-muted-foreground">
-            <tr>
-              <th className="text-left p-3">User</th>
-              <th className="text-right p-3">USD</th>
-              <th className="text-right p-3">Coins</th>
-              <th className="text-left p-3">Status</th>
-              <th className="text-left p-3">Ref</th>
-              <th className="text-left p-3">Created</th>
-              <th className="text-left p-3">Paid</th>
-              <th className="text-right p-3">Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.length === 0 && !busy && (
-              <tr><td colSpan={8} className="p-6 text-center text-muted-foreground text-xs">គ្មានប្រតិបត្តិការ</td></tr>
-            )}
-            {rows.map((r) => (
-              <tr key={r.id} className="border-t border-border/40">
-                <td className="p-3">
-                  <div className="font-medium">{r.user_name}</div>
-                  <div className="text-[10px] text-muted-foreground font-mono">{r.user_id.slice(0, 8)}</div>
-                </td>
-                <td className="p-3 text-right font-mono">${Number(r.amount_usd).toFixed(2)}</td>
-                <td className="p-3 text-right font-mono">{r.coins.toLocaleString()}</td>
-                <td className="p-3">
-                  <span className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold ${
-                    r.status === "paid" ? "bg-emerald-500/20 text-emerald-400" :
-                    r.status === "pending" ? "bg-amber-500/20 text-amber-400" :
-                    "bg-muted text-muted-foreground"
-                  }`}>{r.status}</span>
-                </td>
-                <td className="p-3 text-xs font-mono truncate max-w-[160px]" title={r.bakong_ref ?? ""}>{r.bakong_ref ?? "—"}</td>
-                <td className="p-3 text-xs text-muted-foreground">{fmt(r.created_at)}</td>
-                <td className="p-3 text-xs text-muted-foreground">{fmt(r.paid_at)}</td>
-                <td className="p-3 text-right">
-                  {r.status === "pending" ? (
-                    <button
-                      onClick={() => confirmRow(r.md5)}
-                      disabled={confirming === r.md5}
-                      className="inline-flex items-center gap-1 rounded-full bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 px-3 py-1 text-[11px] font-semibold disabled:opacity-50"
-                    >
-                      {confirming === r.md5 ? <Loader2 className="h-3 w-3 animate-spin" /> : "Confirm"}
-                    </button>
-                  ) : <span className="text-[11px] text-muted-foreground">—</span>}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
-}

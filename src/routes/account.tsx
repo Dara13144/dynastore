@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { ArrowLeft, Save, LogOut, Copy, Check, User as UserIcon, Wallet, RefreshCw } from "lucide-react";
 import { StoreProvider, useStore } from "@/lib/store";
 import { useSession } from "@/hooks/use-session";
-import { TopupModal } from "@/components/TopupModal";
+
 import logoD from "@/assets/dyna-logo.jpeg";
 
 export const Route = createFileRoute("/account")({
@@ -34,7 +34,7 @@ function AccountPage() {
   const [bio, setBio] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("");
   const [saving, setSaving] = useState(false);
-  const [topupOpen, setTopupOpen] = useState(false);
+  
   const [toast, setToast] = useState<string | null>(null);
   const showToast = (m: string) => { setToast(m); window.setTimeout(() => setToast(null), 2400); };
   const [msg, setMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
@@ -178,9 +178,6 @@ function AccountPage() {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <button onClick={() => setTopupOpen(true)} className="inline-flex items-center gap-1.5 rounded-full bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground hover:opacity-90">
-              បញ្ចូល Balance
-            </button>
             <button onClick={() => { refreshWallet(); }} className="inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-xs hover:bg-accent">
               <RefreshCw className="h-3.5 w-3.5" /> ផ្ទុកឡើងវិញ
             </button>
@@ -213,13 +210,6 @@ function AccountPage() {
           </button>
         </section>
       </main>
-      {topupOpen && (
-        <TopupModal
-          onClose={() => setTopupOpen(false)}
-          onCredited={() => { refreshWallet(); }}
-          onToast={showToast}
-        />
-      )}
       {toast && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[200] rounded-full bg-foreground text-background px-5 py-2 text-sm shadow-lg">
           {toast}
