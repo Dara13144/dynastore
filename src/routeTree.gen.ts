@@ -10,7 +10,6 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
-import { Route as PaymentsRouteImport } from './routes/payments'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as LibraryRouteImport } from './routes/library'
 import { Route as AdminRouteImport } from './routes/admin'
@@ -21,11 +20,6 @@ import { Route as GamesIdRouteImport } from './routes/games.$id'
 const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
   id: '/sitemap.xml',
   path: '/sitemap.xml',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const PaymentsRoute = PaymentsRouteImport.update({
-  id: '/payments',
-  path: '/payments',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginRoute = LoginRouteImport.update({
@@ -65,7 +59,6 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AdminRoute
   '/library': typeof LibraryRoute
   '/login': typeof LoginRoute
-  '/payments': typeof PaymentsRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/games/$id': typeof GamesIdRoute
 }
@@ -75,7 +68,6 @@ export interface FileRoutesByTo {
   '/admin': typeof AdminRoute
   '/library': typeof LibraryRoute
   '/login': typeof LoginRoute
-  '/payments': typeof PaymentsRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/games/$id': typeof GamesIdRoute
 }
@@ -86,7 +78,6 @@ export interface FileRoutesById {
   '/admin': typeof AdminRoute
   '/library': typeof LibraryRoute
   '/login': typeof LoginRoute
-  '/payments': typeof PaymentsRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/games/$id': typeof GamesIdRoute
 }
@@ -98,7 +89,6 @@ export interface FileRouteTypes {
     | '/admin'
     | '/library'
     | '/login'
-    | '/payments'
     | '/sitemap.xml'
     | '/games/$id'
   fileRoutesByTo: FileRoutesByTo
@@ -108,7 +98,6 @@ export interface FileRouteTypes {
     | '/admin'
     | '/library'
     | '/login'
-    | '/payments'
     | '/sitemap.xml'
     | '/games/$id'
   id:
@@ -118,7 +107,6 @@ export interface FileRouteTypes {
     | '/admin'
     | '/library'
     | '/login'
-    | '/payments'
     | '/sitemap.xml'
     | '/games/$id'
   fileRoutesById: FileRoutesById
@@ -129,7 +117,6 @@ export interface RootRouteChildren {
   AdminRoute: typeof AdminRoute
   LibraryRoute: typeof LibraryRoute
   LoginRoute: typeof LoginRoute
-  PaymentsRoute: typeof PaymentsRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   GamesIdRoute: typeof GamesIdRoute
 }
@@ -141,13 +128,6 @@ declare module '@tanstack/react-router' {
       path: '/sitemap.xml'
       fullPath: '/sitemap.xml'
       preLoaderRoute: typeof SitemapDotxmlRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/payments': {
-      id: '/payments'
-      path: '/payments'
-      fullPath: '/payments'
-      preLoaderRoute: typeof PaymentsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login': {
@@ -201,10 +181,19 @@ const rootRouteChildren: RootRouteChildren = {
   AdminRoute: AdminRoute,
   LibraryRoute: LibraryRoute,
   LoginRoute: LoginRoute,
-  PaymentsRoute: PaymentsRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   GamesIdRoute: GamesIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
