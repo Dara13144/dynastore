@@ -14,28 +14,6 @@ async function assertAdmin(userId: string) {
   if (!data) throw new Error("forbidden");
 }
 
-// Fire-and-forget Telegram notify to all configured chat IDs
-// Always notify this group in addition to TELEGRAM_CHAT_IDS
-const TELEGRAM_DEFAULT_GROUP = "-1003892184606";
-
-async function notifyTelegram(text: string): Promise<void> {
-  const token = process.env.TELEGRAM_BOT_TOKEN;
-  const envIds = (process.env.TELEGRAM_CHAT_IDS ?? "").split(",").map((s) => s.trim()).filter(Boolean);
-  const chatIds = Array.from(new Set([...envIds, TELEGRAM_DEFAULT_GROUP]));
-  if (!token || chatIds.length === 0) return;
-  await Promise.all(chatIds.map(async (chat_id) => {
-    try {
-      const r = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ chat_id, text, parse_mode: "HTML", disable_web_page_preview: true }),
-      });
-      if (!r.ok) console.error("telegram send failed", r.status, await r.text());
-    } catch (e) {
-      console.error("telegram send error", e);
-    }
-  }));
-}
 
 async function userLabel(userId: string): Promise<string> {
   const { data } = await supabaseAdmin.from("profiles").select("display_name").eq("user_id", userId).maybeSingle();
