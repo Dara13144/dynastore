@@ -186,12 +186,6 @@ function AdminDashboard() {
           <button
             key={s}
             onClick={() => setFilter(s)}
-
-      <div className="flex flex-wrap items-center gap-2 mb-4">
-        {(["all", "pending", "paid", "expired"] as const).map((s) => (
-          <button
-            key={s}
-            onClick={() => setFilter(s)}
             className={`px-3 py-1 rounded-full text-xs border ${
               filter === s
                 ? "bg-primary text-primary-foreground border-primary"
