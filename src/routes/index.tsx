@@ -911,7 +911,7 @@ function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () 
   };
 
   return (
-    <ModalShell onClose={onClose} eyebrow="Bakong KHQR" title="ស្កេនដើម្បីបង់ប្រាក់">
+    <ModalShell onClose={closeAndClear} eyebrow="Bakong KHQR" title="ស្កេនដើម្បីបង់ប្រាក់">
       <div className="rounded-2xl bg-background/40 p-5 ring-1 ring-border">
         <div className="flex items-center justify-between">
           <div>
