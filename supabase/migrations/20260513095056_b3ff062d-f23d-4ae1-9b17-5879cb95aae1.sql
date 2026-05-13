@@ -1,0 +1,1 @@
+UPDATE storage.buckets SET file_size_limit = 53687091200 WHERE id = 'game-files';
