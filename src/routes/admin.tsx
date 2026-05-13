@@ -62,15 +62,20 @@ function AdminPage() {
             <Link to="/" className="text-muted-foreground hover:text-foreground"><ArrowLeft className="h-4 w-4" /></Link>
             <h1 className="font-display text-lg gradient-text">Admin Dashboard</h1>
           </div>
-          <nav className="flex gap-1 rounded-full bg-muted/30 p-1">
+          <nav className="flex gap-1 rounded-full bg-muted/30 p-1 overflow-x-auto">
             <TabBtn active={tab === "games"} onClick={() => setTab("games")} icon={<Gamepad2 className="h-3.5 w-3.5" />} label="Games" />
             <TabBtn active={tab === "users"} onClick={() => setTab("users")} icon={<Users className="h-3.5 w-3.5" />} label="Users" />
+            <TabBtn active={tab === "payments"} onClick={() => setTab("payments")} icon={<Receipt className="h-3.5 w-3.5" />} label="Payments" />
+            <TabBtn active={tab === "settings"} onClick={() => setTab("settings")} icon={<SettingsIcon className="h-3.5 w-3.5" />} label="Settings" />
           </nav>
         </div>
       </header>
 
       <main className="container mx-auto px-4 py-6">
-        {tab === "games" ? <GamesTab /> : <UsersTab />}
+        {tab === "games" && <GamesTab />}
+        {tab === "users" && <UsersTab />}
+        {tab === "payments" && <PaymentsTab />}
+        {tab === "settings" && <SettingsTab />}
       </main>
     </div>
   );
