@@ -374,10 +374,10 @@ function Field({ label, value, onChange, type = "text", placeholder }: { label: 
   );
 }
 
-function GameRowEditor({ game, busy, onSave, onDelete, onReplaceFile, validateFile, onValidationError, allowedExt, maxBytes }: {
+function GameRowEditor({ game, busy, onSave, onDelete, onReplaceFile, validateFile, onValidationError }: {
   game: GameRow; busy: boolean;
   onSave: (p: Partial<GameRow>) => void; onDelete: () => void; onReplaceFile: (f: File) => void;
-  validateFile: (f: File) => string | null; onValidationError: (m: string) => void; allowedExt: string[]; maxBytes: number;
+  validateFile: (f: File) => string | null; onValidationError: (m: string) => void;
 }) {
   const [edit, setEdit] = useState<GameRow>(game);
   useEffect(() => setEdit(game), [game]);
