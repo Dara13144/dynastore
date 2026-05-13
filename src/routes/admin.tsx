@@ -386,10 +386,23 @@ function GameRowEditor({ game, busy, onSave, onDelete, onReplaceFile }: {
             <FileArchive className="h-3 w-3" /> {game.file_size_bytes ? (game.file_size_bytes >= 1024 ** 3 ? `${(game.file_size_bytes / 1024 ** 3).toFixed(2)}GB` : `${(game.file_size_bytes / 1024 / 1024).toFixed(1)}MB`) : "ok"}
           </span>
         ) : <span className="text-[11px] text-muted-foreground">—</span>}
-        <label className="block mt-1">
-          <span className="text-[10px] text-primary cursor-pointer hover:underline">{game.file_path ? "ប្តូរ" : "ផ្ទុកឡើង"}</span>
-          <input type="file" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) onReplaceFile(f); }} />
-        </label>
+        <div className="flex items-center justify-center gap-2 mt-1">
+          {game.file_path && (
+            <button
+              type="button"
+              onClick={async () => {
+                const { data, error } = await supabase.storage.from("game-files").createSignedUrl(game.file_path!, 300, { download: true });
+                if (error || !data?.signedUrl) return;
+                window.open(data.signedUrl, "_blank");
+              }}
+              className="text-[10px] text-emerald-400 hover:underline"
+            >ទាញយក</button>
+          )}
+          <label>
+            <span className="text-[10px] text-primary cursor-pointer hover:underline">{game.file_path ? "ប្តូរ" : "ផ្ទុកឡើង"}</span>
+            <input type="file" accept=".zip,.rar,.7z,.exe,.msi,.apk,.iso,.dmg,.pkg,.tar,.gz" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) onReplaceFile(f); }} />
+          </label>
+        </div>
       </td>
       <td className="px-4 py-3 text-center">
         <button disabled={busy} onClick={() => onSave({ visible: !game.visible })} className="rounded-full p-1.5 hover:bg-accent" title={game.visible ? "Hide" : "Show"}>
