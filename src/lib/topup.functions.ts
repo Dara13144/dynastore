@@ -13,6 +13,31 @@ async function assertAdmin(userId: string) {
   if (!data) throw new Error("forbidden");
 }
 
+// Fire-and-forget Telegram notify to all configured chat IDs
+async function notifyTelegram(text: string): Promise<void> {
+  const token = process.env.TELEGRAM_BOT_TOKEN;
+  const chatIds = (process.env.TELEGRAM_CHAT_IDS ?? "").split(",").map((s) => s.trim()).filter(Boolean);
+  if (!token || chatIds.length === 0) return;
+  await Promise.all(chatIds.map(async (chat_id) => {
+    try {
+      const r = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ chat_id, text, parse_mode: "HTML", disable_web_page_preview: true }),
+      });
+      if (!r.ok) console.error("telegram send failed", r.status, await r.text());
+    } catch (e) {
+      console.error("telegram send error", e);
+    }
+  }));
+}
+
+async function userLabel(userId: string): Promise<string> {
+  const { data } = await supabaseAdmin.from("profiles").select("display_name").eq("user_id", userId).maybeSingle();
+  return data?.display_name ?? userId.slice(0, 8);
+}
+
+
 async function coinsPerUsd(): Promise<number> {
   const { data } = await supabaseAdmin.from("app_settings").select("coins_per_usd").eq("id", 1).maybeSingle();
   return Math.max(1, Number(data?.coins_per_usd ?? 1));
