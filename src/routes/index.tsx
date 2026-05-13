@@ -300,41 +300,14 @@ function Recommendations({ onToast }: { onToast: (m: string) => void }) {
 
 function Footer() {
   const socials = [
-    {
-      label: "Telegram @Maodyna0110",
-      href: "https://t.me/Maodyna0110",
-      hover: "hover:bg-[#229ED9] hover:text-white hover:border-[#229ED9]",
-      icon: (
-        <svg viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor" aria-hidden="true">
-          <path d="M9.78 18.65l.28-4.23 7.68-6.92c.34-.31-.07-.46-.52-.19L7.74 13.24 3.64 11.95c-.88-.25-.89-.86.2-1.3l15.97-6.16c.73-.33 1.43.18 1.15 1.3l-2.72 12.81c-.19.91-.74 1.13-1.5.71l-4.14-3.05-1.99 1.93c-.23.23-.42.42-.83.42z" />
-        </svg>
-      ),
-    },
-    {
-      label: "TikTok @dynastore0",
-      href: "https://www.tiktok.com/@dynastore0?_r=1&_t=ZS-96Ki1RwLOSK",
-      hover: "hover:bg-black hover:text-white hover:border-black",
-      icon: (
-        <svg viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor" aria-hidden="true">
-          <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5.8 20.1a6.34 6.34 0 0 0 10.86-4.43V8.94a8.16 8.16 0 0 0 4.77 1.52V7a4.85 4.85 0 0 1-1.84-.31z" />
-        </svg>
-      ),
-    },
-    {
-      label: "Facebook",
-      href: "https://www.facebook.com/share/17miM2zVxY/",
-      hover: "hover:bg-[#1877F2] hover:text-white hover:border-[#1877F2]",
-      icon: (
-        <svg viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor" aria-hidden="true">
-          <path d="M22 12a10 10 0 1 0-11.56 9.88v-6.99H7.9V12h2.54V9.8c0-2.51 1.49-3.9 3.78-3.9 1.09 0 2.24.2 2.24.2v2.46h-1.26c-1.24 0-1.63.77-1.63 1.56V12h2.77l-.44 2.89h-2.33v6.99A10 10 0 0 0 22 12z" />
-        </svg>
-      ),
-    },
+    { label: "Telegram @Maodyna0110", href: "https://t.me/Maodyna0110", icon: iconTelegram },
+    { label: "TikTok @dynastore0", href: "https://www.tiktok.com/@dynastore0?_r=1&_t=ZS-96Ki1RwLOSK", icon: iconTiktok },
+    { label: "Facebook", href: "https://www.facebook.com/share/17miM2zVxY/", icon: iconFacebook },
   ];
   return (
     <footer className="border-t border-border/60 mt-10">
       <div className="container mx-auto px-4 py-8 flex flex-col items-center gap-4 text-center text-xs text-muted-foreground">
-        <div className="flex flex-wrap items-center justify-center gap-2">
+        <div className="flex items-center justify-center gap-3">
           {socials.map((s) => (
             <a
               key={s.label}
@@ -342,10 +315,10 @@ function Footer() {
               target="_blank"
               rel="noopener noreferrer"
               aria-label={s.label}
-              className={`inline-flex items-center gap-2 rounded-full border border-border/60 bg-card/50 px-3.5 py-1.5 text-xs font-medium text-foreground/90 transition-colors ${s.hover}`}
+              title={s.label}
+              className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-white/5 ring-1 ring-border/60 transition-transform hover:scale-110 hover:ring-primary"
             >
-              {s.icon}
-              <span>{s.label}</span>
+              <img src={s.icon} alt={s.label} className="h-9 w-9 rounded-full object-cover" />
             </a>
           ))}
         </div>
