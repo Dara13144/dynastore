@@ -191,7 +191,7 @@ function GameCard({ game, onToast, onTopup }: { game: Game; onToast: (m: string)
         <div className="mt-3 space-y-2">
           <div className="flex items-center justify-between text-xs">
             <div className="inline-flex items-center gap-1 font-semibold text-primary">
-              <Coins className="h-3.5 w-3.5" /> {game.price_coins.toLocaleString()}
+              <Wallet className="h-3.5 w-3.5" /> {game.price_coins.toLocaleString()}
             </div>
             {authed && !owned && (
               <div className={`inline-flex items-center gap-1 ${balance >= game.price_coins ? "text-emerald-400" : "text-amber-400"}`}>
@@ -381,7 +381,7 @@ function TopupModal({ onClose, onToast }: { onClose: () => void; onToast: (m: st
           const c = await checkFn({ data: { md5: r.md5 } });
           if (c.status === "paid") {
             stopPoll(); setStage("paid"); await refreshWallet();
-            onToast(`បានបន្ថែម ${r.Balance.toLocaleString()} Balance!`);
+            onToast(`បានបន្ថែម ${r.coins.toLocaleString()} Balance!`);
           } else if (c.status === "expired") {
             stopPoll(); setStage("expired");
           }
@@ -398,7 +398,7 @@ function TopupModal({ onClose, onToast }: { onClose: () => void; onToast: (m: st
     setStage("checking");
     try {
       const c = await checkFn({ data: { md5 } });
-      if (c.status === "paid") { stopPoll(); setStage("paid"); await refreshWallet(); onToast(`បានបន្ថែម ${Balance.toLocaleString()} Balance!`); }
+      if (c.status === "paid") { stopPoll(); setStage("paid"); await refreshWallet(); onToast(`បានបន្ថែម ${coins.toLocaleString()} Balance!`); }
       else if (c.status === "expired") { stopPoll(); setStage("expired"); }
       else { setStage("qr"); onToast("មិនទាន់ទទួលបានការបង់ប្រាក់"); }
     } catch (e) {
@@ -425,7 +425,7 @@ function TopupModal({ onClose, onToast }: { onClose: () => void; onToast: (m: st
           <h3 className="text-sm font-semibold inline-flex items-center gap-2"><Wallet className="h-4 w-4 text-primary" /> បន្ថែម Balance</h3>
           <div className="flex items-center gap-2">
             <span className="text-[11px] text-muted-foreground hidden sm:inline">Balance:</span>
-            <span className="text-xs font-semibold text-primary inline-flex items-center gap-1"><Coins className="h-3 w-3" /> {balance.toLocaleString()}</span>
+            <span className="text-xs font-semibold text-primary inline-flex items-center gap-1"><Wallet className="h-3 w-3" /> {balance.toLocaleString()}</span>
             <button onClick={onClose} className="rounded-full p-1.5 hover:bg-accent" aria-label="Close"><X className="h-4 w-4" /></button>
           </div>
         </div>
@@ -445,7 +445,7 @@ function TopupModal({ onClose, onToast }: { onClose: () => void; onToast: (m: st
             </div>
             <div className="rounded-xl bg-accent/40 px-3 py-2 text-xs flex items-center justify-between">
               <span>នឹងទទួលបាន</span>
-              <span className="font-semibold inline-flex items-center gap-1 text-primary"><Coins className="h-3.5 w-3.5" /> {(amount * 100).toLocaleString()}</span>
+              <span className="font-semibold inline-flex items-center gap-1 text-primary"><Wallet className="h-3.5 w-3.5" /> {(amount * 100).toLocaleString()}</span>
             </div>
             <button onClick={start} className="w-full rounded-xl bg-primary py-2.5 text-sm font-semibold text-primary-foreground hover:opacity-90 inline-flex items-center justify-center gap-2">
               បង្កើត KHQR
@@ -464,7 +464,7 @@ function TopupModal({ onClose, onToast }: { onClose: () => void; onToast: (m: st
           <div className="p-5 space-y-3 text-center">
             <div className="text-xs text-muted-foreground inline-flex items-center gap-1.5"><ShieldCheck className="h-3.5 w-3.5 text-emerald-400" /> ស្កេនជាមួយ Bakong / ABA / ធនាគារផ្សេងៗ</div>
             <div className="mx-auto inline-block rounded-xl bg-white p-3"><img src={qrDataUrl} alt="KHQR" className="h-64 w-64" /></div>
-            <div className="text-sm font-semibold">${amount} → {Balance.toLocaleString()} Balance</div>
+            <div className="text-sm font-semibold">${amount} → {coins.toLocaleString()} Balance</div>
             <div className="rounded-xl bg-amber-500/10 border border-amber-500/30 px-3 py-2 text-xs text-amber-300 inline-flex items-center gap-2 mx-auto">
               <Loader2 className={`h-3.5 w-3.5 ${polling ? "animate-spin" : ""}`} />
               <span>កំពុងរង់ចាំការបង់ប្រាក់ • ផុតក្នុង <span className="font-mono text-amber-200">{mm}:{ss}</span></span>
@@ -520,7 +520,7 @@ function TopupModal({ onClose, onToast }: { onClose: () => void; onToast: (m: st
           <div className="p-8 text-center space-y-3">
             <div className="mx-auto h-14 w-14 rounded-full bg-emerald-500/20 grid place-items-center"><Check className="h-7 w-7 text-emerald-400" /></div>
             <div className="font-display text-xl">បន្ថែមជោគជ័យ!</div>
-            <div className="text-sm text-muted-foreground">បាន {Balance.toLocaleString()} Balance ត្រូវបានបន្ថែមទៅ Balance របស់អ្នក។</div>
+            <div className="text-sm text-muted-foreground">បាន {coins.toLocaleString()} Balance ត្រូវបានបន្ថែមទៅ Balance របស់អ្នក។</div>
             <div className="rounded-xl bg-emerald-500/10 border border-emerald-500/30 px-3 py-2 text-xs inline-flex items-center gap-1.5 text-emerald-300 mx-auto">
               <Wallet className="h-3.5 w-3.5" /> Balance ថ្មី: <span className="font-semibold">{balance.toLocaleString()}</span>
             </div>
