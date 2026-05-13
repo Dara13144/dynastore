@@ -1283,6 +1283,18 @@ function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () 
         if (cancelled) return;
         setLastChecked(Date.now());
         setPollTick((n) => n + 1);
+        setApiLog((prev) => [
+          ...prev,
+          {
+            at: Date.now(),
+            tick: prev.length + 1,
+            md5: checkingMd5,
+            status: (r as any).status,
+            responseCode: (r as any).responseCode ?? null,
+            responseMessage: (r as any).responseMessage ?? null,
+            raw: r,
+          },
+        ].slice(-25));
         setTx((cur) => {
           if (!cur || cur.md5 !== checkingMd5) return cur;
           if (Date.now() >= cur.expiresAt) { setStatus("expired"); return cur; }
@@ -1305,7 +1317,21 @@ function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () 
           }
           return cur;
         });
-      } catch {}
+      } catch (err: any) {
+        setApiLog((prev) => [
+          ...prev,
+          {
+            at: Date.now(),
+            tick: prev.length + 1,
+            md5: checkingMd5,
+            status: "error",
+            responseCode: null,
+            responseMessage: null,
+            raw: null,
+            error: err?.message || String(err),
+          },
+        ].slice(-25));
+      }
     };
 
     // Immediate poll, then every 2s for fast PAID flip.
