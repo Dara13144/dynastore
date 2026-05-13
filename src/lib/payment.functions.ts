@@ -371,6 +371,22 @@ export const checkTopup = createServerFn({ method: "POST" })
 
     if (!paid) return { status: "pending" as const, balance: null as number | null, debug };
 
+    // TTL 5min hard guard: even if Bakong returns paid, refuse to credit a QR
+    // whose validity window has elapsed. This prevents late payments on a stale
+    // QR from crediting the user.
+    if (new Date(tx.expires_at).getTime() < Date.now()) {
+      await supabaseAdmin
+        .from("transactions")
+        .update({
+          status: "expired",
+          failure_reason: "paid_after_ttl_expired",
+          provider_payload: json,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("order_id", tx.order_id)
+        .in("status", ["pending"]);
+      return await regenerate("paid_after_ttl_expired");
+    }
 
     const { data: credit, error } = await supabaseAdmin.rpc("process_khqr_payment_atomic", {
       _order_id: tx.order_id,
