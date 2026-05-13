@@ -6,7 +6,6 @@ declare module "bakong-khqr" {
   export class IndividualInfo {
     constructor(
       bakongAccountId: string,
-      currency: number,
       merchantName: string,
       merchantCity: string,
       optionalData?: Record<string, unknown>
