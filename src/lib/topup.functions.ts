@@ -272,7 +272,7 @@ export const submitTopupProof = createServerFn({ method: "POST" })
         `📌 status: <code>${tx.status}</code>` +
         (data.note ? `\n📝 ${data.note}` : "");
 
-      await Promise.all(
+      const results = await Promise.all(
         chatIds.map(async (chat_id) => {
           try {
             const fd = new FormData();
@@ -280,13 +280,59 @@ export const submitTopupProof = createServerFn({ method: "POST" })
             fd.append("caption", caption);
             fd.append("parse_mode", "HTML");
             fd.append("photo", new Blob([new Uint8Array(bytes)], { type: data.contentType }), `proof.${ext}`);
-            await fetch(`https://api.telegram.org/bot${token}/sendPhoto`, { method: "POST", body: fd });
+            const res = await fetch(`https://api.telegram.org/bot${token}/sendPhoto`, { method: "POST", body: fd });
+            const j: any = await res.json().catch(() => ({}));
+            return { chat_id, ok: res.ok && j?.ok === true, error: j?.description ?? null };
           } catch (e) {
             console.error("telegram_proof_failed", chat_id, e);
+            return { chat_id, ok: false, error: e instanceof Error ? e.message : "network_error" };
           }
         })
       );
+      const sent = results.filter((r) => r.ok).length;
+      const failed = results.length - sent;
+      const firstError = results.find((r) => !r.ok)?.error ?? null;
+      return { ok: true, path, telegram: { sent, failed, total: results.length, error: firstError } };
     }
 
-    return { ok: true, path };
+    return { ok: true, path, telegram: { sent: 0, failed: 0, total: 0, error: "telegram_not_configured" } };
+  });
+
+export const adminConfirmTopup = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i) =>
+    z.object({
+      md5: z.string().length(32),
+      bakong_ref: z.string().max(120).optional(),
+    }).parse(i)
+  )
+  .handler(async ({ data, context }) => {
+    const { userId } = context;
+    const { data: role } = await supabaseAdmin
+      .from("user_roles").select("role").eq("user_id", userId).eq("role", "admin").maybeSingle();
+    if (!role) throw new Error("forbidden");
+
+    const { data: rpc, error } = await supabaseAdmin.rpc("credit_topup_atomic", {
+      _md5: data.md5,
+      _bakong_ref: data.bakong_ref ?? `manual:${userId.slice(0, 8)}`,
+    });
+    if (error) throw new Error(error.message);
+    const row = Array.isArray(rpc) ? rpc[0] : rpc;
+    if (row?.message === "credited") {
+      const { data: txRow } = await supabaseAdmin
+        .from("transactions").select("amount_usd, coins, user_id").eq("md5", data.md5).maybeSingle();
+      if (txRow) {
+        const { data: prof } = await supabaseAdmin
+          .from("profiles").select("display_name").eq("user_id", txRow.user_id).maybeSingle();
+        await notifyTelegramPaid({
+          userName: prof?.display_name ?? "Player",
+          userId: txRow.user_id,
+          amountUSD: Number(txRow.amount_usd),
+          coins: txRow.coins,
+          md5: data.md5,
+          bakongRef: data.bakong_ref ?? "manual",
+        });
+      }
+    }
+    return { ok: !!row?.ok, message: row?.message ?? "unknown", new_balance: row?.new_balance ?? 0 };
   });
