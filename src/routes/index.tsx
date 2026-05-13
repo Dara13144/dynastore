@@ -440,6 +440,30 @@ function TopupModal({ onClose, onToast }: { onClose: () => void; onToast: (m: st
           </div>
         </div>
 
+        {/* Real-time KHQR status badge (Khmer) */}
+        {stage !== "choose" && (() => {
+          const map: Record<TopupStage, { label: string; cls: string; dot: string; pulse: boolean }> = {
+            choose: { label: "ត្រៀមរួច", cls: "", dot: "", pulse: false },
+            creating: { label: "កំពុងបង្កើត KHQR…", cls: "bg-sky-500/10 text-sky-300 border-sky-500/30", dot: "bg-sky-400", pulse: true },
+            qr: { label: "កំពុងរង់ចាំការបង់ប្រាក់", cls: "bg-amber-500/10 text-amber-300 border-amber-500/30", dot: "bg-amber-400", pulse: true },
+            checking: { label: "កំពុងផ្ទៀងផ្ទាត់…", cls: "bg-sky-500/10 text-sky-300 border-sky-500/30", dot: "bg-sky-400", pulse: true },
+            paid: { label: "ទូទាត់ជោគជ័យ", cls: "bg-emerald-500/10 text-emerald-300 border-emerald-500/30", dot: "bg-emerald-400", pulse: false },
+            expired: { label: "QR ផុតកំណត់", cls: "bg-amber-500/10 text-amber-300 border-amber-500/30", dot: "bg-amber-400", pulse: false },
+            failed: { label: "បរាជ័យ", cls: "bg-destructive/10 text-destructive border-destructive/30", dot: "bg-destructive", pulse: false },
+          };
+          const s = map[stage];
+          return (
+            <div className="px-5 pt-3">
+              <div className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-[11px] font-semibold ${s.cls}`}>
+                <span className={`h-2 w-2 rounded-full ${s.dot} ${s.pulse ? "animate-pulse" : ""}`} />
+                <span>ស្ថានភាព: {s.label}</span>
+                {stage === "qr" && expiresAt && <span className="font-mono opacity-80">• {mm}:{ss}</span>}
+              </div>
+            </div>
+          );
+        })()}
+
+
         {stage === "choose" && (
           <div className="p-5 space-y-4">
             <p className="text-xs text-muted-foreground">1 USD = 1 Balance។ បង់ប្រាក់ភ្លាមៗតាម Bakong KHQR។ QR មានសុពលភាព 5 នាទី។</p>
