@@ -51,6 +51,7 @@ export const createTopupRequest = createServerFn({ method: "POST" })
     const who = await userLabel(context.userId);
     await notifyTelegram(
       `🆕 <b>New Topup Request</b>\n👤 ${who}\n💵 $${Number(data.amount_usd).toFixed(2)} → <b>${coins.toLocaleString()} coins</b>${data.note ? `\n📝 ${data.note}` : ""}\n🆔 <code>${row.id}</code>`,
+      "topup_submitted",
     );
     return row;
   });
