@@ -34,6 +34,7 @@ const GUEST_PROFILE: Profile = { display_name: "Player", avatar_url: null, bio: 
 
 type StoreCtx = {
   authed: boolean;
+  isAdmin: boolean;
   loading: boolean;
   profile: Profile;
   games: Game[];
