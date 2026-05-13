@@ -1,8 +1,9 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect } from "react";
-import { ArrowLeft, Trash2, Star, Check, Wallet, Library as LibraryIcon } from "lucide-react";
+import { useEffect, useState } from "react";
+import { ArrowLeft, Trash2, Star, Check, Wallet, Library as LibraryIcon, Download, Loader2 } from "lucide-react";
 import { StoreProvider, useStore } from "@/lib/store";
 import { useSession } from "@/hooks/use-session";
+import { supabase } from "@/integrations/supabase/client";
 import logoD from "@/assets/dyna-logo.jpeg";
 
 export const Route = createFileRoute("/library")({
