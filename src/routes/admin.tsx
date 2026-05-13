@@ -119,7 +119,7 @@ function GamesTab() {
 
   const [uploadPct, setUploadPct] = useState<number | null>(null);
   const ALLOWED_EXT = ["zip", "rar", "7z", "exe", "msi", "apk", "iso", "dmg", "pkg", "tar", "gz"];
-  const MAX_BYTES = 50 * 1024 ** 3; // 50 GB (bucket limit)
+  const MAX_BYTES = 5_000_000 * 1024 ** 3; // 5,000,000 GB (effectively unlimited)
   const validateFile = (file: File): string | null => {
     const ext = file.name.split(".").pop()?.toLowerCase() ?? "";
     if (!ALLOWED_EXT.includes(ext)) return `ប្រភេទឯកសារមិនអនុញ្ញាត (.${ext}). អនុញ្ញាត: ${ALLOWED_EXT.join(", ")}`;
