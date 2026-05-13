@@ -136,11 +136,15 @@ export const checkPayment = createServerFn({ method: "POST" })
       if (rpcErr) throw new Error(rpcErr.message);
       const row = Array.isArray(rpc) ? rpc[0] : rpc;
       // Whether this call credited or a previous one did, the user-facing status is "paid".
+      const hash = result.raw?.data?.hash ?? null;
       return {
         status: "paid" as const,
         coinsCredited: tx.coins,
         creditedNow: !!row?.credited,
+        bakongRef: hash,
+        bakongHash: hash,
         newBalance: row?.new_balance ?? null,
+        paidAt: new Date().toISOString(),
       };
     }
     return { status: "pending" as const };
