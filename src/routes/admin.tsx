@@ -325,7 +325,17 @@ function GamesTab() {
             <Field label="ស្លាក" value={draft.badge ?? ""} onChange={(v) => setDraft({ ...draft, badge: v })} />
             <Field label="ការពិពណ៌នា" value={draft.description ?? ""} onChange={(v) => setDraft({ ...draft, description: v })} />
             <Field label="តម្លៃ (Balance)" type="number" value={draft.price_coins ? String(draft.price_coins) : ""} placeholder="ឧ. 1500" onChange={(v) => setDraft({ ...draft, price_coins: Number(v) || 0 })} />
-            <Field label="URL រូបភាព (cover)" value={draft.image_url ?? ""} onChange={(v) => setDraft({ ...draft, image_url: v })} />
+            <div className="block">
+              <span className="block text-[10px] uppercase tracking-wider text-muted-foreground mb-1">URL រូបភាព (cover)</span>
+              <div className="flex items-center gap-2">
+                <input value={draft.image_url ?? ""} placeholder="https://… ឬ ផ្ទុករូបឡើង" onChange={(e) => setDraft({ ...draft, image_url: e.target.value })} className="flex-1 rounded-lg bg-input px-3 py-2 text-xs outline-none ring-1 ring-border focus:ring-primary" />
+                <label className="shrink-0 cursor-pointer rounded-full bg-primary/10 text-primary px-3 py-2 text-[11px] font-semibold hover:bg-primary/20">
+                  ផ្ទុករូប
+                  <input type="file" accept="image/*" className="hidden" onChange={async (e) => { const f = e.target.files?.[0]; if (!f) return; const url = await uploadCoverImage(f); if (url) setDraft({ ...draft, image_url: url }); e.target.value = ""; }} />
+                </label>
+              </div>
+              {draft.image_url && <img src={draft.image_url} alt="cover" className="mt-2 h-20 rounded-lg object-cover ring-1 ring-border" />}
+            </div>
             <label className="block">
               <span className="block text-[10px] uppercase tracking-wider text-muted-foreground mb-1">ឯកសារហ្គេម (zip/installer)</span>
               <input type="file" accept=".zip,.rar,.7z,.exe,.msi,.apk,.iso,.dmg,.pkg,.tar,.gz" onChange={(e) => { const f = e.target.files?.[0] ?? null; if (f) { const err = validateFile(f); if (err) { showToast(err); e.target.value = ""; return; } } setDraftFile(f); }} className="w-full text-xs file:mr-2 file:rounded-full file:border-0 file:bg-primary file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-primary-foreground" />
