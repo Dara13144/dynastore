@@ -1098,6 +1098,43 @@ function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () 
             );
           })()}
 
+          {/* Payment timeline: chronological log of every verification step */}
+          {events.length > 0 && (
+            <div className="mt-2 rounded-lg bg-background/40 p-2.5 ring-1 ring-border/70 text-xs">
+              <div className="mb-2 flex items-center gap-2">
+                <span className="rounded-full bg-violet-500/15 px-2 py-0.5 text-[10px] font-bold text-violet-400 ring-1 ring-violet-500/30">TIMELINE</span>
+                <span className="font-mono text-muted-foreground">verification steps</span>
+                <span className="ml-auto font-mono text-[10px] text-muted-foreground">{events.length} event{events.length === 1 ? "" : "s"}</span>
+              </div>
+              <ol className="relative space-y-1.5 border-l border-border/60 pl-3">
+                {events.map((e, i) => {
+                  const dot =
+                    e.kind === "khqr" ? "bg-cyan-400"
+                    : e.kind === "md5" ? "bg-blue-400"
+                    : e.kind === "bakong" ? "bg-amber-400"
+                    : e.kind === "credited" ? "bg-emerald-400"
+                    : e.kind === "expired" ? "bg-rose-400"
+                    : "bg-rose-500";
+                  const t0 = events[0].at;
+                  const dt = e.at - t0;
+                  return (
+                    <li key={i} className="relative">
+                      <span className={`absolute -left-[15px] top-1.5 h-2 w-2 rounded-full ring-2 ring-background ${dot}`} />
+                      <div className="flex items-baseline justify-between gap-2">
+                        <span className="font-semibold">{e.label}</span>
+                        <span className="font-mono text-[10px] text-muted-foreground">
+                          {new Date(e.at).toLocaleTimeString([], { hour12: false })}
+                          <span className="ml-1 opacity-60">+{(dt / 1000).toFixed(2)}s</span>
+                        </span>
+                      </div>
+                      {e.detail && <div className="font-mono text-[10px] text-muted-foreground">{e.detail}</div>}
+                    </li>
+                  );
+                })}
+              </ol>
+            </div>
+          )}
+
           {/* Debug panel: merchant config + final MD5 used to verify with Bakong */}
           <details
             open={debugOpen}
