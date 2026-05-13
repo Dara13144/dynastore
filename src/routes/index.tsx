@@ -8,6 +8,7 @@ import { createTopup as createTopupFn, checkPayment as checkPaymentFn, getMercha
 import { md5Hex } from "@/lib/md5";
 import heroImg from "@/assets/hero-arcade.jpg";
 import logoD from "@/assets/dyna-logo.jpeg";
+import { ReusedTopupBanner } from "@/components/ReusedTopupBanner";
 
 export const Route = createFileRoute("/")({
   head: () => ({
