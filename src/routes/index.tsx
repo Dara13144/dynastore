@@ -690,6 +690,14 @@ function TopupModal({ onClose, onToast }: { onClose: () => void; onToast: (m: st
                   <Copy className="h-3.5 w-3.5" /> ចម្លង
                 </button>
               </div>
+              {isExpired && (
+                <button
+                  onClick={() => start()}
+                  className="w-full rounded-xl bg-primary py-2.5 text-sm font-semibold text-primary-foreground hover:opacity-90 inline-flex items-center justify-center gap-2"
+                >
+                  <RefreshCw className="h-4 w-4" /> បង្កើត QR ថ្មី
+                </button>
+              )}
               <button onClick={() => reset()} className="w-full text-xs text-muted-foreground hover:text-foreground py-1">បោះបង់ហើយចាប់ផ្តើមឡើងវិញ</button>
             </div>
           );
