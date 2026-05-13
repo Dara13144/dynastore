@@ -1224,6 +1224,7 @@ function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () 
     setTx(null);
     setSecondsLeft(POLL_WINDOW_S);
     setEvents([]);
+    setReusedInfo(null);
 
     try {
       const res = await createTopup({ data: { packId: pack.id } });
