@@ -19,14 +19,10 @@ export const purchaseGame = createServerFn({ method: "POST" })
     const message = row?.message ?? "";
 
     if (ok && message === "purchased") {
-      const [{ data: profile }, { data: game }, { data: u }] = await Promise.all([
-        supabaseAdmin.from("profiles").select("display_name").eq("user_id", userId).maybeSingle(),
+      const [{ data: game }, who] = await Promise.all([
         supabaseAdmin.from("games").select("title, price_coins").eq("id", data.gameId).maybeSingle(),
-        supabaseAdmin.auth.admin.getUserById(userId).catch(() => ({ data: null as any })),
+        formatUserById(userId),
       ]);
-      const name = profile?.display_name ?? userId.slice(0, 8);
-      const email = u?.user?.email ?? "";
-      const who = email ? `${name} (${email})` : name;
       await notifyTelegram(
         `🎮 <b>Game Purchased</b>\n👤 ${who}\n🕹️ ${game?.title ?? data.gameId}\n💰 -${Number(game?.price_coins ?? 0).toLocaleString()} coins\n💼 Balance: ${Number(balance).toLocaleString()}`,
       );
