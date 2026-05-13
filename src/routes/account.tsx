@@ -33,7 +33,18 @@ export const Route = createFileRoute("/account")({
 function AccountPage() {
   const navigate = useNavigate();
   const { session, loading: sessionLoading } = useSession();
-  const { profile, signOut, updateProfile, refreshProfile } = useStore();
+  const { profile, signOut, updateProfile, refreshProfile, balance, refreshWallet } = useStore();
+  const [txs, setTxs] = useState<TxRow[]>([]);
+  const [txLoading, setTxLoading] = useState(false);
+
+  const loadTxs = async () => {
+    setTxLoading(true);
+    const { data } = await supabase.from("transactions").select("id, amount_usd, coins, status, created_at, paid_at, expires_at").order("created_at", { ascending: false }).limit(50);
+    setTxs((data ?? []) as TxRow[]);
+    setTxLoading(false);
+  };
+
+  useEffect(() => { if (session) loadTxs(); }, [session]);
 
   const [displayName, setDisplayName] = useState("");
   const [bio, setBio] = useState("");
