@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useStore } from "@/lib/store";
 import { ArrowLeft, Plus, Eye, EyeOff, Trash2, Save, Loader2, Users, Gamepad2, FileArchive, Settings as SettingsIcon, Receipt, Pencil, History, ChevronDown, ChevronUp } from "lucide-react";
 import { StoreProvider } from "@/lib/store";
-import { getAppSettings, updateAppSettings, adminSetUserBalance, listAllTransactions, listBalanceChanges } from "@/lib/admin.functions";
+import { getAppSettings, updateAppSettings, adminSetUserBalance, listAllTransactions, listBalanceChanges, listSettingsAudit } from "@/lib/admin.functions";
 
 export const Route = createFileRoute("/admin")({
   head: () => ({ meta: [{ title: "Admin — Dyna Store" }] }),
@@ -531,6 +531,55 @@ function SettingsTab() {
           <Save className="h-3.5 w-3.5" /> {busy ? "កំពុងរក្សាទុក…" : "រក្សាទុក"}
         </button>
         {msg && <span className="text-xs text-muted-foreground">{msg}</span>}
+      </div>
+      <SettingsAuditLog refreshKey={msg === "រក្សាទុករួច" ? 1 : 0} />
+    </div>
+  );
+}
+
+function SettingsAuditLog({ refreshKey }: { refreshKey: number }) {
+  type AuditRow = { id: string; changed_by: string; field: string; old_value: string | null; new_value: string | null; created_at: string; changed_by_name: string };
+  const [rows, setRows] = useState<AuditRow[] | null>(null);
+  const [loading, setLoading] = useState(true);
+  const list = useServerFn(listSettingsAudit);
+  useEffect(() => { (async () => {
+    setLoading(true);
+    try { const r = await list({}); setRows(r as AuditRow[]); }
+    catch { setRows([]); }
+    finally { setLoading(false); }
+  })(); }, [list, refreshKey]);
+
+  return (
+    <div className="rounded-2xl glass p-5 space-y-3">
+      <div className="flex items-center justify-between">
+        <h3 className="font-semibold text-sm flex items-center gap-1.5"><History className="h-4 w-4" /> ប្រវត្តិការផ្លាស់ប្តូរ Settings</h3>
+        <span className="text-[10px] text-muted-foreground">{rows?.length ?? 0} entries</span>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full text-xs">
+          <thead className="text-[10px] uppercase tracking-wider text-muted-foreground">
+            <tr>
+              <th className="text-left px-2 py-1.5">ពេលវេលា</th>
+              <th className="text-left px-2 py-1.5">ដោយ</th>
+              <th className="text-left px-2 py-1.5">Field</th>
+              <th className="text-left px-2 py-1.5">ពី</th>
+              <th className="text-left px-2 py-1.5">ទៅ</th>
+            </tr>
+          </thead>
+          <tbody>
+            {loading ? <tr><td colSpan={5} className="text-center py-4 text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin inline" /></td></tr>
+              : !rows || rows.length === 0 ? <tr><td colSpan={5} className="text-center py-4 text-muted-foreground">គ្មានប្រវត្តិ។</td></tr>
+              : rows.map((r) => (
+                <tr key={r.id} className="border-t border-border/40">
+                  <td className="px-2 py-1.5 text-muted-foreground whitespace-nowrap">{new Date(r.created_at).toLocaleString()}</td>
+                  <td className="px-2 py-1.5">{r.changed_by_name}</td>
+                  <td className="px-2 py-1.5 font-mono text-[10px]">{r.field}</td>
+                  <td className="px-2 py-1.5 font-mono text-[10px] text-muted-foreground max-w-[180px] truncate" title={r.old_value ?? ""}>{r.old_value ?? "—"}</td>
+                  <td className="px-2 py-1.5 font-mono text-[10px] text-primary max-w-[180px] truncate" title={r.new_value ?? ""}>{r.new_value ?? "—"}</td>
+                </tr>
+              ))}
+          </tbody>
+        </table>
       </div>
     </div>
   );
