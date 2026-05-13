@@ -65,6 +65,7 @@ export const createTopup = createServerFn({ method: "POST" })
     const merchantCity = process.env.BAKONG_MERCHANT_CITY;
     const merchantPhone = process.env.BAKONG_MERCHANT_PHONE;
     const acquiringBank = process.env.BAKONG_ACQUIRING_BANK;
+    const merchantId = process.env.BAKONG_MERCHANT_ID_NUMBER;
     if (!accountId) throw new Error("BAKONG_ACCOUNT_ID (or BAKONG_MERCHANT_ID) is not configured");
     if (!merchantName) throw new Error("BAKONG_MERCHANT_NAME is not configured");
     if (!merchantCity) throw new Error("BAKONG_MERCHANT_CITY is not configured");
@@ -79,7 +80,9 @@ export const createTopup = createServerFn({ method: "POST" })
       billNumber,
       storeLabel: pack.name.slice(0, 25),
       mobileNumber: merchantPhone?.replace(/\s+/g, "") || undefined,
-      terminalLabel: acquiringBank || undefined,
+      terminalLabel: undefined,
+      acquiringBank: acquiringBank || undefined,
+      merchantId: merchantId || undefined,
     });
     const totalCoins = pack.coins + (pack.bonus ?? 0);
 
