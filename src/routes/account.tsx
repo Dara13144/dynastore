@@ -8,6 +8,7 @@ import logoD from "@/assets/dyna-logo.jpeg";
 
 type TxRow = {
   id: string;
+  bakong_md5: string;
   amount_usd: number;
   coins: number;
   status: "pending" | "paid" | "failed" | "expired" | string;
@@ -44,7 +45,7 @@ function AccountPage() {
 
   const loadTxs = async () => {
     setTxLoading(true);
-    const { data } = await supabase.from("transactions").select("id, amount_usd, coins, status, created_at, paid_at, expires_at").order("created_at", { ascending: false }).limit(50);
+    const { data } = await supabase.from("transactions").select("id, bakong_md5, amount_usd, coins, status, created_at, paid_at, expires_at").order("created_at", { ascending: false }).limit(50);
     setTxs((data ?? []) as TxRow[]);
     setTxLoading(false);
   };
