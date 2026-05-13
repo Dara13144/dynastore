@@ -1035,7 +1035,7 @@ function CoinShop({ onBuyPack }: { onBuyPack: (p: CoinPack) => void }) {
                   className="inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-semibold text-coin-foreground transition hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
                   style={{ background: "var(--gradient-coin)" }}
                 >
-                  <Coins className="h-4 w-4" /> {hasError ? "Disabled" : `Topup $${p.price}`}
+                  <Coins className="h-4 w-4" /> {hasError ? "Disabled" : `Add $${p.price}`}
                 </button>
               </div>
               {i === 1 && <span className="absolute -top-3 right-0 rounded-full bg-accent px-2 py-0.5 text-[10px] font-bold text-accent-foreground">POPULAR</span>}
