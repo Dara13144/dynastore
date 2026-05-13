@@ -520,7 +520,7 @@ function TopupModal({ onClose, onToast }: { onClose: () => void; onToast: (m: st
       else if (c.status === "regenerated") {
         // Auto-refresh QR after expiry
         setQr(c.qr); setOrderId(c.orderId); setBakongMd5(c.bakongMd5);
-        setCoins(c.coins); setTtlWindow(new Date(c.expiresAt).getTime());
+        setCoins(c.coins); setTtlWindow(new Date(c.expiresAt).getTime(), c.issuedAt ? new Date(c.issuedAt).getTime() : undefined);
         try { const QR = (await import("qrcode")).default; setQrDataUrl(await QR.toDataURL(c.qr, { margin: 1, scale: 8 })); } catch {}
         setStage("qr");
         onToast("QR ថ្មីបានបង្កើត — សូមស្កេនបន្ត");
