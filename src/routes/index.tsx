@@ -428,7 +428,33 @@ function TopupModal({ onClose, onToast }: { onClose: () => void; onToast: (m: st
     }
   };
 
-  const verifyNow = async () => {
+  // Realtime: flip the UI the moment the transaction row turns paid/completed,
+  // without waiting for the next poll tick.
+  useEffect(() => {
+    if (!orderId) return;
+    const channel = supabase
+      .channel(`tx-${orderId}`)
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "transactions", filter: `order_id=eq.${orderId}` },
+        async (payload) => {
+          const newStatus = (payload.new as { status?: string } | null)?.status;
+          if (newStatus === "paid" || newStatus === "completed") {
+            stopPoll();
+            await refreshWallet();
+            recordAttempt("paid", payload.new, null, null, "realtime_update");
+            setStage("paid");
+            onToast(`បានបន្ថែម ${coins.toLocaleString()} Balance!`);
+          } else if (newStatus === "expired" || newStatus === "cancelled" || newStatus === "failed") {
+            stopPoll();
+            setStage(newStatus === "expired" ? "expired" : "failed");
+          }
+        },
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [orderId]);
     if (!orderId) return;
     setStage("checking");
     try {
