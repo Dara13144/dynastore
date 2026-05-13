@@ -1835,6 +1835,58 @@ function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () 
                 <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">QR Payload</div>
                 <div className="mt-1 max-h-24 overflow-auto break-all font-mono text-[10px] leading-relaxed">{tx.qrPayload}</div>
               </div>
+              <div className="rounded bg-background/40 p-2">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">checkPayment API log</span>
+                  <span className="ml-auto rounded-full bg-secondary px-2 py-0.5 text-[10px] font-bold">{apiLog.length}</span>
+                  {apiLog.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        try { await navigator.clipboard.writeText(JSON.stringify(apiLog, null, 2)); onToast("បានចម្លង API log"); }
+                        catch { onToast("ចម្លងបរាជ័យ"); }
+                      }}
+                      className="inline-flex items-center gap-1 rounded bg-secondary px-1.5 py-0.5 text-[10px] font-semibold hover:bg-secondary/80"
+                    >
+                      <Copy className="h-2.5 w-2.5" /> Copy
+                    </button>
+                  )}
+                </div>
+                {apiLog.length === 0 ? (
+                  <div className="text-[10px] text-muted-foreground italic">No checkPayment calls yet — polling starts when QR is shown.</div>
+                ) : (
+                  <ol className="grid gap-1 max-h-56 overflow-auto">
+                    {[...apiLog].reverse().map((c, i) => {
+                      const color =
+                        c.status === "paid" ? "ring-emerald-500/40 bg-emerald-500/5" :
+                        c.status === "expired" ? "ring-amber-500/40 bg-amber-500/5" :
+                        c.status === "error" ? "ring-rose-500/40 bg-rose-500/5" :
+                        "ring-border/60 bg-background/30";
+                      return (
+                        <li key={`${c.at}-${i}`} className={`rounded ring-1 p-1.5 text-[10px] font-mono ${color}`}>
+                          <div className="flex items-center gap-2">
+                            <span className="rounded bg-background/60 px-1.5 py-0.5 font-bold">#{c.tick}</span>
+                            <span className="uppercase tracking-wider">{c.status}</span>
+                            <span className="text-muted-foreground ml-auto">{new Date(c.at).toLocaleTimeString()}</span>
+                          </div>
+                          <div className="mt-1 text-muted-foreground truncate">md5 {c.md5.slice(0, 16)}…</div>
+                          {(c.responseCode != null || c.responseMessage) && (
+                            <div className="mt-0.5">
+                              code=<span className="text-foreground">{String(c.responseCode ?? "—")}</span>
+                              {c.responseMessage && <> · msg=<span className="text-foreground">{String(c.responseMessage)}</span></>}
+                            </div>
+                          )}
+                          {c.error && <div className="mt-0.5 text-rose-500 break-all">err: {c.error}</div>}
+                          <details className="mt-1">
+                            <summary className="cursor-pointer text-muted-foreground select-none">raw</summary>
+                            <pre className="mt-1 max-h-40 overflow-auto whitespace-pre-wrap break-all text-[10px] leading-snug">{JSON.stringify(c.raw, null, 2)}</pre>
+                          </details>
+                        </li>
+                      );
+                    })}
+                  </ol>
+                )}
+              </div>
             </div>
           </details>
 
