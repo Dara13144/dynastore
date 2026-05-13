@@ -62,13 +62,13 @@ function AdminPage() {
         <div className="container mx-auto px-4 h-14 flex items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <Link to="/" className="text-muted-foreground hover:text-foreground"><ArrowLeft className="h-4 w-4" /></Link>
-            <h1 className="font-display text-lg gradient-text">Admin Dashboard</h1>
+            <h1 className="font-display text-lg gradient-text">ផ្ទាំងគ្រប់គ្រង Admin</h1>
           </div>
           <nav className="flex gap-1 rounded-full bg-muted/30 p-1 overflow-x-auto">
-            <TabBtn active={tab === "games"} onClick={() => setTab("games")} icon={<Gamepad2 className="h-3.5 w-3.5" />} label="Games" />
-            <TabBtn active={tab === "users"} onClick={() => setTab("users")} icon={<Users className="h-3.5 w-3.5" />} label="Users" />
-            <TabBtn active={tab === "payments"} onClick={() => setTab("payments")} icon={<Receipt className="h-3.5 w-3.5" />} label="Payments" />
-            <TabBtn active={tab === "settings"} onClick={() => setTab("settings")} icon={<SettingsIcon className="h-3.5 w-3.5" />} label="Settings" />
+            <TabBtn active={tab === "games"} onClick={() => setTab("games")} icon={<Gamepad2 className="h-3.5 w-3.5" />} label="ហ្គេម" />
+            <TabBtn active={tab === "users"} onClick={() => setTab("users")} icon={<Users className="h-3.5 w-3.5" />} label="អ្នកប្រើ" />
+            <TabBtn active={tab === "payments"} onClick={() => setTab("payments")} icon={<Receipt className="h-3.5 w-3.5" />} label="ការទូទាត់" />
+            <TabBtn active={tab === "settings"} onClick={() => setTab("settings")} icon={<SettingsIcon className="h-3.5 w-3.5" />} label="កំណត់" />
           </nav>
         </div>
       </header>
@@ -275,13 +275,13 @@ function GamesTab() {
           )}
         </div>
         <select value={catFilter} onChange={(e) => setCatFilter(e.target.value)} className="rounded-full bg-input px-3 py-2 text-xs ring-1 ring-border focus:ring-primary outline-none">
-          <option value="all">គ្រប់ Category</option>
+          <option value="all">គ្រប់ប្រភេទ</option>
           {categories.map((c) => <option key={c} value={c}>{c}</option>)}
         </select>
         <div className="inline-flex rounded-full bg-muted/30 p-1 text-[11px] font-semibold">
           {(["all", "visible", "hidden"] as const).map((v) => (
             <button key={v} onClick={() => setVisFilter(v)} className={`px-3 py-1 rounded-full ${visFilter === v ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}>
-              {v === "all" ? "All" : v === "visible" ? "Visible" : "Hidden"}
+              {v === "all" ? "ទាំងអស់" : v === "visible" ? "បង្ហាញ" : "លាក់"}
             </button>
           ))}
         </div>
@@ -289,7 +289,7 @@ function GamesTab() {
           <button onClick={() => { setQuery(""); setCatFilter("all"); setVisFilter("all"); }} className="text-[11px] text-muted-foreground hover:text-foreground underline">សម្អាត</button>
         )}
         <button onClick={() => toggleSort("created_at")} className={`text-[11px] px-3 py-1.5 rounded-full ring-1 ring-border ${sortKey === "created_at" ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}>
-          Recently added{sortIcon("created_at")}
+          ថ្មីៗ{sortIcon("created_at")}
         </button>
       </div>
 
@@ -297,15 +297,15 @@ function GamesTab() {
         <div className="rounded-2xl glass p-5 space-y-3">
           <h3 className="font-semibold text-sm">បន្ថែមហ្គេមថ្មី</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <Field label="ID (slug)" value={draft.id} onChange={(v) => setDraft({ ...draft, id: v })} />
-            <Field label="Title" value={draft.title} onChange={(v) => setDraft({ ...draft, title: v })} />
-            <Field label="Category" value={draft.category} onChange={(v) => setDraft({ ...draft, category: v })} />
-            <Field label="Badge" value={draft.badge ?? ""} onChange={(v) => setDraft({ ...draft, badge: v })} />
-            <Field label="Description" value={draft.description ?? ""} onChange={(v) => setDraft({ ...draft, description: v })} />
+            <Field label="លេខសម្គាល់ (slug)" value={draft.id} onChange={(v) => setDraft({ ...draft, id: v })} />
+            <Field label="ចំណងជើង" value={draft.title} onChange={(v) => setDraft({ ...draft, title: v })} />
+            <Field label="ប្រភេទ" value={draft.category} onChange={(v) => setDraft({ ...draft, category: v })} />
+            <Field label="ស្លាក" value={draft.badge ?? ""} onChange={(v) => setDraft({ ...draft, badge: v })} />
+            <Field label="ការពិពណ៌នា" value={draft.description ?? ""} onChange={(v) => setDraft({ ...draft, description: v })} />
             <Field label="តម្លៃ (Balance)" type="number" value={draft.price_coins ? String(draft.price_coins) : ""} placeholder="ឧ. 1500" onChange={(v) => setDraft({ ...draft, price_coins: Number(v) || 0 })} />
-            <Field label="Image URL (cover)" value={draft.image_url ?? ""} onChange={(v) => setDraft({ ...draft, image_url: v })} />
+            <Field label="URL រូបភាព (cover)" value={draft.image_url ?? ""} onChange={(v) => setDraft({ ...draft, image_url: v })} />
             <label className="block">
-              <span className="block text-[10px] uppercase tracking-wider text-muted-foreground mb-1">Game File (zip/installer)</span>
+              <span className="block text-[10px] uppercase tracking-wider text-muted-foreground mb-1">ឯកសារហ្គេម (zip/installer)</span>
               <input type="file" accept=".zip,.rar,.7z,.exe,.msi,.apk,.iso,.dmg,.pkg,.tar,.gz" onChange={(e) => { const f = e.target.files?.[0] ?? null; if (f) { const err = validateFile(f); if (err) { showToast(err); e.target.value = ""; return; } } setDraftFile(f); }} className="w-full text-xs file:mr-2 file:rounded-full file:border-0 file:bg-primary file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-primary-foreground" />
               {draftFile && <span className="text-[10px] text-muted-foreground mt-1 block">{draftFile.name} · {(draftFile.size / 1024 / 1024).toFixed(2)} MB</span>}
               {uploadPct !== null && (
@@ -332,13 +332,13 @@ function GamesTab() {
           <table className="w-full text-sm">
             <thead className="bg-muted/30 text-xs uppercase tracking-wider text-muted-foreground">
               <tr>
-                <th className="text-left px-4 py-3">ID</th>
-                <th className="text-left px-4 py-3"><button onClick={() => toggleSort("title")} className="uppercase tracking-wider hover:text-foreground">Title{sortIcon("title")}</button></th>
-                <th className="text-left px-4 py-3"><button onClick={() => toggleSort("category")} className="uppercase tracking-wider hover:text-foreground">Category{sortIcon("category")}</button></th>
-                <th className="text-right px-4 py-3"><button onClick={() => toggleSort("price_coins")} className="uppercase tracking-wider hover:text-foreground">Price{sortIcon("price_coins")}</button></th>
-                <th className="text-center px-4 py-3">File</th>
-                <th className="text-center px-4 py-3">Visible</th>
-                <th className="text-right px-4 py-3">Action</th>
+                <th className="text-left px-4 py-3">លេខ</th>
+                <th className="text-left px-4 py-3"><button onClick={() => toggleSort("title")} className="uppercase tracking-wider hover:text-foreground">ចំណងជើង{sortIcon("title")}</button></th>
+                <th className="text-left px-4 py-3"><button onClick={() => toggleSort("category")} className="uppercase tracking-wider hover:text-foreground">ប្រភេទ{sortIcon("category")}</button></th>
+                <th className="text-right px-4 py-3"><button onClick={() => toggleSort("price_coins")} className="uppercase tracking-wider hover:text-foreground">តម្លៃ{sortIcon("price_coins")}</button></th>
+                <th className="text-center px-4 py-3">ឯកសារ</th>
+                <th className="text-center px-4 py-3">បង្ហាញ</th>
+                <th className="text-right px-4 py-3">សកម្មភាព</th>
               </tr>
             </thead>
             <tbody>
@@ -376,7 +376,7 @@ function GameRowEditor({ game, busy, onSave, onDelete, onReplaceFile }: {
       <td className="px-4 py-3 font-mono text-[11px] text-muted-foreground">{game.id}</td>
       <td className="px-4 py-3">
         <input value={edit.title} onChange={(e) => setEdit({ ...edit, title: e.target.value })} className="w-full bg-transparent outline-none focus:ring-1 focus:ring-primary rounded px-1" />
-        <input value={edit.image_url ?? ""} placeholder="Image URL" onChange={(e) => setEdit({ ...edit, image_url: e.target.value })} className="w-full text-[10px] text-muted-foreground bg-transparent outline-none focus:ring-1 focus:ring-primary rounded px-1 mt-0.5" />
+        <input value={edit.image_url ?? ""} placeholder="URL រូបភាព" onChange={(e) => setEdit({ ...edit, image_url: e.target.value })} className="w-full text-[10px] text-muted-foreground bg-transparent outline-none focus:ring-1 focus:ring-primary rounded px-1 mt-0.5" />
       </td>
       <td className="px-4 py-3"><input value={edit.category} onChange={(e) => setEdit({ ...edit, category: e.target.value })} className="w-24 bg-transparent outline-none focus:ring-1 focus:ring-primary rounded px-1" /></td>
       <td className="px-4 py-3 text-right"><input type="number" value={edit.price_coins} onChange={(e) => setEdit({ ...edit, price_coins: Number(e.target.value) || 0 })} className="w-20 text-right bg-transparent outline-none focus:ring-1 focus:ring-primary rounded px-1" /></td>
@@ -405,13 +405,13 @@ function GameRowEditor({ game, busy, onSave, onDelete, onReplaceFile }: {
         </div>
       </td>
       <td className="px-4 py-3 text-center">
-        <button disabled={busy} onClick={() => onSave({ visible: !game.visible })} className="rounded-full p-1.5 hover:bg-accent" title={game.visible ? "Hide" : "Show"}>
+        <button disabled={busy} onClick={() => onSave({ visible: !game.visible })} className="rounded-full p-1.5 hover:bg-accent" title={game.visible ? "លាក់" : "បង្ហាញ"}>
           {game.visible ? <Eye className="h-4 w-4 text-primary" /> : <EyeOff className="h-4 w-4 text-muted-foreground" />}
         </button>
       </td>
       <td className="px-4 py-3 text-right">
         <div className="inline-flex gap-1">
-          <button disabled={!dirty || busy} onClick={() => onSave({ title: edit.title, category: edit.category, badge: edit.badge || null, price_coins: edit.price_coins, image_url: edit.image_url || null })} className="inline-flex items-center gap-1 rounded-full bg-primary/10 text-primary px-3 py-1 text-[11px] font-semibold disabled:opacity-30"><Save className="h-3 w-3" /> Save</button>
+          <button disabled={!dirty || busy} onClick={() => onSave({ title: edit.title, category: edit.category, badge: edit.badge || null, price_coins: edit.price_coins, image_url: edit.image_url || null })} className="inline-flex items-center gap-1 rounded-full bg-primary/10 text-primary px-3 py-1 text-[11px] font-semibold disabled:opacity-30"><Save className="h-3 w-3" /> រក្សាទុក</button>
           <button disabled={busy} onClick={onDelete} className="rounded-full bg-destructive/10 text-destructive px-2 py-1 text-[11px] font-semibold"><Trash2 className="h-3 w-3" /></button>
         </div>
       </td>
@@ -455,8 +455,8 @@ function UsersTab() {
             <thead className="bg-muted/30 text-xs uppercase tracking-wider text-muted-foreground">
               <tr>
                 <th className="text-left px-4 py-3">ឈ្មោះ</th>
-                <th className="text-left px-4 py-3">User ID</th>
-                <th className="text-right px-4 py-3">Balance</th>
+                <th className="text-left px-4 py-3">លេខអ្នកប្រើ</th>
+                <th className="text-right px-4 py-3">សមតុល្យ</th>
                 <th className="text-right px-4 py-3">ហ្គេមដែលបាន</th>
                 <th className="text-center px-4 py-3">តួនាទី</th>
                 <th className="text-left px-4 py-3">បង្កើត</th>
@@ -528,7 +528,7 @@ function UserRowEditor({ user, onUpdate }: { user: UserRow; onUpdate: (b: number
             <div className="inline-flex flex-col items-end gap-1">
               <span className="inline-flex items-center gap-1">
                 <input type="number" min={0} value={val} onChange={(e) => setVal(e.target.value)} className="w-24 text-right rounded bg-input px-2 py-1 text-xs ring-1 ring-border focus:ring-primary outline-none" />
-                <button disabled={busy} onClick={save} className="rounded-full bg-primary/10 text-primary px-2 py-1 text-[11px] font-semibold disabled:opacity-50">Save</button>
+                <button disabled={busy} onClick={save} className="rounded-full bg-primary/10 text-primary px-2 py-1 text-[11px] font-semibold disabled:opacity-50">រក្សាទុក</button>
                 <button onClick={() => { setEditing(false); setVal(String(user.balance)); setReason(""); }} className="text-[11px] text-muted-foreground">×</button>
               </span>
               <input type="text" maxLength={200} value={reason} onChange={(e) => setReason(e.target.value)} placeholder="មូលហេតុ (សេចក្តីពន្យល់)" className="w-56 text-left rounded bg-input px-2 py-1 text-[11px] ring-1 ring-border focus:ring-primary outline-none" />
@@ -541,8 +541,8 @@ function UserRowEditor({ user, onUpdate }: { user: UserRow; onUpdate: (b: number
         </td>
         <td className="px-4 py-3 text-right">{user.owned}</td>
         <td className="px-4 py-3 text-center">
-          {user.is_admin ? <span className="inline-flex items-center rounded-full bg-primary/15 text-primary px-2 py-0.5 text-[10px] font-semibold">Admin</span>
-            : <span className="text-[10px] text-muted-foreground">User</span>}
+          {user.is_admin ? <span className="inline-flex items-center rounded-full bg-primary/15 text-primary px-2 py-0.5 text-[10px] font-semibold">អ្នកគ្រប់គ្រង</span>
+            : <span className="text-[10px] text-muted-foreground">អ្នកប្រើ</span>}
         </td>
         <td className="px-4 py-3 text-xs text-muted-foreground">{new Date(user.created_at).toLocaleDateString()}</td>
         <td className="px-4 py-3 text-right">
@@ -641,19 +641,19 @@ function SettingsTab() {
       <div className="rounded-2xl glass p-5 space-y-4">
         <h3 className="font-semibold text-sm">អត្រាប្តូរ & ពេលផុតកំណត់</h3>
         <div className="grid grid-cols-2 gap-3">
-          <Field label="1 USD = ? Balance" type="number" value={String(s.coins_per_usd)} onChange={(v) => setS({ ...s, coins_per_usd: Number(v) || 1 })} />
+          <Field label="១ ដុល្លារ = ? សមតុល្យ" type="number" value={String(s.coins_per_usd)} onChange={(v) => setS({ ...s, coins_per_usd: Number(v) || 1 })} />
           <Field label="QR ផុតកំណត់ (នាទី)" type="number" value={String(s.tx_ttl_min)} onChange={(v) => setS({ ...s, tx_ttl_min: Number(v) || 5 })} />
         </div>
       </div>
       <div className="rounded-2xl glass p-5 space-y-4">
-        <h3 className="font-semibold text-sm">Bakong Merchant</h3>
+        <h3 className="font-semibold text-sm">ព័ត៌មាន Bakong Merchant</h3>
         <div className="grid grid-cols-1 gap-3">
-          <Field label="Bakong Account ID (ឧ. dyna_store@aclb)" value={s.bakong_account_id ?? ""} onChange={(v) => setS({ ...s, bakong_account_id: v })} />
+          <Field label="លេខគណនី Bakong (ឧ. dyna_store@aclb)" value={s.bakong_account_id ?? ""} onChange={(v) => setS({ ...s, bakong_account_id: v })} />
           <div className="grid grid-cols-2 gap-3">
-            <Field label="Merchant Name" value={s.bakong_merchant_name ?? ""} onChange={(v) => setS({ ...s, bakong_merchant_name: v })} />
-            <Field label="Merchant City" value={s.bakong_merchant_city ?? ""} onChange={(v) => setS({ ...s, bakong_merchant_city: v })} />
+            <Field label="ឈ្មោះហាង" value={s.bakong_merchant_name ?? ""} onChange={(v) => setS({ ...s, bakong_merchant_name: v })} />
+            <Field label="ទីក្រុង" value={s.bakong_merchant_city ?? ""} onChange={(v) => setS({ ...s, bakong_merchant_city: v })} />
           </div>
-          <Field label="Merchant Phone" value={s.bakong_merchant_phone ?? ""} onChange={(v) => setS({ ...s, bakong_merchant_phone: v })} />
+          <Field label="លេខទូរស័ព្ទ" value={s.bakong_merchant_phone ?? ""} onChange={(v) => setS({ ...s, bakong_merchant_phone: v })} />
         </div>
       </div>
       <div className="flex items-center gap-3">
@@ -691,7 +691,7 @@ function SettingsAuditLog({ refreshKey }: { refreshKey: number }) {
             <tr>
               <th className="text-left px-2 py-1.5">ពេលវេលា</th>
               <th className="text-left px-2 py-1.5">ដោយ</th>
-              <th className="text-left px-2 py-1.5">Field</th>
+              <th className="text-left px-2 py-1.5">វាល</th>
               <th className="text-left px-2 py-1.5">ពី</th>
               <th className="text-left px-2 py-1.5">ទៅ</th>
             </tr>
@@ -735,10 +735,10 @@ function PaymentsTab() {
             <thead className="bg-muted/30 text-xs uppercase tracking-wider text-muted-foreground">
               <tr>
                 <th className="text-left px-4 py-3">ពេលវេលា</th>
-                <th className="text-left px-4 py-3">User</th>
+                <th className="text-left px-4 py-3">អ្នកប្រើ</th>
                 <th className="text-left px-4 py-3">MD5</th>
-                <th className="text-right px-4 py-3">USD</th>
-                <th className="text-right px-4 py-3">Balance</th>
+                <th className="text-right px-4 py-3">ដុល្លារ</th>
+                <th className="text-right px-4 py-3">សមតុល្យ</th>
                 <th className="text-center px-4 py-3">ស្ថានភាព</th>
                 <th className="text-left px-4 py-3">ផុត / បង់</th>
               </tr>
