@@ -71,9 +71,14 @@ function Header({ onSettings }: { onSettings: () => void }) {
             <Settings className="h-4 w-4" />
           </button>
           {authed ? (
-            <button onClick={() => signOut()} className="inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-xs font-medium hover:bg-accent">
-              <LogOut className="h-3.5 w-3.5" /> ចេញ
-            </button>
+            <>
+              <Link to="/account" className="inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-xs font-medium hover:bg-accent">
+                គណនី
+              </Link>
+              <button onClick={() => signOut()} className="inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-xs font-medium hover:bg-accent">
+                <LogOut className="h-3.5 w-3.5" /> ចេញ
+              </button>
+            </>
           ) : (
             <Link to="/login" className="inline-flex items-center gap-1.5 rounded-full bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground hover:opacity-90">
               <LogIn className="h-3.5 w-3.5" /> ចូល
@@ -233,8 +238,19 @@ function Footer() {
 }
 
 function SettingsModal({ onClose, onToast }: { onClose: () => void; onToast: (m: string) => void }) {
-  const { profile, setProfile, authed } = useStore();
-  const [name, setName] = useState(profile.name);
+  const { profile, updateProfile, authed } = useStore();
+  const [name, setName] = useState(profile.display_name);
+  const [saving, setSaving] = useState(false);
+
+  const save = async () => {
+    if (!authed) { onToast("សូមចូលគណនីជាមុនសិន"); return; }
+    setSaving(true);
+    const { error } = await updateProfile({ display_name: name.trim() || "Player" });
+    setSaving(false);
+    if (error) { onToast(error); return; }
+    onToast("បានរក្សាទុក");
+    onClose();
+  };
 
   return (
     <div className="fixed inset-0 z-[120] flex items-center justify-center bg-background/80 backdrop-blur-sm p-4 animate-in fade-in" onClick={onClose}>
@@ -248,16 +264,19 @@ function SettingsModal({ onClose, onToast }: { onClose: () => void; onToast: (m:
             <label className="text-xs text-muted-foreground">ឈ្មោះបង្ហាញ</label>
             <input value={name} onChange={(e) => setName(e.target.value)} className="mt-1 w-full rounded-xl bg-input px-4 py-2.5 text-sm outline-none ring-1 ring-border focus:ring-primary" />
           </div>
-          {!authed && (
+          {authed ? (
+            <Link to="/account" onClick={onClose} className="block text-xs text-primary hover:underline">មើលគណនីពេញលេញ →</Link>
+          ) : (
             <p className="text-xs text-muted-foreground">សូមចូលគណនីដើម្បីរក្សាការកំណត់នៅគ្រប់ឧបករណ៍។</p>
           )}
           <div className="flex justify-end gap-2 pt-2">
             <button onClick={onClose} className="rounded-full border border-border px-4 py-1.5 text-xs hover:bg-accent">បោះបង់</button>
             <button
-              onClick={() => { setProfile({ ...profile, name: name.trim() || "Player" }); onToast("បានរក្សាទុក"); onClose(); }}
-              className="rounded-full bg-primary px-4 py-1.5 text-xs font-semibold text-primary-foreground hover:opacity-90"
+              onClick={save}
+              disabled={saving}
+              className="rounded-full bg-primary px-4 py-1.5 text-xs font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-60"
             >
-              រក្សាទុក
+              {saving ? "កំពុងរក្សាទុក…" : "រក្សាទុក"}
             </button>
           </div>
         </div>
