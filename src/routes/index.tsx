@@ -1169,6 +1169,7 @@ function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () 
         coins: data.coins,
         createdAt: data.createdAt,
         expiresAt: data.expiresAt,
+        billNumber: null,
       });
       setSecondsLeft(Math.max(0, Math.ceil((data.expiresAt - Date.now()) / 1000)));
       setStatus("qr");
