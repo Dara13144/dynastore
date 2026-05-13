@@ -958,7 +958,7 @@ function SettingsModal({ onClose, onToast }: { onClose: () => void; onToast: (m:
               onClick={() => { onClose(); setTimeout(() => { document.getElementById("coins")?.scrollIntoView({ behavior: "smooth" }); }, 50); }}
               className="inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold text-coin-foreground transition hover:scale-105"
               style={{ background: "var(--gradient-coin)" }}>
-              <Coins className="h-4 w-4" /> Topup Coins
+              <Coins className="h-4 w-4" /> Add Balance
             </button>
           </div>
           <div className="mt-4 grid grid-cols-4 gap-2">
