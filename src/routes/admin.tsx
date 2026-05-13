@@ -119,7 +119,7 @@ function GamesTab() {
 
   const [uploadPct, setUploadPct] = useState<number | null>(null);
   const ALLOWED_EXT = ["zip", "rar", "7z", "exe", "msi", "apk", "iso", "dmg", "pkg", "tar", "gz"];
-  const MAX_BYTES = 50 * 1024 ** 3; // 50 GB (bucket limit)
+  const MAX_BYTES = 5_000_000 * 1024 ** 3; // 5,000,000 GB (effectively unlimited)
   const validateFile = (file: File): string | null => {
     const ext = file.name.split(".").pop()?.toLowerCase() ?? "";
     if (!ALLOWED_EXT.includes(ext)) return `ប្រភេទឯកសារមិនអនុញ្ញាត (.${ext}). អនុញ្ញាត: ${ALLOWED_EXT.join(", ")}`;
@@ -342,7 +342,7 @@ function GamesTab() {
               </tr>
             </thead>
             <tbody>
-              {filtered.map((g) => <GameRowEditor key={g.id} game={g} busy={busy} onSave={(p) => updateGame(g.id, p)} onDelete={() => deleteGame(g)} onReplaceFile={(f) => replaceFile(g, f)} />)}
+              {filtered.map((g) => <GameRowEditor key={g.id} game={g} busy={busy} onSave={(p) => updateGame(g.id, p)} onDelete={() => deleteGame(g)} onReplaceFile={(f) => replaceFile(g, f)} validateFile={validateFile} onValidationError={showToast} allowedExt={ALLOWED_EXT} maxBytes={MAX_BYTES} />)}
               {filtered.length === 0 && <tr><td colSpan={7} className="text-center py-8 text-muted-foreground text-xs">{games.length === 0 ? "គ្មានហ្គេម។" : "រកមិនឃើញ។"}</td></tr>}
             </tbody>
           </table>
@@ -363,9 +363,10 @@ function Field({ label, value, onChange, type = "text", placeholder }: { label: 
   );
 }
 
-function GameRowEditor({ game, busy, onSave, onDelete, onReplaceFile }: {
+function GameRowEditor({ game, busy, onSave, onDelete, onReplaceFile, validateFile, onValidationError, allowedExt, maxBytes }: {
   game: GameRow; busy: boolean;
   onSave: (p: Partial<GameRow>) => void; onDelete: () => void; onReplaceFile: (f: File) => void;
+  validateFile: (f: File) => string | null; onValidationError: (m: string) => void; allowedExt: string[]; maxBytes: number;
 }) {
   const [edit, setEdit] = useState<GameRow>(game);
   useEffect(() => setEdit(game), [game]);
@@ -398,9 +399,21 @@ function GameRowEditor({ game, busy, onSave, onDelete, onReplaceFile }: {
               className="text-[10px] text-emerald-400 hover:underline"
             >ទាញយក</button>
           )}
-          <label>
+          <label title={`អនុញ្ញាត: ${allowedExt.join(", ")} • កំណត់ ${(maxBytes / 1024 ** 3).toFixed(0)}GB`}>
             <span className="text-[10px] text-primary cursor-pointer hover:underline">{game.file_path ? "ប្តូរ" : "ផ្ទុកឡើង"}</span>
-            <input type="file" accept=".zip,.rar,.7z,.exe,.msi,.apk,.iso,.dmg,.pkg,.tar,.gz" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) onReplaceFile(f); }} />
+            <input
+              type="file"
+              accept={allowedExt.map((e) => `.${e}`).join(",")}
+              className="hidden"
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (!f) return;
+                const err = validateFile(f);
+                if (err) { onValidationError(err); e.target.value = ""; return; }
+                onReplaceFile(f);
+                e.target.value = "";
+              }}
+            />
           </label>
         </div>
       </td>

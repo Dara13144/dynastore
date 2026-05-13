@@ -29,33 +29,47 @@ export const createTopup = createServerFn({ method: "POST" })
     const { userId } = context;
     const { coinsPerUsd, ttlMin, accountId, merchantName, merchantCity, phone } = await loadSettings();
 
-    const info = new IndividualInfo(accountId, merchantName, merchantCity, {
-      currency: khqrData.currency.usd,
-      amount: Number(data.amountUsd.toFixed(2)),
-      mobileNumber: phone,
-      storeLabel: "Dyna Store",
-      terminalLabel: "topup",
-      expirationTimestamp: Date.now() + ttlMin * 60_000,
-    });
-    let qr: string | undefined;
-    let md5: string | undefined;
-    try {
-      const res = new BakongKHQR().generateIndividual(info);
-      qr = res?.data?.qr;
-      md5 = res?.data?.md5;
-    } catch (e) {
-      throw new Error("បរាជ័យបង្កើត KHQR: " + (e instanceof Error ? e.message : String(e)));
-    }
-    if (!qr || !md5) throw new Error("KHQR មិនត្រឹមត្រូវ — សូមពិនិត្យ Bakong account/credentials");
-
     const coins = Math.round(data.amountUsd * coinsPerUsd);
     const expires = new Date(Date.now() + ttlMin * 60_000).toISOString();
-    const { error } = await supabaseAdmin.from("transactions").insert({
-      user_id: userId, md5, qr_string: qr, amount_usd: data.amountUsd, coins,
-      status: "pending", expires_at: expires,
-    });
-    if (error) throw new Error(error.message);
-    return { md5, qr, balance: coins, amountUsd: data.amountUsd, expiresAt: expires };
+
+    // Retry up to 3 times to avoid md5 unique-collision (same params produce same md5)
+    let qr: string | undefined;
+    let md5: string | undefined;
+    let lastErr: string | null = null;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const nonce = `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}${attempt}`;
+      const info = new IndividualInfo(accountId, merchantName, merchantCity, {
+        currency: khqrData.currency.usd,
+        amount: Number(data.amountUsd.toFixed(2)),
+        mobileNumber: phone,
+        storeLabel: "Dyna Store",
+        terminalLabel: "topup",
+        billNumber: nonce,
+        expirationTimestamp: Date.now() + ttlMin * 60_000,
+      });
+      try {
+        const res = new BakongKHQR().generateIndividual(info);
+        qr = res?.data?.qr;
+        md5 = res?.data?.md5;
+      } catch (e) {
+        throw new Error("បរាជ័យបង្កើត KHQR: " + (e instanceof Error ? e.message : String(e)));
+      }
+      if (!qr || !md5) throw new Error("KHQR មិនត្រឹមត្រូវ — សូមពិនិត្យ Bakong account/credentials");
+
+      const { error } = await supabaseAdmin.from("transactions").insert({
+        user_id: userId, md5, qr_string: qr, amount_usd: data.amountUsd, coins,
+        status: "pending", expires_at: expires,
+      });
+      if (!error) {
+        return { md5, qr, balance: coins, amountUsd: data.amountUsd, expiresAt: expires };
+      }
+      lastErr = error.message;
+      // Only retry on unique-violation; otherwise bail immediately
+      if (!/duplicate key|unique constraint|transactions_md5/i.test(error.message)) {
+        throw new Error(error.message);
+      }
+    }
+    throw new Error("បរាជ័យបង្កើត KHQR (ID ស្ទួន) — សូមសាកម្តងទៀត។ " + (lastErr ?? ""));
   });
 
 
