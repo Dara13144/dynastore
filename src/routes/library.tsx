@@ -151,21 +151,3 @@ function Empty({ text, cta, to }: { text: string; cta: string; to: string }) {
   );
 }
 
-function DownloadBtn({ filePath }: { filePath: string | null }) {
-  const [busy, setBusy] = useState(false);
-  if (!filePath) {
-    return <span className="text-[11px] text-muted-foreground">មិនទាន់មានឯកសារ</span>;
-  }
-  const onClick = async () => {
-    setBusy(true);
-    const { data, error } = await supabase.storage.from("game-files").createSignedUrl(filePath, 300);
-    setBusy(false);
-    if (error || !data?.signedUrl) { alert(error?.message ?? "មិនអាច download បាន"); return; }
-    window.open(data.signedUrl, "_blank");
-  };
-  return (
-    <button onClick={onClick} disabled={busy} className="inline-flex items-center gap-1 rounded-full bg-primary px-3 py-1 text-[11px] font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50">
-      {busy ? <Loader2 className="h-3 w-3 animate-spin" /> : <Download className="h-3 w-3" />} Download
-    </button>
-  );
-}
