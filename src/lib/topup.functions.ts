@@ -187,3 +187,71 @@ export const checkTopupStatus = createServerFn({ method: "POST" })
 
     return { status: "pending" as const, balance: 0 };
   });
+
+export const submitTopupProof = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i) =>
+    z.object({
+      md5: z.string().length(32),
+      // data URL or raw base64 of an image
+      imageBase64: z.string().min(100).max(8_000_000),
+      contentType: z.enum(["image/png", "image/jpeg", "image/webp"]).default("image/png"),
+      note: z.string().max(500).optional(),
+    }).parse(i)
+  )
+  .handler(async ({ data, context }) => {
+    const { userId } = context;
+
+    const { data: tx, error: txErr } = await supabaseAdmin
+      .from("transactions")
+      .select("user_id, amount_usd, coins, status")
+      .eq("md5", data.md5)
+      .maybeSingle();
+    if (txErr) throw new Error(txErr.message);
+    if (!tx || tx.user_id !== userId) throw new Error("transaction_not_found");
+
+    // Strip data-url prefix if present
+    const b64 = data.imageBase64.includes(",") ? data.imageBase64.split(",")[1] : data.imageBase64;
+    const bytes = Buffer.from(b64, "base64");
+    if (bytes.length > 6_000_000) throw new Error("file_too_large");
+
+    const ext = data.contentType === "image/jpeg" ? "jpg" : data.contentType === "image/webp" ? "webp" : "png";
+    const path = `${userId}/${data.md5}-${Date.now()}.${ext}`;
+    const { error: upErr } = await supabaseAdmin.storage
+      .from("topup-receipts")
+      .upload(path, bytes, { contentType: data.contentType, upsert: false });
+    if (upErr) throw new Error(upErr.message);
+
+    const { data: prof } = await supabaseAdmin
+      .from("profiles").select("display_name").eq("user_id", userId).maybeSingle();
+
+    const token = process.env.TELEGRAM_BOT_TOKEN;
+    const raw = process.env.TELEGRAM_CHAT_IDS;
+    if (token && raw) {
+      const chatIds = raw.split(/[\s,]+/).map((s) => s.trim()).filter(Boolean);
+      const caption =
+        `📩 <b>Payment proof submitted</b>\n` +
+        `👤 ${prof?.display_name ?? "Player"} <code>${userId.slice(0, 8)}</code>\n` +
+        `💵 $${Number(tx.amount_usd).toFixed(2)} → <b>${tx.coins.toLocaleString()} coins</b>\n` +
+        `🆔 md5: <code>${data.md5}</code>\n` +
+        `📌 status: <code>${tx.status}</code>` +
+        (data.note ? `\n📝 ${data.note}` : "");
+
+      await Promise.all(
+        chatIds.map(async (chat_id) => {
+          try {
+            const fd = new FormData();
+            fd.append("chat_id", chat_id);
+            fd.append("caption", caption);
+            fd.append("parse_mode", "HTML");
+            fd.append("photo", new Blob([new Uint8Array(bytes)], { type: data.contentType }), `proof.${ext}`);
+            await fetch(`https://api.telegram.org/bot${token}/sendPhoto`, { method: "POST", body: fd });
+          } catch (e) {
+            console.error("telegram_proof_failed", chat_id, e);
+          }
+        })
+      );
+    }
+
+    return { ok: true, path };
+  });
