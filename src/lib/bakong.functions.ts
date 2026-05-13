@@ -138,7 +138,7 @@ export const createTopup = createServerFn({ method: "POST" })
       if (/duplicate key|unique constraint/i.test(error.message)) {
         const { data: existing } = await supabaseAdmin
           .from("transactions")
-          .select("user_id, status, expires_at, amount_usd, coins, qr_payload")
+          .select("id, user_id, status, created_at, expires_at, amount_usd, coins, qr_payload")
           .eq("md5", md5)
           .maybeSingle();
         if (
@@ -156,6 +156,14 @@ export const createTopup = createServerFn({ method: "POST" })
             coins: totalCoins,
             packName: pack.name,
             reused: true as const,
+            reusedTx: {
+              id: existing.id,
+              status: existing.status,
+              createdAt: existing.created_at,
+              expiresAt: existing.expires_at,
+              amountUsd: Number(existing.amount_usd),
+              coins: existing.coins,
+            },
           };
         }
         continue; // collision with someone else / different tx — retry with new bill number

@@ -1098,6 +1098,7 @@ function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () 
   const qrWrapRef = useRef<HTMLDivElement | null>(null);
   type Tx = { md5: string; qrPayload: string; coins: number; createdAt: number; expiresAt: number };
   const [tx, setTx] = useState<Tx | null>(null);
+  const [reusedInfo, setReusedInfo] = useState<{ id: string; createdAt: string; expiresAt: string; status: string; coins: number; amountUsd: number } | null>(null);
   const [prevTx, setPrevTx] = useState<Tx | null>(null);
   const [status, setStatus] = useState<"confirm" | "loading" | "login" | "qr" | "verifying" | "paid" | "expired" | "error">("confirm");
   const [errMsg, setErrMsg] = useState<string>("");
@@ -1223,18 +1224,30 @@ function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () 
     setTx(null);
     setSecondsLeft(POLL_WINDOW_S);
     setEvents([]);
+    setReusedInfo(null);
 
     try {
       const res = await createTopup({ data: { packId: pack.id } });
       const now = Date.now();
+      const reused = (res as any).reused === true;
+      const reusedTx = (res as any).reusedTx ?? null;
+      const expiresAtMs = reusedTx?.expiresAt ? new Date(reusedTx.expiresAt).getTime() : now + POLL_WINDOW_S * 1000;
+      const createdAtMs = reusedTx?.createdAt ? new Date(reusedTx.createdAt).getTime() : now;
       setTx({
         md5: res.md5,
         qrPayload: res.qrPayload,
         coins: res.coins,
-        createdAt: now,
-        expiresAt: now + POLL_WINDOW_S * 1000,
+        createdAt: createdAtMs,
+        expiresAt: expiresAtMs,
       });
-      pushEvent({ kind: "khqr", label: "KHQR generated", detail: `${res.coins} Coins · MD5 ${res.md5.slice(0, 10)}…` });
+      setReusedInfo(reused && reusedTx ? reusedTx : null);
+      pushEvent({
+        kind: "khqr",
+        label: reused ? "Reused existing pending KHQR ♻︎" : "KHQR generated",
+        detail: reused
+          ? `Tx ${reusedTx?.id?.slice(0, 8)}… · MD5 ${res.md5.slice(0, 10)}… · expires ${new Date(expiresAtMs).toLocaleTimeString()}`
+          : `${res.coins} Coins · MD5 ${res.md5.slice(0, 10)}…`,
+      });
       const clientMatch = md5Hex(res.qrPayload) === res.md5;
       pushEvent({ kind: "md5", label: clientMatch ? "Client MD5 match ✓" : "Client MD5 mismatch ✗", detail: clientMatch ? "payload hash = server md5" : "hash mismatch" });
       setStatus("qr");
@@ -1591,6 +1604,30 @@ function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () 
           </>
         )}
       </div>
+
+      {reusedInfo && (status === "qr" || status === "verifying") && (
+        <div className="mt-4 rounded-xl border border-amber-500/40 bg-amber-500/10 p-3 text-xs">
+          <div className="flex items-center gap-2 mb-1.5">
+            <RefreshCw className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
+            <span className="font-semibold text-amber-700 dark:text-amber-400">Reused existing pending KHQR</span>
+          </div>
+          <div className="text-muted-foreground mb-2">
+            A duplicate MD5 was detected, so this active topup was reused instead of creating a new one.
+          </div>
+          <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 font-mono text-[11px]">
+            <dt className="text-muted-foreground">Tx ID</dt>
+            <dd className="break-all">{reusedInfo.id}</dd>
+            <dt className="text-muted-foreground">Status</dt>
+            <dd className="uppercase">{reusedInfo.status}</dd>
+            <dt className="text-muted-foreground">Amount</dt>
+            <dd>${reusedInfo.amountUsd.toFixed(2)} · {reusedInfo.coins} coins</dd>
+            <dt className="text-muted-foreground">Created</dt>
+            <dd>{new Date(reusedInfo.createdAt).toLocaleString()}</dd>
+            <dt className="text-muted-foreground">Expires</dt>
+            <dd>{new Date(reusedInfo.expiresAt).toLocaleString()}</dd>
+          </dl>
+        </div>
+      )}
 
       <p className="mt-4 text-xs text-muted-foreground">
         ស្កេន KHQR តាម Bakong, ABA, Wing, ACLEDA ឬកម្មវិធីធនាគារផ្សេងទៀត។ Coins នឹងចូល Wallet ស្វ័យប្រវត្តិពេល Bakong បញ្ជាក់។
