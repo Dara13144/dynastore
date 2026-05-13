@@ -125,6 +125,7 @@ function GamesTab() {
   });
   const [draftFile, setDraftFile] = useState<File | null>(null);
   const [draftFileError, setDraftFileError] = useState<string | null>(null);
+  const [draftUrlError, setDraftUrlError] = useState<string | null>(null);
 
   const showToast = (m: string) => { setToast(m); setTimeout(() => setToast(null), 2200); };
 
