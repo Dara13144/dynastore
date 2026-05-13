@@ -91,6 +91,11 @@ function Header({ onSettings, onTopup }: { onSettings: () => void; onTopup: () =
               <Library className="h-3.5 w-3.5" /> បណ្ណាល័យ
             </Link>
           )}
+          {authed && (
+            <Link to="/payments" className="hidden sm:inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-xs font-medium hover:bg-accent">
+              ការទូទាត់
+            </Link>
+          )}
           <button onClick={onSettings} className="p-2 rounded-full hover:bg-accent transition" aria-label="Settings">
             <Settings className="h-4 w-4" />
           </button>
