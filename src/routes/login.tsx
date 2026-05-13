@@ -9,7 +9,7 @@ export const Route = createFileRoute("/login")({
   head: () => ({
     meta: [
       { title: "ចូលប្រើ — Dyna Store" },
-      { name: "description", content: "ចូលគណនី Dyna Store ដើម្បីទិញ Coins និងហ្គេម។" },
+      { name: "description", content: "ចូលគណនី Dyna Store ដើម្បីរក្សាទុកបញ្ជីហ្គេមរបស់អ្នក។" },
     ],
   }),
   component: LoginPage,
@@ -84,7 +84,7 @@ function LoginPage() {
           <span className="font-display text-2xl gradient-text">Dyna Store</span>
         </Link>
         <h1 className="font-display text-2xl text-center">{mode === "login" ? "ចូលប្រើគណនី" : "បង្កើតគណនី"}</h1>
-        <p className="text-center text-sm text-muted-foreground mt-1">បង់ប្រាក់តាម Bakong KHQR ទិញ Coins និងហ្គេម</p>
+        <p className="text-center text-sm text-muted-foreground mt-1">ស្វែងរក និងតាមដានហ្គេមដែលអ្នកចូលចិត្ត</p>
 
         <form onSubmit={submit} className="space-y-3 mt-6">
           <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="អ៊ីមែល" className="w-full rounded-xl bg-input px-4 py-3 text-sm outline-none ring-1 ring-border focus:ring-primary" />

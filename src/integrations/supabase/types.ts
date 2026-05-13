@@ -14,69 +14,6 @@ export type Database = {
   }
   public: {
     Tables: {
-      library: {
-        Row: {
-          acquired_at: string
-          game_id: string
-          id: string
-          user_id: string
-        }
-        Insert: {
-          acquired_at?: string
-          game_id: string
-          id?: string
-          user_id: string
-        }
-        Update: {
-          acquired_at?: string
-          game_id?: string
-          id?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
-      transactions: {
-        Row: {
-          amount_usd: number
-          bakong_ref: string | null
-          coins: number
-          created_at: string
-          expires_at: string
-          id: string
-          md5: string
-          paid_at: string | null
-          qr_payload: string
-          status: Database["public"]["Enums"]["tx_status"]
-          user_id: string
-        }
-        Insert: {
-          amount_usd: number
-          bakong_ref?: string | null
-          coins: number
-          created_at?: string
-          expires_at?: string
-          id?: string
-          md5: string
-          paid_at?: string | null
-          qr_payload: string
-          status?: Database["public"]["Enums"]["tx_status"]
-          user_id: string
-        }
-        Update: {
-          amount_usd?: number
-          bakong_ref?: string | null
-          coins?: number
-          created_at?: string
-          expires_at?: string
-          id?: string
-          md5?: string
-          paid_at?: string | null
-          qr_payload?: string
-          status?: Database["public"]["Enums"]["tx_status"]
-          user_id?: string
-        }
-        Relationships: []
-      }
       user_roles: {
         Row: {
           created_at: string
@@ -98,38 +35,11 @@ export type Database = {
         }
         Relationships: []
       }
-      wallets: {
-        Row: {
-          coins: number
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          coins?: number
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          coins?: number
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      credit_topup_atomic: {
-        Args: { _bakong_ref: string; _md5: string }
-        Returns: {
-          coins_added: number
-          credited: boolean
-          new_balance: number
-          status: string
-        }[]
-      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -140,7 +50,6 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "user"
-      tx_status: "pending" | "paid" | "expired" | "failed"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -269,7 +178,6 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "user"],
-      tx_status: ["pending", "paid", "expired", "failed"],
     },
   },
 } as const
