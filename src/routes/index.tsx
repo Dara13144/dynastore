@@ -185,16 +185,33 @@ function GameCard({ game, onToast, onTopup }: { game: Game; onToast: (m: string)
         <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{game.category}</div>
         <h3 className="font-display text-lg mt-0.5">{game.title}</h3>
         <p className="text-xs text-muted-foreground mt-1.5 line-clamp-2">{game.description}</p>
-        <div className="mt-3 flex items-center justify-between gap-2">
-          <div className="inline-flex items-center gap-1 text-sm font-semibold text-primary">
-            <Coins className="h-3.5 w-3.5" /> {game.price_coins.toLocaleString()}
+        <div className="mt-3 space-y-2">
+          <div className="flex items-center justify-between text-xs">
+            <div className="inline-flex items-center gap-1 font-semibold text-primary">
+              <Coins className="h-3.5 w-3.5" /> {game.price_coins.toLocaleString()}
+            </div>
+            {authed && !owned && (
+              <div className={`inline-flex items-center gap-1 ${balance >= game.price_coins ? "text-emerald-400" : "text-amber-400"}`}>
+                <Wallet className="h-3 w-3" /> Balance: {balance.toLocaleString()}
+              </div>
+            )}
           </div>
-          <div className="flex items-center gap-1.5">
+          {authed && !owned && (
+            <div className="h-1.5 w-full overflow-hidden rounded-full bg-accent/40">
+              <div className={`h-full transition-all ${balance >= game.price_coins ? "bg-emerald-400" : "bg-amber-400"}`}
+                style={{ width: `${Math.min(100, (balance / game.price_coins) * 100)}%` }} />
+            </div>
+          )}
+          <div className="flex items-center justify-end gap-1.5">
             <button onClick={wish} className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1.5 text-xs hover:bg-accent ${wished ? "border-primary text-primary" : "border-border"}`}>
               <Star className={`h-3.5 w-3.5 ${wished ? "fill-primary" : ""}`} />
             </button>
             {owned ? (
               <button disabled className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 text-emerald-400 px-3 py-1.5 text-xs font-semibold">មាន</button>
+            ) : authed && balance < game.price_coins ? (
+              <button onClick={onTopup} className="inline-flex items-center gap-1 rounded-full border border-amber-400/50 bg-amber-400/10 text-amber-300 px-3 py-1.5 text-xs font-semibold hover:bg-amber-400/20">
+                <Plus className="h-3.5 w-3.5" /> បន្ថែម Balance
+              </button>
             ) : (
               <button onClick={buy} disabled={busy} className="inline-flex items-center gap-1 rounded-full bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-60">
                 {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "ទិញ"}
