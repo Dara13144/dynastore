@@ -14,12 +14,13 @@ export const Route = createFileRoute("/admin")({
   head: () => ({
     meta: [
       { title: "Admin — Dyna Store" },
-      { name: "description", content: "ផ្ទាំងគ្រប់គ្រង Dyna Store សម្រាប់ admin។" },
+      { name: "description", content: "ផ្ទាំងគ្រប់គ្រង Dyna Store សម្រាប់ admin: គ្រប់គ្រងអ្នកប្រើ, ប្រតិបត្តិការ, ផលិតផល, និងសំណើបញ្ចូលលុយ។" },
       { property: "og:title", content: "Admin — Dyna Store" },
       { property: "og:description", content: "ផ្ទាំងគ្រប់គ្រង Dyna Store សម្រាប់ admin: អ្នកប្រើ, ប្រតិបត្តិការ, និងផលិតផល។" },
       { property: "og:url", content: "https://dynastore.lovable.app/admin" },
       { name: "robots", content: "noindex" },
     ],
+    links: [{ rel: "canonical", href: "https://dynastore.lovable.app/admin" }],
   }),
   component: () => (<StoreProvider><AdminPage /></StoreProvider>),
 });
