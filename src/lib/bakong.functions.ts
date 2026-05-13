@@ -138,15 +138,15 @@ export const checkPayment = createServerFn({ method: "POST" })
     }
 
     const result = await checkBakongMd5(data.md5, token);
+    const responseCode = result.raw?.responseCode ?? null;
+    const responseMessage = result.raw?.responseMessage ?? result.raw?.errorCode ?? null;
     if (result.status === "SUCCESS") {
-      // Atomic + idempotent: flips pending->paid and credits wallet exactly once per md5.
       const { data: rpc, error: rpcErr } = await supabaseAdmin.rpc("credit_topup_atomic", {
         _md5: data.md5,
         _bakong_ref: result.raw?.data?.hash ?? null,
       });
       if (rpcErr) throw new Error(rpcErr.message);
       const row = Array.isArray(rpc) ? rpc[0] : rpc;
-      // Whether this call credited or a previous one did, the user-facing status is "paid".
       const hash = result.raw?.data?.hash ?? null;
       return {
         status: "paid" as const,
@@ -156,9 +156,12 @@ export const checkPayment = createServerFn({ method: "POST" })
         bakongHash: hash,
         newBalance: row?.new_balance ?? null,
         paidAt: new Date().toISOString(),
+        responseCode,
+        responseMessage,
+        creditResult: row ?? null,
       };
     }
-    return { status: "pending" as const };
+    return { status: "pending" as const, responseCode, responseMessage, raw: result.raw ?? null };
   });
 
 export const buyGame = createServerFn({ method: "POST" })
