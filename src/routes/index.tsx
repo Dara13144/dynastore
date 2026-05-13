@@ -14,9 +14,10 @@ export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
       { title: "Dyna Store — ទិញហ្គេមដោយ KHQR" },
-      { name: "description", content: "ទិញហ្គេម PC និង Console ដោយ Bakong KHQR។ បន្ថែម Balance ហើយចាប់ផ្តើមលេង។" },
-      { property: "og:title", content: "Dyna Store" },
-      { property: "og:description", content: "ហាងហ្គេមជាមួយ KHQR top-up។" },
+      { name: "description", content: "ទិញហ្គេម PC និង Console ដោយ Bakong KHQR។ បន្ថែម Balance ហើយទាញយកហ្គេមបានភ្លាមៗបន្ទាប់ពីការទូទាត់។" },
+      { property: "og:title", content: "Dyna Store — ទិញហ្គេមដោយ KHQR" },
+      { property: "og:description", content: "ហាងហ្គេម PC និង Console ជាមួយការទូទាត់តាម Bakong KHQR, ABA និងធនាគារផ្សេងៗ — បន្ថែម Balance ភ្លាមៗ ហើយទាញយកហ្គេមបានភ្លាមៗ។" },
+      { property: "og:url", content: "https://dynastore.lovable.app/" },
     ],
     links: [
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
