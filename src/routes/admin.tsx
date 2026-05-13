@@ -355,7 +355,7 @@ function GameRowEditor({ game, busy, onSave, onDelete, onReplaceFile }: {
       <td className="px-4 py-3 text-center">
         {game.file_path ? (
           <span className="inline-flex items-center gap-1 text-[11px] text-emerald-400" title={game.file_path}>
-            <FileArchive className="h-3 w-3" /> {game.file_size_bytes ? `${(game.file_size_bytes / 1024 / 1024).toFixed(1)}MB` : "ok"}
+            <FileArchive className="h-3 w-3" /> {game.file_size_bytes ? (game.file_size_bytes >= 1024 ** 3 ? `${(game.file_size_bytes / 1024 ** 3).toFixed(2)}GB` : `${(game.file_size_bytes / 1024 / 1024).toFixed(1)}MB`) : "ok"}
           </span>
         ) : <span className="text-[11px] text-muted-foreground">—</span>}
         <label className="block mt-1">
