@@ -7,6 +7,36 @@ import { encodeKhqr } from "./khqr-encode";
 
 const TTL_MIN = 10;
 
+async function notifyTelegramPaid(args: {
+  userName: string;
+  userId: string;
+  amountUSD: number;
+  coins: number;
+  md5: string;
+  bakongRef: string | null;
+}) {
+  const token = process.env.TELEGRAM_BOT_TOKEN;
+  const raw = process.env.TELEGRAM_CHAT_IDS;
+  if (!token || !raw) return;
+  const chatIds = raw.split(/[\s,]+/).map((s) => s.trim()).filter(Boolean);
+  const text =
+    `✅ <b>Top-up paid</b>\n` +
+    `👤 ${args.userName} <code>${args.userId.slice(0, 8)}</code>\n` +
+    `💵 $${args.amountUSD.toFixed(2)} → <b>${args.coins.toLocaleString()} coins</b>\n` +
+    `🔗 ref: <code>${args.bakongRef ?? "—"}</code>\n` +
+    `🆔 md5: <code>${args.md5}</code>`;
+  await Promise.all(
+    chatIds.map((chat_id) =>
+      fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ chat_id, text, parse_mode: "HTML", disable_web_page_preview: true }),
+      }).catch((e) => console.error("telegram_notify_failed", chat_id, e))
+    )
+  );
+}
+
+
 export const createTopup = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) =>
