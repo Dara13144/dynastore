@@ -350,8 +350,9 @@ function GamesTab() {
             </div>
             <label className="block">
               <span className="block text-[10px] uppercase tracking-wider text-muted-foreground mb-1">ឯកសារហ្គេម (zip/installer)</span>
-              <input type="file" accept=".zip,.rar,.7z,.tar,.gz,.tgz" onChange={(e) => { const f = e.target.files?.[0] ?? null; if (f) { const err = validateFile(f); if (err) { showToast(err); e.target.value = ""; return; } } setDraftFile(f); }} className="w-full text-xs file:mr-2 file:rounded-full file:border-0 file:bg-primary file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-primary-foreground" />
-              {draftFile && <span className="text-[10px] text-muted-foreground mt-1 block">{draftFile.name} · {(draftFile.size / 1024 / 1024).toFixed(2)} MB</span>}
+              <input type="file" accept=".zip,.rar,.7z,.tar,.gz,.tgz" onChange={(e) => { const f = e.target.files?.[0] ?? null; const err = f ? validateFile(f) : null; setDraftFileError(err); setDraftFile(f); }} className="w-full text-xs file:mr-2 file:rounded-full file:border-0 file:bg-primary file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-primary-foreground" />
+              {draftFile && !draftFileError && <span className="text-[10px] text-muted-foreground mt-1 block">{draftFile.name} · {(draftFile.size / 1024 / 1024).toFixed(2)} MB</span>}
+              {draftFileError && <span className="text-[10px] text-destructive mt-1 block">{draftFileError}</span>}
               {uploadPct !== null && (
                 <div className="mt-2 h-1.5 w-full rounded-full bg-muted overflow-hidden">
                   <div className="h-full bg-primary transition-all" style={{ width: `${uploadPct}%` }} />
