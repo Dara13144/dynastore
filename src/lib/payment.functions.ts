@@ -28,7 +28,6 @@ export const createTopup = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { userId } = context;
     const { coinsPerUsd, ttlMin, accountId, merchantName, merchantCity, phone } = await loadSettings();
-    if (!accountId) throw new Error("Bakong មិនទាន់កំណត់ — សូមកំណត់ Account ID នៅ Admin Settings");
 
     const info = new IndividualInfo(accountId, merchantName, merchantCity, {
       currency: khqrData.currency.usd,
