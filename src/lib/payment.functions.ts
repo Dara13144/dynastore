@@ -5,10 +5,10 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
 // @ts-ignore - bakong-khqr is plain js
 import { BakongKHQR, IndividualInfo, khqrData } from "bakong-khqr";
 
-const COINS_PER_USD = 100;
-const TX_TTL_MIN = 15;
+const COINS_PER_USD = 1;
+const TX_TTL_MIN = 5;
 
-// 1 USD = 100 coins
+// 1 USD = 1 Balance
 export const createTopup = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) => z.object({ amountUsd: z.number().min(1).max(1000) }).parse(i))
@@ -18,7 +18,7 @@ export const createTopup = createServerFn({ method: "POST" })
     const merchantName = process.env.BAKONG_MERCHANT_NAME || "Dyna Store";
     const merchantCity = process.env.BAKONG_MERCHANT_CITY || "Phnom Penh";
     const phone = process.env.BAKONG_MERCHANT_PHONE || "";
-    if (!accountId) throw new Error("Bakong not configured");
+    if (!accountId) throw new Error("Bakong មិនទាន់កំណត់ — សូមកំណត់ BAKONG_ACCOUNT_ID");
 
     const info = new IndividualInfo(accountId, merchantName, merchantCity, {
       currency: khqrData.currency.usd,
@@ -27,9 +27,16 @@ export const createTopup = createServerFn({ method: "POST" })
       storeLabel: "Dyna Store",
       terminalLabel: "topup",
     });
-    const res = new BakongKHQR().generateIndividual(info);
-    const qr = res.data.qr as string;
-    const md5 = res.data.md5 as string;
+    let qr: string | undefined;
+    let md5: string | undefined;
+    try {
+      const res = new BakongKHQR().generateIndividual(info);
+      qr = res?.data?.qr;
+      md5 = res?.data?.md5;
+    } catch (e) {
+      throw new Error("បរាជ័យបង្កើត KHQR: " + (e instanceof Error ? e.message : String(e)));
+    }
+    if (!qr || !md5) throw new Error("KHQR មិនត្រឹមត្រូវ — សូមពិនិត្យ Bakong account/credentials");
 
     const coins = Math.round(data.amountUsd * COINS_PER_USD);
     const expires = new Date(Date.now() + TX_TTL_MIN * 60_000).toISOString();
@@ -40,6 +47,7 @@ export const createTopup = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { md5, qr, balance: coins, amountUsd: data.amountUsd, expiresAt: expires };
   });
+
 
 export const checkTopup = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
