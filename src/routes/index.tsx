@@ -488,7 +488,11 @@ function TopupModal({ onClose, onToast }: { onClose: () => void; onToast: (m: st
 
         {stage === "choose" && (
           <div className="p-5 space-y-4">
-            <p className="text-xs text-muted-foreground">1 USD = 1 Balance។ បង់ប្រាក់ភ្លាមៗតាម Bakong KHQR។ QR មានសុពលភាព 5 នាទី។</p>
+            <div className="flex gap-1 rounded-xl bg-muted/30 p-1">
+              <button onClick={() => setMethod("khqr")} className={`flex-1 rounded-lg px-3 py-1.5 text-xs font-semibold ${method === "khqr" ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}>KHQR ស្វ័យប្រវត្តិ</button>
+              <button onClick={() => setMethod("manual")} className={`flex-1 rounded-lg px-3 py-1.5 text-xs font-semibold inline-flex items-center justify-center gap-1 ${method === "manual" ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}><Upload className="h-3 w-3" /> ផ្ញើវិក័យបត្រ</button>
+            </div>
+            <p className="text-xs text-muted-foreground">{method === "khqr" ? "1 USD = 1 Balance។ បង់ប្រាក់ភ្លាមៗតាម Bakong KHQR។ QR មានសុពលភាព 5 នាទី។" : "បង់ប្រាក់ដោយដៃ បន្ទាប់មកផ្ទុកវិក័យបត្រ — Admin នឹងផ្ទៀងផ្ទាត់ និងបន្ថែម Balance។"}</p>
             <div className="grid grid-cols-5 gap-2">
               {PRESETS.map((p) => (
                 <button key={p} onClick={() => setAmount(p)} className={`rounded-xl border px-2 py-2 text-sm font-semibold ${amount === p ? "border-primary bg-primary/10 text-primary" : "border-border hover:bg-accent"}`}>${p}</button>
@@ -503,9 +507,13 @@ function TopupModal({ onClose, onToast }: { onClose: () => void; onToast: (m: st
               <span>នឹងទទួលបាន</span>
               <span className="font-semibold inline-flex items-center gap-1 text-primary"><Wallet className="h-3.5 w-3.5" /> {amount.toLocaleString()}</span>
             </div>
-            <button onClick={() => start()} className="w-full rounded-xl bg-primary py-2.5 text-sm font-semibold text-primary-foreground hover:opacity-90 inline-flex items-center justify-center gap-2">
-              បង្កើត KHQR
-            </button>
+            {method === "khqr" ? (
+              <button onClick={() => start()} className="w-full rounded-xl bg-primary py-2.5 text-sm font-semibold text-primary-foreground hover:opacity-90 inline-flex items-center justify-center gap-2">
+                បង្កើត KHQR
+              </button>
+            ) : (
+              <ManualTopupForm amount={amount} onClose={onClose} onToast={onToast} />
+            )}
           </div>
         )}
 
