@@ -161,7 +161,7 @@ function GameCard({ game, onToast, onTopup }: { game: Game; onToast: (m: string)
     try {
       const r = await purchaseFn({ data: { gameId: game.id } });
       if (r.ok) { onToast(r.message === "already_owned" ? "អ្នកមានហ្គេមនេះរួចហើយ" : "ទិញបានជោគជ័យ!"); await Promise.all([refreshWallet(), refreshLibrary()]); }
-      else if (r.message === "insufficient_balance") { onToast("Coins មិនគ្រប់គ្រាន់"); onTopup(); }
+      else if (r.message === "insufficient_balance") { onToast("Balance មិនគ្រប់គ្រាន់"); onTopup(); }
       else onToast(r.message || "បរាជ័យ");
     } catch (e) { onToast(e instanceof Error ? e.message : "បរាជ័យ"); }
     finally { setBusy(false); }
