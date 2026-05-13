@@ -52,12 +52,16 @@ export const listMyTopupRequests = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     const { data, error } = await supabaseAdmin
       .from("topup_requests")
-      .select("id, amount_usd, coins, status, created_at, reviewed_at, reject_reason")
+      .select("id, amount_usd, coins, status, slip_path, created_at, reviewed_at, reject_reason")
       .eq("user_id", context.userId)
       .order("created_at", { ascending: false })
       .limit(20);
     if (error) throw new Error(error.message);
-    return data ?? [];
+    const out = await Promise.all((data ?? []).map(async (r) => {
+      const { data: signed } = await supabaseAdmin.storage.from("topup-slips").createSignedUrl(r.slip_path, 60 * 30);
+      return { ...r, slip_url: signed?.signedUrl ?? null };
+    }));
+    return out;
   });
 
 // Admin: list all requests
