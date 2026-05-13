@@ -238,7 +238,10 @@ function GamesTab() {
       draftFile,
       {
         uploadFile: (gameId, file) => uploadFile(gameId, file as File),
-        insertGame: (row) => supabase.from("games").insert(row),
+        insertGame: async (row) => {
+          const { error } = await supabase.from("games").insert(row);
+          return { error: error ? { message: error.message } : null };
+        },
         onError: showToast,
       },
     );
