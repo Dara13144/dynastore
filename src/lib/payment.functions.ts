@@ -276,10 +276,6 @@ export const checkTopup = createServerFn({ method: "POST" })
       const { data: w } = await supabaseAdmin.from("wallets").select("balance").eq("user_id", userId).maybeSingle();
       return { status: "paid" as const, balance: w?.balance ?? 0, debug: mkDebug({ source: "db", txStatus: tx.status, bakongMd5: tx.bakong_md5, providerMessage: "already_credited" }) };
     }
-    if (new Date(tx.expires_at).getTime() < Date.now()) {
-      // Auto-regenerate fresh KHQR (TTL 5min) instead of dead-ending the user.
-      return await regenerate("auto_regen_after_expiry");
-    }
 
     const regenerate = async (reason: string) => {
       await supabaseAdmin.from("transactions").update({
@@ -296,6 +292,10 @@ export const checkTopup = createServerFn({ method: "POST" })
       };
     };
 
+    if (new Date(tx.expires_at).getTime() < Date.now()) {
+      // Auto-regenerate fresh KHQR instead of dead-ending the user with "expired".
+      return await regenerate("auto_regen_after_expiry");
+    }
     if (!tx.bakong_md5 || !tx.qr_string) {
       return await regenerate("missing_qr_or_md5");
     }
