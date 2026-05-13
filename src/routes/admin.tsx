@@ -165,7 +165,7 @@ function GamesTab() {
     setBusy(false);
     if (error) { showToast(error.message); return; }
     setCreating(false);
-    setDraft({ id: "", title: "", category: "", description: "", badge: "", price_coins: 1000, visible: true, image_url: "", file_path: null, file_size_bytes: null });
+    setDraft({ id: "", title: "", category: "", description: "", badge: "", price_coins: 0, visible: true, image_url: "", file_path: null, file_size_bytes: null });
     setDraftFile(null);
     loadGames();
     showToast("បន្ថែមរួច");
