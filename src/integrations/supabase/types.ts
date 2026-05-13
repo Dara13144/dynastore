@@ -47,6 +47,33 @@ export type Database = {
         }
         Relationships: []
       }
+      app_settings_audit: {
+        Row: {
+          changed_by: string
+          created_at: string
+          field: string
+          id: string
+          new_value: string | null
+          old_value: string | null
+        }
+        Insert: {
+          changed_by: string
+          created_at?: string
+          field: string
+          id?: string
+          new_value?: string | null
+          old_value?: string | null
+        }
+        Update: {
+          changed_by?: string
+          created_at?: string
+          field?: string
+          id?: string
+          new_value?: string | null
+          old_value?: string | null
+        }
+        Relationships: []
+      }
       balance_changes: {
         Row: {
           changed_by: string
