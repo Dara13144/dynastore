@@ -641,19 +641,19 @@ function SettingsTab() {
       <div className="rounded-2xl glass p-5 space-y-4">
         <h3 className="font-semibold text-sm">អត្រាប្តូរ & ពេលផុតកំណត់</h3>
         <div className="grid grid-cols-2 gap-3">
-          <Field label="1 USD = ? Balance" type="number" value={String(s.coins_per_usd)} onChange={(v) => setS({ ...s, coins_per_usd: Number(v) || 1 })} />
+          <Field label="១ ដុល្លារ = ? សមតុល្យ" type="number" value={String(s.coins_per_usd)} onChange={(v) => setS({ ...s, coins_per_usd: Number(v) || 1 })} />
           <Field label="QR ផុតកំណត់ (នាទី)" type="number" value={String(s.tx_ttl_min)} onChange={(v) => setS({ ...s, tx_ttl_min: Number(v) || 5 })} />
         </div>
       </div>
       <div className="rounded-2xl glass p-5 space-y-4">
-        <h3 className="font-semibold text-sm">Bakong Merchant</h3>
+        <h3 className="font-semibold text-sm">ព័ត៌មាន Bakong Merchant</h3>
         <div className="grid grid-cols-1 gap-3">
-          <Field label="Bakong Account ID (ឧ. dyna_store@aclb)" value={s.bakong_account_id ?? ""} onChange={(v) => setS({ ...s, bakong_account_id: v })} />
+          <Field label="លេខគណនី Bakong (ឧ. dyna_store@aclb)" value={s.bakong_account_id ?? ""} onChange={(v) => setS({ ...s, bakong_account_id: v })} />
           <div className="grid grid-cols-2 gap-3">
-            <Field label="Merchant Name" value={s.bakong_merchant_name ?? ""} onChange={(v) => setS({ ...s, bakong_merchant_name: v })} />
-            <Field label="Merchant City" value={s.bakong_merchant_city ?? ""} onChange={(v) => setS({ ...s, bakong_merchant_city: v })} />
+            <Field label="ឈ្មោះហាង" value={s.bakong_merchant_name ?? ""} onChange={(v) => setS({ ...s, bakong_merchant_name: v })} />
+            <Field label="ទីក្រុង" value={s.bakong_merchant_city ?? ""} onChange={(v) => setS({ ...s, bakong_merchant_city: v })} />
           </div>
-          <Field label="Merchant Phone" value={s.bakong_merchant_phone ?? ""} onChange={(v) => setS({ ...s, bakong_merchant_phone: v })} />
+          <Field label="លេខទូរស័ព្ទ" value={s.bakong_merchant_phone ?? ""} onChange={(v) => setS({ ...s, bakong_merchant_phone: v })} />
         </div>
       </div>
       <div className="flex items-center gap-3">
