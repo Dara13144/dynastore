@@ -363,7 +363,8 @@ function SettingsModal({ onClose, onToast }: { onClose: () => void; onToast: (m:
 
 const PRESETS = [1, 5, 10, 20, 50];
 
-type TopupStage = "choose" | "creating" | "qr" | "checking" | "paid" | "expired" | "failed";
+type TopupStage = "choose" | "creating" | "qr" | "checking" | "paid" | "expired" | "failed" | "cancelled";
+type FlashKind = "regenerated" | "paid" | "cancelled" | null;
 
 function TopupModal({ onClose, onToast }: { onClose: () => void; onToast: (m: string) => void }) {
   const { authed, balance, refreshWallet } = useStore();
