@@ -363,9 +363,10 @@ function Field({ label, value, onChange, type = "text", placeholder }: { label: 
   );
 }
 
-function GameRowEditor({ game, busy, onSave, onDelete, onReplaceFile }: {
+function GameRowEditor({ game, busy, onSave, onDelete, onReplaceFile, validateFile, onValidationError, allowedExt, maxBytes }: {
   game: GameRow; busy: boolean;
   onSave: (p: Partial<GameRow>) => void; onDelete: () => void; onReplaceFile: (f: File) => void;
+  validateFile: (f: File) => string | null; onValidationError: (m: string) => void; allowedExt: string[]; maxBytes: number;
 }) {
   const [edit, setEdit] = useState<GameRow>(game);
   useEffect(() => setEdit(game), [game]);
