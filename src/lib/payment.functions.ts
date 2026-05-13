@@ -226,23 +226,16 @@ export const validateTopup = createServerFn({ method: "POST" })
     //    (catches missing / mis-configured BAKONG_ACCOUNT_ID, merchant name, city, etc.)
     try {
       const { accountId, merchantName, merchantCity, phone } = await loadSettings();
-      const probe = new IndividualInfo(accountId, merchantName, merchantCity, {
-        currency: khqrData.currency.usd,
+      const res = encodeKhqr({
+        accountId, merchantName, merchantCity,
+        currency: "USD",
         amount: Number(Number(tx.amount_usd).toFixed(2)),
         mobileNumber: phone,
         storeLabel: "Dyna Store",
         terminalLabel: `validate-${userId.slice(0, 8)}`,
         billNumber: `validate-${tx.order_id.slice(-12)}`,
       });
-      const res = new BakongKHQR().generateIndividual(probe);
-      if (res?.status && res.status.code !== 0) {
-        return {
-          ok: false as const,
-          code: "invalid_credentials",
-          message: `Bakong credentials ត្រូវបានបដិសេធ: ${res.status.message ?? "unknown"}`,
-        };
-      }
-      if (!res?.data?.qr || !res?.data?.md5) {
+      if (!res?.qr) {
         return { ok: false as const, code: "invalid_credentials", message: "Bakong credentials មិនត្រឹមត្រូវ" };
       }
     } catch (e) {
