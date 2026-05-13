@@ -52,6 +52,40 @@ async function loadSettings() {
   };
 }
 
+async function generateKhqrForUser(opts: {
+  userId: string; amountUsd: number; coinsPerUsd: number; ttlMin: number;
+  accountId: string; merchantName: string; merchantCity: string; phone: string;
+}) {
+  const { userId, amountUsd, coinsPerUsd, ttlMin, accountId, merchantName, merchantCity, phone } = opts;
+  const coins = Math.round(amountUsd * coinsPerUsd);
+  const expires = new Date(Date.now() + ttlMin * 60_000).toISOString();
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const orderId = `khqr_${crypto.randomUUID()}`;
+    const nonce = `${userId.slice(0, 6)}-${Date.now().toString(36)}-${attempt}${Math.random().toString(36).slice(2, 6)}`;
+    const info = new IndividualInfo(accountId, merchantName, merchantCity, {
+      currency: khqrData.currency.usd, amount: Number(amountUsd.toFixed(2)),
+      mobileNumber: phone, storeLabel: "Dyna Store", terminalLabel: `tp-${userId.slice(0, 8)}`,
+      billNumber: nonce, expirationTimestamp: Date.now() + ttlMin * 60_000,
+    });
+    let qr: string | undefined; let md5: string | undefined;
+    try {
+      const res = new BakongKHQR().generateIndividual(info);
+      if (res?.status && res.status.code !== 0) {
+        throw new Error(`KHQR generation rejected: ${res.status.message ?? "unknown"}`);
+      }
+      qr = res?.data?.qr; md5 = res?.data?.md5;
+    } catch (e) { throw new Error("បរាជ័យបង្កើត KHQR: " + khqrErrorMessage(e)); }
+    if (!qr || !md5) throw new Error("KHQR មិនត្រឹមត្រូវ — សូមពិនិត្យ Bakong credentials");
+    const { error } = await supabaseAdmin.from("transactions").insert({
+      order_id: orderId, user_id: userId, bakong_md5: md5, qr_string: qr,
+      amount_usd: amountUsd, coins, payment_method: "khqr", status: "pending", expires_at: expires,
+    });
+    if (!error) return { orderId, bakongMd5: md5, qr, coins, amountUsd, expiresAt: expires };
+    if (!/duplicate key|unique constraint/i.test(error.message)) throw new Error(error.message);
+  }
+  throw new Error("បរាជ័យបង្កើត KHQR — សូមសាកម្តងទៀត។");
+}
+
 export const createTopup = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) => z.object({ amountUsd: z.number().min(1).max(1000), forceNew: z.boolean().optional() }).parse(i))
@@ -252,8 +286,23 @@ export const checkTopup = createServerFn({ method: "POST" })
       return { status: "expired" as const, balance: null as number | null, debug: mkDebug({ source: "db", txStatus: "expired", bakongMd5: tx.bakong_md5, providerMessage: "expired_before_payment" }) };
     }
 
-    if (!tx.bakong_md5) {
-      throw new Error("KHQR មិនត្រឹមត្រូវ — សូមបង្កើត QR ថ្មី");
+    const regenerate = async (reason: string) => {
+      await supabaseAdmin.from("transactions").update({
+        status: "cancelled", failure_reason: reason, updated_at: new Date().toISOString(),
+      }).eq("order_id", data.orderId).in("status", ["pending"]);
+      const settings = await loadSettings();
+      const fresh = await generateKhqrForUser({ userId, amountUsd: Number(tx.amount_usd), ...settings });
+      return {
+        status: "regenerated" as const,
+        balance: null as number | null,
+        orderId: fresh.orderId, qr: fresh.qr, bakongMd5: fresh.bakongMd5,
+        amountUsd: fresh.amountUsd, expiresAt: fresh.expiresAt, coins: fresh.coins,
+        debug: mkDebug({ source: "db", txStatus: "regenerated", bakongMd5: fresh.bakongMd5, providerMessage: `regenerated:${reason}` }),
+      };
+    };
+
+    if (!tx.bakong_md5 || !tx.qr_string) {
+      return await regenerate("missing_qr_or_md5");
     }
 
     // Verify with Bakong API. Network/CDN errors and Bakong's "Invalid data" / "Transaction could
@@ -300,7 +349,18 @@ export const checkTopup = createServerFn({ method: "POST" })
       _next_status: paid ? undefined : tx.status,
     });
 
+    // Auto-regenerate when Bakong rejects the MD5/hash as malformed (not just "not found yet").
+    const msg = String(providerMessage ?? "").toLowerCase();
+    const looksInvalidMd5 = !paid && !networkError && httpStatus >= 200 && httpStatus < 500 &&
+      json?.responseCode !== 0 &&
+      /(invalid|hash|md5|bad request|malformed)/.test(msg) &&
+      !/not\s*found/.test(msg);
+    if (looksInvalidMd5) {
+      return await regenerate(`bakong_invalid_md5:${msg.slice(0, 60)}`);
+    }
+
     if (!paid) return { status: "pending" as const, balance: null as number | null, debug };
+
 
     const { data: credit, error } = await supabaseAdmin.rpc("process_khqr_payment_atomic", {
       _order_id: tx.order_id,

@@ -434,9 +434,10 @@ function TopupModal({ onClose, onToast }: { onClose: () => void; onToast: (m: st
       setQrDataUrl(dataUrl);
       setStage("qr");
       setPolling(true);
+      let activeOrderId = r.orderId;
       pollRef.current = window.setInterval(async () => {
         try {
-          const c = await checkFn({ data: { orderId: r.orderId } });
+          const c: any = await checkFn({ data: { orderId: activeOrderId } });
           setPollCount((n) => n + 1);
           recordAttempt(c.status, c.debug ?? c, c.debug?.httpStatus ?? null, c.debug?.latencyMs ?? null, c.debug?.providerMessage ?? null);
           if (c.status === "paid") {
@@ -444,6 +445,13 @@ function TopupModal({ onClose, onToast }: { onClose: () => void; onToast: (m: st
             onToast(`បានបន្ថែម ${r.balance.toLocaleString()} Balance!`);
           } else if (c.status === "expired") {
             stopPoll(); setStage("expired");
+          } else if (c.status === "regenerated" && c.qr && c.orderId) {
+            activeOrderId = c.orderId;
+            setOrderId(c.orderId); setBakongMd5(c.bakongMd5 ?? ""); setQr(c.qr);
+            if (c.expiresAt) setExpiresAt(new Date(c.expiresAt).getTime());
+            const dataUrl = await QRCode.toDataURL(c.qr, { width: 320, margin: 1 });
+            setQrDataUrl(dataUrl);
+            onToast("បានបង្កើត QR ថ្មីដោយស្វ័យប្រវត្តិ");
           }
         } catch (e) {
           recordAttempt("error", e instanceof Error ? e.message : String(e));
