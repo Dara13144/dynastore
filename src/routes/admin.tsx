@@ -253,6 +253,7 @@ function GamesTab() {
     setDraft({ id: "", title: "", category: "", description: "", badge: "", price_coins: 0, visible: true, image_url: "", file_path: null, file_size_bytes: null });
     setDraftFile(null);
     setDraftFileError(null);
+    setDraftUrlError(null);
     loadGames();
     showToast("បន្ថែមរួច");
   };
