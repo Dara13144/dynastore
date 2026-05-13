@@ -5,20 +5,25 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
 // @ts-ignore - bakong-khqr is plain js
 import { BakongKHQR, IndividualInfo, khqrData } from "bakong-khqr";
 
-const COINS_PER_USD = 100;
-const TX_TTL_MIN = 5;
+async function loadSettings() {
+  const { data } = await supabaseAdmin.from("app_settings").select("*").eq("id", 1).maybeSingle();
+  return {
+    coinsPerUsd: data?.coins_per_usd ?? 1,
+    ttlMin: data?.tx_ttl_min ?? 5,
+    accountId: data?.bakong_account_id || process.env.BAKONG_ACCOUNT_ID || "",
+    merchantName: data?.bakong_merchant_name || process.env.BAKONG_MERCHANT_NAME || "Dyna Store",
+    merchantCity: data?.bakong_merchant_city || process.env.BAKONG_MERCHANT_CITY || "Phnom Penh",
+    phone: data?.bakong_merchant_phone || process.env.BAKONG_MERCHANT_PHONE || "",
+  };
+}
 
-// 1 USD = 100 Balance
 export const createTopup = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) => z.object({ amountUsd: z.number().min(1).max(1000) }).parse(i))
   .handler(async ({ data, context }) => {
     const { userId } = context;
-    const accountId = process.env.BAKONG_ACCOUNT_ID;
-    const merchantName = process.env.BAKONG_MERCHANT_NAME || "Dyna Store";
-    const merchantCity = process.env.BAKONG_MERCHANT_CITY || "Phnom Penh";
-    const phone = process.env.BAKONG_MERCHANT_PHONE || "";
-    if (!accountId) throw new Error("Bakong មិនទាន់កំណត់ — សូមកំណត់ BAKONG_ACCOUNT_ID");
+    const { coinsPerUsd, ttlMin, accountId, merchantName, merchantCity, phone } = await loadSettings();
+    if (!accountId) throw new Error("Bakong មិនទាន់កំណត់ — សូមកំណត់ Account ID នៅ Admin Settings");
 
     const info = new IndividualInfo(accountId, merchantName, merchantCity, {
       currency: khqrData.currency.usd,
@@ -26,7 +31,7 @@ export const createTopup = createServerFn({ method: "POST" })
       mobileNumber: phone,
       storeLabel: "Dyna Store",
       terminalLabel: "topup",
-      expirationTimestamp: Date.now() + TX_TTL_MIN * 60_000,
+      expirationTimestamp: Date.now() + ttlMin * 60_000,
     });
     let qr: string | undefined;
     let md5: string | undefined;
@@ -39,8 +44,8 @@ export const createTopup = createServerFn({ method: "POST" })
     }
     if (!qr || !md5) throw new Error("KHQR មិនត្រឹមត្រូវ — សូមពិនិត្យ Bakong account/credentials");
 
-    const coins = Math.round(data.amountUsd * COINS_PER_USD);
-    const expires = new Date(Date.now() + TX_TTL_MIN * 60_000).toISOString();
+    const coins = Math.round(data.amountUsd * coinsPerUsd);
+    const expires = new Date(Date.now() + ttlMin * 60_000).toISOString();
     const { error } = await supabaseAdmin.from("transactions").insert({
       user_id: userId, md5, qr_string: qr, amount_usd: data.amountUsd, coins,
       status: "pending", expires_at: expires,

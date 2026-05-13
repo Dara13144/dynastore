@@ -14,6 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      app_settings: {
+        Row: {
+          bakong_account_id: string | null
+          bakong_merchant_city: string | null
+          bakong_merchant_name: string | null
+          bakong_merchant_phone: string | null
+          coins_per_usd: number
+          id: number
+          tx_ttl_min: number
+          updated_at: string
+        }
+        Insert: {
+          bakong_account_id?: string | null
+          bakong_merchant_city?: string | null
+          bakong_merchant_name?: string | null
+          bakong_merchant_phone?: string | null
+          coins_per_usd?: number
+          id?: number
+          tx_ttl_min?: number
+          updated_at?: string
+        }
+        Update: {
+          bakong_account_id?: string | null
+          bakong_merchant_city?: string | null
+          bakong_merchant_name?: string | null
+          bakong_merchant_phone?: string | null
+          coins_per_usd?: number
+          id?: number
+          tx_ttl_min?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       games: {
         Row: {
           badge: string | null
@@ -204,6 +237,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_set_balance: {
+        Args: { _new_balance: number; _user_id: string }
+        Returns: number
+      }
       credit_topup_atomic: {
         Args: { _md5: string }
         Returns: {
