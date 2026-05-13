@@ -633,7 +633,10 @@ function TopupModal({ onClose, onToast }: { onClose: () => void; onToast: (m: st
         )}
 
         {stage === "qr" && qrDataUrl && (() => {
-          const totalTtl = 5 * 60; // 5min default TTL
+          // Real TTL window from backend (expires_at - issued_at). Falls back to remaining seconds.
+          const totalTtl = issuedAt && expiresAt
+            ? Math.max(1, Math.round((expiresAt - issuedAt) / 1000))
+            : Math.max(1, remain);
           const pct = Math.max(0, Math.min(100, (remain / totalTtl) * 100));
           const isExpired = remain <= 0;
           const isUrgent = remain > 0 && remain <= 30;
