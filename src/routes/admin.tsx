@@ -939,6 +939,7 @@ function TopupsTab() {
   const [busy, setBusy] = useState(false);
   const [acting, setActing] = useState<string | null>(null);
   const [previewSlip, setPreviewSlip] = useState<string | null>(null);
+  const [outcome, setOutcome] = useState<Record<string, "approved" | "already" | "rejected">>({});
 
   const load = useCallback(async () => {
     setBusy(true);
@@ -957,10 +958,13 @@ function TopupsTab() {
     try {
       const r = await approveFn({ data: { id } });
       if (r.status === "rejected") {
+        setOutcome((o) => ({ ...o, [id]: "rejected" }));
         toast.error(`Already rejected${r.reject_reason ? ` · ${r.reject_reason}` : ""}`);
       } else if (r.already_reviewed) {
+        setOutcome((o) => ({ ...o, [id]: "already" }));
         toast(`Already approved · balance ${r.new_balance.toLocaleString()}`);
       } else {
+        setOutcome((o) => ({ ...o, [id]: "approved" }));
         toast.success(`✓ Approved · +${r.credited.toLocaleString()} coins · balance ${r.new_balance.toLocaleString()}`);
       }
       await load();
@@ -973,6 +977,7 @@ function TopupsTab() {
     setActing(id);
     try {
       await rejectFn({ data: { id, reason } });
+      setOutcome((o) => ({ ...o, [id]: "rejected" }));
       toast("Rejected");
       await load();
     } catch (e) { toast.error(e instanceof Error ? e.message : "Failed"); }
@@ -1024,11 +1029,28 @@ function TopupsTab() {
                 <td className="p-3 text-right font-mono">${Number(r.amount_usd).toFixed(2)}</td>
                 <td className="p-3 text-right font-mono">{r.coins.toLocaleString()}</td>
                 <td className="p-3">
-                  <span className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold ${
-                    r.status === "approved" ? "bg-emerald-500/20 text-emerald-400" :
-                    r.status === "pending" ? "bg-amber-500/20 text-amber-400" :
-                    "bg-destructive/20 text-destructive"
-                  }`}>{r.status}</span>
+                  <div className="flex items-center gap-1.5">
+                    <span className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                      r.status === "approved" ? "bg-emerald-500/20 text-emerald-400" :
+                      r.status === "pending" ? "bg-amber-500/20 text-amber-400" :
+                      "bg-destructive/20 text-destructive"
+                    }`}>{r.status}</span>
+                    {outcome[r.id] === "approved" && (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 text-emerald-300 ring-1 ring-emerald-500/30 px-2 py-0.5 text-[10px] font-semibold">
+                        <Check className="h-2.5 w-2.5" /> Just approved
+                      </span>
+                    )}
+                    {outcome[r.id] === "already" && (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-muted/40 text-muted-foreground ring-1 ring-border px-2 py-0.5 text-[10px] font-semibold">
+                        Already approved
+                      </span>
+                    )}
+                    {outcome[r.id] === "rejected" && (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-destructive/15 text-destructive ring-1 ring-destructive/30 px-2 py-0.5 text-[10px] font-semibold">
+                        <X className="h-2.5 w-2.5" /> Rejected
+                      </span>
+                    )}
+                  </div>
                 </td>
                 <td className="p-3">
                   {r.slip_url ? (
