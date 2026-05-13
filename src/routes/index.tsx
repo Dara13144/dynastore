@@ -369,8 +369,8 @@ function TopupModal({ onClose, onToast }: { onClose: () => void; onToast: (m: st
   const [expiresAt, setExpiresAt] = useState<number | null>(null);
   const [now, setNow] = useState(Date.now());
   const pollRef = useRef<number | null>(null);
-  const [debug, setDebug] = useState<{ at: string; status: string; httpStatus: number | null; latencyMs: number | null; payload: unknown } | null>(null);
-  const [attempts, setAttempts] = useState<Array<{ at: string; status: string; httpStatus: number | null; latencyMs: number | null; payload: unknown }>>([]);
+  const [debug, setDebug] = useState<{ at: string; status: string; httpStatus: number | null; latencyMs: number | null; payload: unknown; providerMessage?: string | null } | null>(null);
+  const [attempts, setAttempts] = useState<Array<{ at: string; status: string; httpStatus: number | null; latencyMs: number | null; payload: unknown; providerMessage?: string | null }>>([]);
   const [showDebug, setShowDebug] = useState(false);
   const [pollCount, setPollCount] = useState(0);
 
@@ -390,8 +390,8 @@ function TopupModal({ onClose, onToast }: { onClose: () => void; onToast: (m: st
     if (stage === "qr" && expiresAt && now >= expiresAt) { stopPoll(); setStage("expired"); }
   }, [stage, expiresAt, now]);
 
-  const recordAttempt = (status: string, payload: unknown, httpStatus: number | null = null, latencyMs: number | null = null) => {
-    const entry = { at: new Date().toISOString(), status, httpStatus, latencyMs, payload };
+  const recordAttempt = (status: string, payload: unknown, httpStatus: number | null = null, latencyMs: number | null = null, providerMessage: string | null = null) => {
+    const entry = { at: new Date().toISOString(), status, httpStatus, latencyMs, payload, providerMessage };
     setDebug(entry);
     setAttempts((prev) => [entry, ...prev].slice(0, 10));
   };
@@ -411,7 +411,7 @@ function TopupModal({ onClose, onToast }: { onClose: () => void; onToast: (m: st
         try {
           const c = await checkFn({ data: { orderId: r.orderId } });
           setPollCount((n) => n + 1);
-          recordAttempt(c.status, c.debug ?? c, c.debug?.httpStatus ?? null, c.debug?.latencyMs ?? null);
+          recordAttempt(c.status, c.debug ?? c, c.debug?.httpStatus ?? null, c.debug?.latencyMs ?? null, c.debug?.providerMessage ?? null);
           if (c.status === "paid") {
             stopPoll(); setStage("paid"); await refreshWallet();
             onToast(`បានបន្ថែម ${r.balance.toLocaleString()} Balance!`);
@@ -421,12 +421,40 @@ function TopupModal({ onClose, onToast }: { onClose: () => void; onToast: (m: st
         } catch (e) {
           recordAttempt("error", e instanceof Error ? e.message : String(e));
         }
-      }, 3000) as unknown as number;
+      }, 2500) as unknown as number;
     } catch (e) {
       setErrorMsg(e instanceof Error ? e.message : "បរាជ័យបង្កើត KHQR");
       setStage("failed");
     }
   };
+
+  // Realtime: flip the UI the moment the transaction row turns paid/completed,
+  // without waiting for the next poll tick.
+  useEffect(() => {
+    if (!orderId) return;
+    const channel = supabase
+      .channel(`tx-${orderId}`)
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "transactions", filter: `order_id=eq.${orderId}` },
+        async (payload) => {
+          const newStatus = (payload.new as { status?: string } | null)?.status;
+          if (newStatus === "paid" || newStatus === "completed") {
+            stopPoll();
+            await refreshWallet();
+            recordAttempt("paid", payload.new, null, null, "realtime_update");
+            setStage("paid");
+            onToast(`បានបន្ថែម ${coins.toLocaleString()} Balance!`);
+          } else if (newStatus === "expired" || newStatus === "cancelled" || newStatus === "failed") {
+            stopPoll();
+            setStage(newStatus === "expired" ? "expired" : "failed");
+          }
+        },
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [orderId]);
 
   const verifyNow = async () => {
     if (!orderId) return;
@@ -434,10 +462,10 @@ function TopupModal({ onClose, onToast }: { onClose: () => void; onToast: (m: st
     try {
       const c = await checkFn({ data: { orderId } });
       setPollCount((n) => n + 1);
-      recordAttempt(c.status, c.debug ?? c, c.debug?.httpStatus ?? null, c.debug?.latencyMs ?? null);
+      recordAttempt(c.status, c.debug ?? c, c.debug?.httpStatus ?? null, c.debug?.latencyMs ?? null, c.debug?.providerMessage ?? null);
       if (c.status === "paid") { stopPoll(); setStage("paid"); await refreshWallet(); onToast(`បានបន្ថែម ${coins.toLocaleString()} Balance!`); }
       else if (c.status === "expired") { stopPoll(); setStage("expired"); }
-      else { setStage("qr"); onToast("មិនទាន់ទទួលបានការបង់ប្រាក់"); }
+      else { setStage("qr"); onToast(c.debug?.providerMessage ?? "មិនទាន់ទទួលបានការបង់ប្រាក់"); }
     } catch (e) {
       recordAttempt("error", e instanceof Error ? e.message : String(e));
       setErrorMsg(e instanceof Error ? e.message : "បរាជ័យផ្ទៀងផ្ទាត់");

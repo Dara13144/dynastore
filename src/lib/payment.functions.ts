@@ -14,7 +14,21 @@ type PollDebug = {
   orderId: string | null;
   bakongMd5: string | null;
   response: string | null;
+  providerMessage: string | null;
 };
+
+// bakong-khqr throws plain objects shaped like { status: { code, errorCode, message }, data: null }.
+// Convert them to a real Error with a readable message.
+function khqrErrorMessage(e: unknown): string {
+  if (e instanceof Error) return e.message;
+  if (e && typeof e === "object") {
+    const anyE = e as { status?: { message?: string; errorCode?: string | number }; message?: string };
+    if (anyE.status?.message) return `${anyE.status.message}${anyE.status.errorCode ? ` (${anyE.status.errorCode})` : ""}`;
+    if (anyE.message) return anyE.message;
+    try { return JSON.stringify(e); } catch { /* ignore */ }
+  }
+  return String(e);
+}
 
 async function loadSettings() {
   const { data, error } = await supabaseAdmin.from("app_settings").select("*").eq("id", 1).maybeSingle();
@@ -92,10 +106,14 @@ export const createTopup = createServerFn({ method: "POST" })
       });
       try {
         const res = new BakongKHQR().generateIndividual(info);
+        // bakong-khqr returns { status: {...}, data: null } on failure WITHOUT throwing.
+        if (res?.status && res.status.code !== 0) {
+          throw new Error(`KHQR generation rejected: ${res.status.message ?? "unknown"}${res.status.errorCode ? ` (${res.status.errorCode})` : ""}`);
+        }
         qr = res?.data?.qr;
         bakongMd5 = res?.data?.md5;
       } catch (e) {
-        throw new Error("បរាជ័យបង្កើត KHQR: " + (e instanceof Error ? e.message : String(e)));
+        throw new Error("បរាជ័យបង្កើត KHQR: " + khqrErrorMessage(e));
       }
       if (!qr || !bakongMd5) throw new Error("KHQR មិនត្រឹមត្រូវ — សូមពិនិត្យ Bakong account/credentials");
 
@@ -149,7 +167,7 @@ export const checkTopup = createServerFn({ method: "POST" })
     const { userId } = context;
     const checkedAt = new Date().toISOString();
     const mkDebug = (p: Partial<PollDebug>): PollDebug => ({
-      checkedAt, source: "db", txStatus: "unknown", httpStatus: null, latencyMs: null, response: null, orderId: data.orderId, bakongMd5: null, ...p,
+      checkedAt, source: "db", txStatus: "unknown", httpStatus: null, latencyMs: null, response: null, orderId: data.orderId, bakongMd5: null, providerMessage: null, ...p,
     });
 
     const { data: tx } = await supabaseAdmin
@@ -157,30 +175,48 @@ export const checkTopup = createServerFn({ method: "POST" })
     if (!tx || tx.user_id !== userId) throw new Error("transaction_not_found");
     if (tx.status === "paid" || tx.status === "completed") {
       const { data: w } = await supabaseAdmin.from("wallets").select("balance").eq("user_id", userId).maybeSingle();
-      return { status: "paid" as const, balance: w?.balance ?? 0, debug: mkDebug({ source: "db", txStatus: tx.status, bakongMd5: tx.bakong_md5 }) };
+      return { status: "paid" as const, balance: w?.balance ?? 0, debug: mkDebug({ source: "db", txStatus: tx.status, bakongMd5: tx.bakong_md5, providerMessage: "already_credited" }) };
     }
     if (new Date(tx.expires_at).getTime() < Date.now()) {
       await supabaseAdmin.from("transactions").update({ status: "expired", failure_reason: "expired_before_payment" }).eq("order_id", data.orderId).eq("status", "pending");
-      return { status: "expired" as const, balance: null as number | null, debug: mkDebug({ source: "db", txStatus: "expired", bakongMd5: tx.bakong_md5 }) };
+      return { status: "expired" as const, balance: null as number | null, debug: mkDebug({ source: "db", txStatus: "expired", bakongMd5: tx.bakong_md5, providerMessage: "expired_before_payment" }) };
     }
 
-    // Verify with Bakong API
+    // Verify with Bakong API. Network/CDN errors and Bakong's "Invalid data" / "Transaction could
+    // not be found" responses both mean "still waiting" — they MUST NOT throw.
     const token = process.env.BAKONG_DEVELOPER_TOKEN;
     if (!token) throw new Error("Bakong token missing");
     const startedAt = Date.now();
-    const res = await fetch("https://api-bakong.nbc.gov.kh/v1/check_transaction_by_md5", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ md5: tx.bakong_md5 }),
-    });
-    const httpStatus = res.status;
-    const json = await res.json().catch(() => ({}));
+    let httpStatus = 0;
+    let json: Record<string, any> = {};
+    let networkError: string | null = null;
+    try {
+      const ctrl = new AbortController();
+      const timer = setTimeout(() => ctrl.abort(), 8000);
+      try {
+        const res = await fetch("https://api-bakong.nbc.gov.kh/v1/check_transaction_by_md5", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ md5: tx.bakong_md5 }),
+          signal: ctrl.signal,
+        });
+        httpStatus = res.status;
+        const text = await res.text();
+        try { json = text ? JSON.parse(text) : {}; }
+        catch { json = { responseMessage: text.slice(0, 500) }; }
+      } finally { clearTimeout(timer); }
+    } catch (e) {
+      networkError = e instanceof Error ? e.message : String(e);
+    }
     const latencyMs = Date.now() - startedAt;
     const payload = JSON.stringify(json).slice(0, 2000);
     const gatewayEventId = json?.data?.hash || json?.data?.id || json?.data?.transactionId || null;
     const bakongTxRef = json?.data?.transactionReference || json?.data?.bakongTxRef || json?.data?.txRef || null;
     const paid = json?.responseCode === 0 && json?.data;
-    const debug = mkDebug({ source: "bakong", httpStatus, latencyMs, response: payload, txStatus: tx.status, bakongMd5: tx.bakong_md5 });
+    const providerMessage = networkError
+      ? `network_error: ${networkError}`
+      : (json?.responseMessage || json?.errorMessage || (paid ? "credited" : "waiting_for_payment"));
+    const debug = mkDebug({ source: "bakong", httpStatus, latencyMs, response: payload, txStatus: tx.status, bakongMd5: tx.bakong_md5, providerMessage });
 
     await supabaseAdmin.rpc("mark_transaction_poll_result", {
       _order_id: tx.order_id,
