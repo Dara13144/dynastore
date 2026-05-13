@@ -24,6 +24,8 @@ export function TopupModal({ onClose, onToast }: Props) {
   const [slipPreview, setSlipPreview] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [history, setHistory] = useState<Awaited<ReturnType<typeof listFn>>>([]);
+  const [qrName, setQrName] = useState("dynastore-khqr");
+  const [exporting, setExporting] = useState(false);
 
   const coins = useMemo(() => Math.round(amount * rate), [amount, rate]);
 
@@ -76,34 +78,43 @@ export function TopupModal({ onClose, onToast }: Props) {
   function downloadQrPng() {
     const svg = qrBoxRef.current?.querySelector("svg");
     if (!svg) { onToast("QR មិនទាន់រួចរាល់"); return; }
+    setExporting(true);
+    const safeName = (qrName.trim() || "dynastore-khqr").replace(/[^a-zA-Z0-9_\-]+/g, "-").slice(0, 80);
     const xml = new XMLSerializer().serializeToString(svg);
     const svgBlob = new Blob([xml], { type: "image/svg+xml;charset=utf-8" });
     const url = URL.createObjectURL(svgBlob);
     const img = new Image();
     img.onload = () => {
-      const SIZE = 1024;
-      const PAD = 64;
-      const canvas = document.createElement("canvas");
-      canvas.width = SIZE; canvas.height = SIZE + 80;
-      const ctx = canvas.getContext("2d")!;
-      ctx.fillStyle = "#ffffff";
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      ctx.drawImage(img, PAD, PAD, SIZE - PAD * 2, SIZE - PAD * 2);
-      ctx.fillStyle = "#000";
-      ctx.font = "bold 28px system-ui, sans-serif";
-      ctx.textAlign = "center";
-      ctx.fillText("DYNASTORE • KHQR", SIZE / 2, SIZE + 40);
-      URL.revokeObjectURL(url);
-      canvas.toBlob((blob) => {
-        if (!blob) { onToast("Export បរាជ័យ"); return; }
-        const a = document.createElement("a");
-        a.href = URL.createObjectURL(blob);
-        a.download = "dynastore-khqr.png";
-        a.click();
-        setTimeout(() => URL.revokeObjectURL(a.href), 1000);
-      }, "image/png");
+      try {
+        const SIZE = 1024;
+        const PAD = 64;
+        const canvas = document.createElement("canvas");
+        canvas.width = SIZE; canvas.height = SIZE + 80;
+        const ctx = canvas.getContext("2d")!;
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, PAD, PAD, SIZE - PAD * 2, SIZE - PAD * 2);
+        ctx.fillStyle = "#000";
+        ctx.font = "bold 28px system-ui, sans-serif";
+        ctx.textAlign = "center";
+        ctx.fillText("DYNASTORE • KHQR", SIZE / 2, SIZE + 40);
+        URL.revokeObjectURL(url);
+        canvas.toBlob((blob) => {
+          if (!blob) { onToast("Export បរាជ័យ"); setExporting(false); return; }
+          const a = document.createElement("a");
+          a.href = URL.createObjectURL(blob);
+          a.download = `${safeName}.png`;
+          a.click();
+          setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+          setExporting(false);
+        }, "image/png");
+      } catch {
+        URL.revokeObjectURL(url);
+        onToast("Export បរាជ័យ");
+        setExporting(false);
+      }
     };
-    img.onerror = () => { URL.revokeObjectURL(url); onToast("Export បរាជ័យ"); };
+    img.onerror = () => { URL.revokeObjectURL(url); onToast("Export បរាជ័យ"); setExporting(false); };
     img.src = url;
   }
 
@@ -128,11 +139,22 @@ export function TopupModal({ onClose, onToast }: Props) {
               )}
               <div className="mt-3 text-center text-[10px] font-semibold tracking-wider text-black">DYNASTORE • KHQR</div>
             </div>
+            <div className="flex w-full items-center gap-2">
+              <input
+                value={qrName}
+                onChange={(e) => setQrName(e.target.value)}
+                placeholder="filename"
+                disabled={exporting}
+                className="flex-1 rounded-full bg-input px-3 py-2 text-xs ring-1 ring-border focus:ring-primary outline-none disabled:opacity-50"
+              />
+              <span className="text-[10px] text-muted-foreground">.png</span>
+            </div>
             <button
               onClick={downloadQrPng}
-              disabled={!qr}
-              className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-4 py-2 text-xs font-semibold hover:bg-accent disabled:opacity-50">
-              <Download className="h-3.5 w-3.5" /> ទាញយក KHQR (PNG)
+              disabled={!qr || exporting}
+              className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-4 py-2 text-xs font-semibold hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed">
+              {exporting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
+              {exporting ? "កំពុង Export…" : "ទាញយក KHQR (PNG)"}
             </button>
           </div>
 
