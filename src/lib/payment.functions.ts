@@ -212,7 +212,7 @@ export const validateTopup = createServerFn({ method: "POST" })
     const { userId } = context;
     const { data: tx } = await supabaseAdmin
       .from("transactions")
-      .select("user_id, order_id, bakong_md5, qr_string, amount_usd, status, expires_at")
+      .select("user_id, order_id, bakong_md5, qr_string, amount_usd, status, expires_at, created_at")
       .eq("order_id", data.orderId)
       .maybeSingle();
     if (!tx || tx.user_id !== userId) {
