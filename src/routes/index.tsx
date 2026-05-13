@@ -610,6 +610,10 @@ function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () 
   const [pollTick, setPollTick] = useState(0);
   const [paidAt, setPaidAt] = useState<number | null>(null);
   const [paidInfo, setPaidInfo] = useState<{ bakongRef: string | null; newBalance: number | null; creditedNow: boolean } | null>(null);
+  type TimelineEvent = { at: number; kind: "khqr" | "md5" | "bakong" | "credited" | "expired" | "error"; label: string; detail?: string };
+  const [events, setEvents] = useState<TimelineEvent[]>([]);
+  const pushEvent = (e: Omit<TimelineEvent, "at">) =>
+    setEvents((prev) => [...prev, { ...e, at: Date.now() }].slice(-50));
   const [mismatch, setMismatch] = useState<{ scanned: string; active: string } | null>(null);
   const [autoCloseIn, setAutoCloseIn] = useState<number>(0);
   const POLL_WINDOW_S = 300;
@@ -665,6 +669,7 @@ function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () 
     setErrMsg("");
     setTx(null);
     setSecondsLeft(POLL_WINDOW_S);
+    setEvents([]);
 
     try {
       const res = await createTopup({ data: { packId: pack.id } });
@@ -676,10 +681,14 @@ function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () 
         createdAt: now,
         expiresAt: now + POLL_WINDOW_S * 1000,
       });
+      pushEvent({ kind: "khqr", label: "KHQR generated", detail: `${res.coins} Coins · MD5 ${res.md5.slice(0, 10)}…` });
+      const clientMatch = md5Hex(res.qrPayload) === res.md5;
+      pushEvent({ kind: "md5", label: clientMatch ? "Client MD5 match ✓" : "Client MD5 mismatch ✗", detail: clientMatch ? "payload hash = server md5" : "hash mismatch" });
       setStatus("qr");
     } catch (e: any) {
       setStatus("error");
       setErrMsg(e?.message || "មានបញ្ហាបង្កើតការទូទាត់");
+      pushEvent({ kind: "error", label: "KHQR generation failed", detail: e?.message });
     }
   };
 
@@ -709,11 +718,19 @@ function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () 
           if (r.status === "paid") {
             setStatus("paid");
             setPaidAt(Date.now());
-            setPaidInfo({ bakongRef: (r as any).bakongRef ?? null, newBalance: (r as any).newBalance ?? null, creditedNow: !!(r as any).creditedNow });
+            const ref = (r as any).bakongRef ?? null;
+            const nb = (r as any).newBalance ?? null;
+            const cn = !!(r as any).creditedNow;
+            setPaidInfo({ bakongRef: ref, newBalance: nb, creditedNow: cn });
+            pushEvent({ kind: "bakong", label: "Bakong check: SUCCESS", detail: `responseCode=${(r as any).responseCode ?? 0}${ref ? ` · ref ${String(ref).slice(0, 14)}…` : ""}` });
+            pushEvent({ kind: "credited", label: cn ? `Wallet credited (+${cur.coins})` : "Already credited (idempotent)", detail: nb != null ? `new balance ${nb} Coins` : undefined });
             onToast(`បានបន្ថែម ${cur.coins.toLocaleString()} Coins ✓`);
             refresh();
           } else if (r.status === "expired") {
             setStatus("expired");
+            pushEvent({ kind: "expired", label: "MD5 expired (server)" });
+          } else {
+            pushEvent({ kind: "bakong", label: `Bakong poll #${pollTick + 1}: pending`, detail: `responseCode=${(r as any).responseCode ?? "—"}` });
           }
           return cur;
         });
@@ -770,13 +787,11 @@ function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () 
     if (Date.now() >= tx.expiresAt) { setStatus("expired"); return; }
     const checkingMd5 = tx.md5;
     setStatus("verifying");
+    pushEvent({ kind: "bakong", label: "Manual verify started" });
     try {
       const r = await checkPayment({ data: { md5: checkingMd5 } });
       setLastChecked(Date.now());
       setPollTick((n) => n + 1);
-      // Validate against the LIVE active QR (not the closure snapshot) so a
-      // late response from a previously-displayed KHQR cannot mark the new
-      // one as paid or trigger the auto-close receipt.
       let mismatched = false;
       let expired = false;
       setTx((cur) => {
@@ -785,13 +800,20 @@ function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () 
         if (r.status === "paid") {
           setStatus("paid");
           setPaidAt(Date.now());
-          setPaidInfo({ bakongRef: (r as any).bakongRef ?? null, newBalance: (r as any).newBalance ?? null, creditedNow: !!(r as any).creditedNow });
+          const ref = (r as any).bakongRef ?? null;
+          const nb = (r as any).newBalance ?? null;
+          const cn = !!(r as any).creditedNow;
+          setPaidInfo({ bakongRef: ref, newBalance: nb, creditedNow: cn });
+          pushEvent({ kind: "bakong", label: "Bakong check: SUCCESS", detail: `responseCode=${(r as any).responseCode ?? 0}${ref ? ` · ref ${String(ref).slice(0, 14)}…` : ""}` });
+          pushEvent({ kind: "credited", label: cn ? `Wallet credited (+${cur.coins})` : "Already credited (idempotent)", detail: nb != null ? `new balance ${nb} Coins` : undefined });
           onToast(`ការបង់ប្រាក់ជោគជ័យ ✓ — បន្ថែម ${cur.coins.toLocaleString()} Coins`);
           refresh();
         } else if (r.status === "expired") {
           setStatus("expired");
+          pushEvent({ kind: "expired", label: "MD5 expired (server)" });
         } else {
           setStatus("qr");
+          pushEvent({ kind: "bakong", label: "Bakong check: pending", detail: `responseCode=${(r as any).responseCode ?? "—"}` });
           onToast("មិនទាន់ទទួលការទូទាត់នៅឡើយទេ");
         }
         return cur;
@@ -803,7 +825,7 @@ function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () 
       } else if (expired) {
         setStatus("expired");
       }
-    } catch (e: any) { setStatus("qr"); onToast(e?.message || "ផ្ទៀងផ្ទាត់បរាជ័យ"); }
+    } catch (e: any) { setStatus("qr"); pushEvent({ kind: "error", label: "Manual verify error", detail: e?.message }); onToast(e?.message || "ផ្ទៀងផ្ទាត់បរាជ័យ"); }
   };
 
   return (
@@ -1075,6 +1097,43 @@ function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () 
               </div>
             );
           })()}
+
+          {/* Payment timeline: chronological log of every verification step */}
+          {events.length > 0 && (
+            <div className="mt-2 rounded-lg bg-background/40 p-2.5 ring-1 ring-border/70 text-xs">
+              <div className="mb-2 flex items-center gap-2">
+                <span className="rounded-full bg-violet-500/15 px-2 py-0.5 text-[10px] font-bold text-violet-400 ring-1 ring-violet-500/30">TIMELINE</span>
+                <span className="font-mono text-muted-foreground">verification steps</span>
+                <span className="ml-auto font-mono text-[10px] text-muted-foreground">{events.length} event{events.length === 1 ? "" : "s"}</span>
+              </div>
+              <ol className="relative space-y-1.5 border-l border-border/60 pl-3">
+                {events.map((e, i) => {
+                  const dot =
+                    e.kind === "khqr" ? "bg-cyan-400"
+                    : e.kind === "md5" ? "bg-blue-400"
+                    : e.kind === "bakong" ? "bg-amber-400"
+                    : e.kind === "credited" ? "bg-emerald-400"
+                    : e.kind === "expired" ? "bg-rose-400"
+                    : "bg-rose-500";
+                  const t0 = events[0].at;
+                  const dt = e.at - t0;
+                  return (
+                    <li key={i} className="relative">
+                      <span className={`absolute -left-[15px] top-1.5 h-2 w-2 rounded-full ring-2 ring-background ${dot}`} />
+                      <div className="flex items-baseline justify-between gap-2">
+                        <span className="font-semibold">{e.label}</span>
+                        <span className="font-mono text-[10px] text-muted-foreground">
+                          {new Date(e.at).toLocaleTimeString([], { hour12: false })}
+                          <span className="ml-1 opacity-60">+{(dt / 1000).toFixed(2)}s</span>
+                        </span>
+                      </div>
+                      {e.detail && <div className="font-mono text-[10px] text-muted-foreground">{e.detail}</div>}
+                    </li>
+                  );
+                })}
+              </ol>
+            </div>
+          )}
 
           {/* Debug panel: merchant config + final MD5 used to verify with Bakong */}
           <details
