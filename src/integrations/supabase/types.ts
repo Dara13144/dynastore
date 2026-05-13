@@ -253,6 +253,63 @@ export type Database = {
         }
         Relationships: []
       }
+      promotions: {
+        Row: {
+          created_at: string
+          id: string
+          subtitle: string | null
+          title: string
+          updated_at: string
+          visible: boolean
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          subtitle?: string | null
+          title: string
+          updated_at?: string
+          visible?: boolean
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          subtitle?: string | null
+          title?: string
+          updated_at?: string
+          visible?: boolean
+        }
+        Relationships: []
+      }
+      testimonials: {
+        Row: {
+          created_at: string
+          game: string | null
+          id: string
+          name: string
+          text: string
+          updated_at: string
+          visible: boolean
+        }
+        Insert: {
+          created_at?: string
+          game?: string | null
+          id?: string
+          name: string
+          text: string
+          updated_at?: string
+          visible?: boolean
+        }
+        Update: {
+          created_at?: string
+          game?: string | null
+          id?: string
+          name?: string
+          text?: string
+          updated_at?: string
+          visible?: boolean
+        }
+        Relationships: []
+      }
       transactions: {
         Row: {
           amount_usd: number
