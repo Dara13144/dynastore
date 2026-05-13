@@ -11,7 +11,11 @@ export const Route = createFileRoute("/library")({
   head: () => ({
     meta: [
       { title: "បណ្ណាល័យ — Dyna Store" },
-      { name: "description", content: "ហ្គេមដែលអ្នកមាន និងបញ្ជីចង់លេង។" },
+      { name: "description", content: "ហ្គេមដែលអ្នកមាន និងបញ្ជីចង់លេងរបស់អ្នកនៅ Dyna Store។" },
+      { property: "og:title", content: "បណ្ណាល័យ — Dyna Store" },
+      { property: "og:description", content: "មើល និងទាញយកហ្គេមដែលអ្នកមានរួចហើយ ព្រមទាំងបញ្ជីចង់លេងរបស់អ្នកនៅ Dyna Store។" },
+      { property: "og:url", content: "https://dynastore.lovable.app/library" },
+      { name: "robots", content: "noindex" },
     ],
   }),
   component: () => (<StoreProvider><LibraryPage /></StoreProvider>),
