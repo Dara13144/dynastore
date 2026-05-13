@@ -461,12 +461,13 @@ function GameRowEditor({ game, busy, onSave, onDelete, onReplaceFile, validateFi
               type="button"
               onClick={async () => {
                 const { resolveDownloadUrl } = await import("@/lib/download-game-file");
-                const result = await resolveDownloadUrl(game.file_path, (path, exp, opts) =>
-                  supabase.storage.from("game-files").createSignedUrl(path, exp, opts),
+                const result = await resolveDownloadUrl(
+                  game.file_path,
+                  (path, exp, opts) => supabase.storage.from("game-files").createSignedUrl(path, exp, opts),
                   { forceDownload: true },
                 );
                 if (!result.ok) {
-                  toast.error("មិនអាចបង្កើតតំណទាញយកបាន", { description: result.error });
+                  onValidationError(result.error);
                   return;
                 }
                 window.open(result.url, "_blank", "noopener,noreferrer");
