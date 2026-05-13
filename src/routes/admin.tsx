@@ -956,10 +956,12 @@ function TopupsTab() {
     setActing(id);
     try {
       const r = await approveFn({ data: { id } });
-      if ((r as any).already_approved) {
+      if (r.status === "rejected") {
+        toast.error(`Already rejected${r.reject_reason ? ` · ${r.reject_reason}` : ""}`);
+      } else if (r.already_reviewed) {
         toast(`Already approved · balance ${r.new_balance.toLocaleString()}`);
       } else {
-        toast.success(`✓ Credited +${r.credited.toLocaleString()} coins · new balance ${r.new_balance.toLocaleString()}`);
+        toast.success(`✓ Approved · +${r.credited.toLocaleString()} coins · balance ${r.new_balance.toLocaleString()}`);
       }
       await load();
     } catch (e) { toast.error(e instanceof Error ? e.message : "Failed"); }

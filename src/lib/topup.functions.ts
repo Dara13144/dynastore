@@ -137,11 +137,19 @@ export const adminApproveTopup = createServerFn({ method: "POST" })
     if (!claimed) {
       // Idempotent path: request was already processed. Do NOT credit again.
       const { data: existing } = await supabaseAdmin
-        .from("topup_requests").select("status, user_id").eq("id", data.id).maybeSingle();
+        .from("topup_requests").select("status, user_id, coins, amount_usd, reject_reason").eq("id", data.id).maybeSingle();
       if (!existing) throw new Error("not_found");
-      if (existing.status === "rejected") throw new Error("already_rejected");
       const { data: w } = await supabaseAdmin.from("wallets").select("balance").eq("user_id", existing.user_id).maybeSingle();
-      return { ok: true, already_approved: true, new_balance: Number(w?.balance ?? 0), credited: 0 };
+      return {
+        ok: true,
+        status: existing.status as "approved" | "rejected",
+        already_reviewed: true,
+        credited: 0,
+        coins: Number(existing.coins),
+        amount_usd: Number(existing.amount_usd),
+        new_balance: Number(w?.balance ?? 0),
+        reject_reason: existing.reject_reason ?? null,
+      };
     }
 
     const { data: wallet } = await supabaseAdmin.from("wallets").select("balance").eq("user_id", claimed.user_id).maybeSingle();
@@ -156,7 +164,7 @@ export const adminApproveTopup = createServerFn({ method: "POST" })
       await supabaseAdmin.from("topup_requests").update({ status: "pending", reviewed_by: null, reviewed_at: null }).eq("id", data.id);
       throw new Error(e2.message);
     }
-    const bal = upserted.balance;
+    const bal = Number(upserted.balance);
     await supabaseAdmin.from("balance_changes").insert({
       user_id: claimed.user_id, changed_by: context.userId,
       old_balance: current, new_balance: newBalance,
@@ -164,9 +172,18 @@ export const adminApproveTopup = createServerFn({ method: "POST" })
     });
     const who = await userLabel(claimed.user_id);
     await notifyTelegram(
-      `✅ <b>Topup Approved</b>\n👤 ${who}\n💵 $${Number(claimed.amount_usd).toFixed(2)} → <b>+${Number(claimed.coins).toLocaleString()} coins</b>\n💼 New balance: ${Number(bal).toLocaleString()}\n🆔 <code>${data.id}</code>`,
+      `✅ <b>Topup Approved</b>\n👤 ${who}\n💵 $${Number(claimed.amount_usd).toFixed(2)} → <b>+${Number(claimed.coins).toLocaleString()} coins</b>\n💼 New balance: ${bal.toLocaleString()}\n🆔 <code>${data.id}</code>`,
     );
-    return { ok: true, new_balance: Number(bal), credited: Number(claimed.coins) };
+    return {
+      ok: true,
+      status: "approved" as const,
+      already_reviewed: false,
+      credited: Number(claimed.coins),
+      coins: Number(claimed.coins),
+      amount_usd: Number(claimed.amount_usd),
+      new_balance: bal,
+      reject_reason: null,
+    };
   });
 
 // Admin: reject
