@@ -3,9 +3,9 @@ import { useEffect, useState, useCallback } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { useStore } from "@/lib/store";
-import { ArrowLeft, Plus, Eye, EyeOff, Trash2, Save, Loader2, Users, Gamepad2, FileArchive, Settings as SettingsIcon, Receipt, Pencil } from "lucide-react";
+import { ArrowLeft, Plus, Eye, EyeOff, Trash2, Save, Loader2, Users, Gamepad2, FileArchive, Settings as SettingsIcon, Receipt, Pencil, History, ChevronDown, ChevronUp } from "lucide-react";
 import { StoreProvider } from "@/lib/store";
-import { getAppSettings, updateAppSettings, adminSetUserBalance, listAllTransactions } from "@/lib/admin.functions";
+import { getAppSettings, updateAppSettings, adminSetUserBalance, listAllTransactions, listBalanceChanges } from "@/lib/admin.functions";
 
 export const Route = createFileRoute("/admin")({
   head: () => ({ meta: [{ title: "Admin — Dyna Store" }] }),
@@ -330,11 +330,12 @@ function UsersTab() {
                 <th className="text-right px-4 py-3">ហ្គេមដែលបាន</th>
                 <th className="text-center px-4 py-3">តួនាទី</th>
                 <th className="text-left px-4 py-3">បង្កើត</th>
+                <th className="text-right px-4 py-3">សកម្មភាព</th>
               </tr>
             </thead>
             <tbody>
-              {loading ? <tr><td colSpan={6} className="text-center py-8 text-xs text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin inline" /></td></tr>
-                : rows.length === 0 ? <tr><td colSpan={6} className="text-center py-8 text-xs text-muted-foreground">គ្មានអ្នកប្រើ។</td></tr>
+              {loading ? <tr><td colSpan={7} className="text-center py-8 text-xs text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin inline" /></td></tr>
+                : rows.length === 0 ? <tr><td colSpan={7} className="text-center py-8 text-xs text-muted-foreground">គ្មានអ្នកប្រើ។</td></tr>
                 : rows.map((u) => (
                   <UserRowEditor key={u.user_id} user={u} onUpdate={(b) => setRows(rs => rs.map(x => x.user_id === u.user_id ? { ...x, balance: b } : x))} />
                 ))}
@@ -349,43 +350,121 @@ function UsersTab() {
 function UserRowEditor({ user, onUpdate }: { user: UserRow; onUpdate: (b: number) => void }) {
   const [editing, setEditing] = useState(false);
   const [val, setVal] = useState(String(user.balance));
+  const [reason, setReason] = useState("");
   const [busy, setBusy] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
+  const [history, setHistory] = useState<Array<{ id: string; old_balance: number; new_balance: number; reason: string | null; created_at: string; changed_by_name: string }> | null>(null);
+  const [loadingHist, setLoadingHist] = useState(false);
   const setBalance = useServerFn(adminSetUserBalance);
+  const fetchHistory = useServerFn(listBalanceChanges);
+
+  const loadHistory = useCallback(async () => {
+    setLoadingHist(true);
+    try {
+      const rows = await fetchHistory({ data: { user_id: user.user_id } });
+      setHistory(rows);
+    } catch (e) { alert(e instanceof Error ? e.message : "បរាជ័យ"); }
+    finally { setLoadingHist(false); }
+  }, [fetchHistory, user.user_id]);
+
+  const toggleHistory = () => {
+    const next = !showHistory;
+    setShowHistory(next);
+    if (next && history === null) loadHistory();
+  };
+
   const save = async () => {
     const n = Number(val);
     if (!Number.isFinite(n) || n < 0) return;
     setBusy(true);
     try {
-      const r = await setBalance({ data: { user_id: user.user_id, new_balance: Math.floor(n) } });
+      const r = await setBalance({ data: { user_id: user.user_id, new_balance: Math.floor(n), reason: reason.trim() || undefined } });
       onUpdate(r.balance);
       setEditing(false);
+      setReason("");
+      if (showHistory) await loadHistory();
+      else setHistory(null);
     } catch (e) { alert(e instanceof Error ? e.message : "បរាជ័យ"); }
     finally { setBusy(false); }
   };
+
   return (
-    <tr className="border-t border-border/60 hover:bg-muted/10">
-      <td className="px-4 py-3 font-medium">{user.display_name}</td>
-      <td className="px-4 py-3 font-mono text-[11px] text-muted-foreground truncate max-w-[200px]">{user.user_id}</td>
-      <td className="px-4 py-3 text-right font-semibold text-primary">
-        {editing ? (
-          <span className="inline-flex items-center gap-1">
-            <input type="number" min={0} value={val} onChange={(e) => setVal(e.target.value)} className="w-24 text-right rounded bg-input px-2 py-1 text-xs ring-1 ring-border focus:ring-primary outline-none" />
-            <button disabled={busy} onClick={save} className="rounded-full bg-primary/10 text-primary px-2 py-1 text-[11px] font-semibold disabled:opacity-50">Save</button>
-            <button onClick={() => { setEditing(false); setVal(String(user.balance)); }} className="text-[11px] text-muted-foreground">×</button>
-          </span>
-        ) : (
-          <button onClick={() => { setVal(String(user.balance)); setEditing(true); }} className="inline-flex items-center gap-1 hover:underline">
-            {user.balance.toLocaleString()} <Pencil className="h-3 w-3 text-muted-foreground" />
+    <>
+      <tr className="border-t border-border/60 hover:bg-muted/10">
+        <td className="px-4 py-3 font-medium">{user.display_name}</td>
+        <td className="px-4 py-3 font-mono text-[11px] text-muted-foreground truncate max-w-[200px]">{user.user_id}</td>
+        <td className="px-4 py-3 text-right font-semibold text-primary">
+          {editing ? (
+            <div className="inline-flex flex-col items-end gap-1">
+              <span className="inline-flex items-center gap-1">
+                <input type="number" min={0} value={val} onChange={(e) => setVal(e.target.value)} className="w-24 text-right rounded bg-input px-2 py-1 text-xs ring-1 ring-border focus:ring-primary outline-none" />
+                <button disabled={busy} onClick={save} className="rounded-full bg-primary/10 text-primary px-2 py-1 text-[11px] font-semibold disabled:opacity-50">Save</button>
+                <button onClick={() => { setEditing(false); setVal(String(user.balance)); setReason(""); }} className="text-[11px] text-muted-foreground">×</button>
+              </span>
+              <input type="text" maxLength={200} value={reason} onChange={(e) => setReason(e.target.value)} placeholder="មូលហេតុ (សេចក្តីពន្យល់)" className="w-56 text-left rounded bg-input px-2 py-1 text-[11px] ring-1 ring-border focus:ring-primary outline-none" />
+            </div>
+          ) : (
+            <button onClick={() => { setVal(String(user.balance)); setEditing(true); }} className="inline-flex items-center gap-1 hover:underline">
+              {user.balance.toLocaleString()} <Pencil className="h-3 w-3 text-muted-foreground" />
+            </button>
+          )}
+        </td>
+        <td className="px-4 py-3 text-right">{user.owned}</td>
+        <td className="px-4 py-3 text-center">
+          {user.is_admin ? <span className="inline-flex items-center rounded-full bg-primary/15 text-primary px-2 py-0.5 text-[10px] font-semibold">Admin</span>
+            : <span className="text-[10px] text-muted-foreground">User</span>}
+        </td>
+        <td className="px-4 py-3 text-xs text-muted-foreground">{new Date(user.created_at).toLocaleDateString()}</td>
+        <td className="px-4 py-3 text-right">
+          <button onClick={toggleHistory} className="inline-flex items-center gap-1 rounded-full bg-muted/30 hover:bg-muted/50 px-2 py-1 text-[11px] font-semibold text-muted-foreground">
+            <History className="h-3 w-3" /> ប្រវត្តិ {showHistory ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
           </button>
-        )}
-      </td>
-      <td className="px-4 py-3 text-right">{user.owned}</td>
-      <td className="px-4 py-3 text-center">
-        {user.is_admin ? <span className="inline-flex items-center rounded-full bg-primary/15 text-primary px-2 py-0.5 text-[10px] font-semibold">Admin</span>
-          : <span className="text-[10px] text-muted-foreground">User</span>}
-      </td>
-      <td className="px-4 py-3 text-xs text-muted-foreground">{new Date(user.created_at).toLocaleDateString()}</td>
-    </tr>
+        </td>
+      </tr>
+      {showHistory && (
+        <tr className="border-t border-border/40 bg-muted/5">
+          <td colSpan={7} className="px-4 py-3">
+            {loadingHist ? (
+              <div className="text-center text-xs text-muted-foreground py-3"><Loader2 className="h-4 w-4 animate-spin inline" /></div>
+            ) : !history || history.length === 0 ? (
+              <div className="text-center text-xs text-muted-foreground py-3">គ្មានប្រវត្តិការផ្លាស់ប្តូរ Balance។</div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs">
+                  <thead className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                    <tr>
+                      <th className="text-left px-2 py-1.5">កាលបរិច្ឆេទ</th>
+                      <th className="text-left px-2 py-1.5">ដោយ Admin</th>
+                      <th className="text-right px-2 py-1.5">ពី</th>
+                      <th className="text-right px-2 py-1.5">ទៅ</th>
+                      <th className="text-right px-2 py-1.5">ផ្លាស់ប្តូរ</th>
+                      <th className="text-left px-2 py-1.5">មូលហេតុ</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {history.map((h) => {
+                      const diff = h.new_balance - h.old_balance;
+                      return (
+                        <tr key={h.id} className="border-t border-border/40">
+                          <td className="px-2 py-1.5 text-muted-foreground whitespace-nowrap">{new Date(h.created_at).toLocaleString()}</td>
+                          <td className="px-2 py-1.5">{h.changed_by_name}</td>
+                          <td className="px-2 py-1.5 text-right font-mono">{h.old_balance.toLocaleString()}</td>
+                          <td className="px-2 py-1.5 text-right font-mono font-semibold text-primary">{h.new_balance.toLocaleString()}</td>
+                          <td className={`px-2 py-1.5 text-right font-mono font-semibold ${diff > 0 ? "text-emerald-500" : diff < 0 ? "text-destructive" : "text-muted-foreground"}`}>
+                            {diff > 0 ? "+" : ""}{diff.toLocaleString()}
+                          </td>
+                          <td className="px-2 py-1.5 text-muted-foreground">{h.reason ?? "—"}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </td>
+        </tr>
+      )}
+    </>
   );
 }
 

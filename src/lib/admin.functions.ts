@@ -43,14 +43,35 @@ export const adminSetUserBalance = createServerFn({ method: "POST" })
   .inputValidator((i) => z.object({
     user_id: z.string().uuid(),
     new_balance: z.number().int().min(0).max(10_000_000),
+    reason: z.string().trim().max(200).optional(),
   }).parse(i))
   .handler(async ({ data, context }) => {
     await assertAdmin(context.userId);
     const { data: bal, error } = await supabaseAdmin.rpc("admin_set_balance", {
-      _user_id: data.user_id, _new_balance: data.new_balance,
+      _user_id: data.user_id, _new_balance: data.new_balance, _reason: data.reason ?? null,
     });
     if (error) throw new Error(error.message);
     return { balance: Number(bal) };
+  });
+
+export const listBalanceChanges = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i) => z.object({ user_id: z.string().uuid() }).parse(i))
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context.userId);
+    const { data: rows, error } = await supabaseAdmin
+      .from("balance_changes")
+      .select("id, user_id, changed_by, old_balance, new_balance, reason, created_at")
+      .eq("user_id", data.user_id)
+      .order("created_at", { ascending: false })
+      .limit(100);
+    if (error) throw new Error(error.message);
+    const adminIds = Array.from(new Set((rows ?? []).map((r) => r.changed_by)));
+    const { data: admins } = adminIds.length
+      ? await supabaseAdmin.from("profiles").select("user_id, display_name").in("user_id", adminIds)
+      : { data: [] as { user_id: string; display_name: string }[] };
+    const nameMap = new Map((admins ?? []).map((a) => [a.user_id, a.display_name]));
+    return (rows ?? []).map((r) => ({ ...r, changed_by_name: nameMap.get(r.changed_by) ?? "Admin" }));
   });
 
 export const listMyTransactions = createServerFn({ method: "GET" })
