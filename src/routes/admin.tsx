@@ -62,13 +62,13 @@ function AdminPage() {
         <div className="container mx-auto px-4 h-14 flex items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <Link to="/" className="text-muted-foreground hover:text-foreground"><ArrowLeft className="h-4 w-4" /></Link>
-            <h1 className="font-display text-lg gradient-text">Admin Dashboard</h1>
+            <h1 className="font-display text-lg gradient-text">ផ្ទាំងគ្រប់គ្រង Admin</h1>
           </div>
           <nav className="flex gap-1 rounded-full bg-muted/30 p-1 overflow-x-auto">
-            <TabBtn active={tab === "games"} onClick={() => setTab("games")} icon={<Gamepad2 className="h-3.5 w-3.5" />} label="Games" />
-            <TabBtn active={tab === "users"} onClick={() => setTab("users")} icon={<Users className="h-3.5 w-3.5" />} label="Users" />
-            <TabBtn active={tab === "payments"} onClick={() => setTab("payments")} icon={<Receipt className="h-3.5 w-3.5" />} label="Payments" />
-            <TabBtn active={tab === "settings"} onClick={() => setTab("settings")} icon={<SettingsIcon className="h-3.5 w-3.5" />} label="Settings" />
+            <TabBtn active={tab === "games"} onClick={() => setTab("games")} icon={<Gamepad2 className="h-3.5 w-3.5" />} label="ហ្គេម" />
+            <TabBtn active={tab === "users"} onClick={() => setTab("users")} icon={<Users className="h-3.5 w-3.5" />} label="អ្នកប្រើ" />
+            <TabBtn active={tab === "payments"} onClick={() => setTab("payments")} icon={<Receipt className="h-3.5 w-3.5" />} label="ការទូទាត់" />
+            <TabBtn active={tab === "settings"} onClick={() => setTab("settings")} icon={<SettingsIcon className="h-3.5 w-3.5" />} label="កំណត់" />
           </nav>
         </div>
       </header>
