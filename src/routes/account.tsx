@@ -179,6 +179,68 @@ function AccountPage() {
           </form>
         </section>
 
+        {/* Balance card */}
+        <section className="glass rounded-2xl border border-border/60 p-6 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="h-12 w-12 rounded-2xl bg-primary/15 grid place-items-center text-primary">
+              <Wallet className="h-6 w-6" />
+            </div>
+            <div>
+              <div className="text-[11px] uppercase tracking-wider text-muted-foreground">Balance បច្ចុប្បន្ន</div>
+              <div className="font-display text-2xl">{balance.toLocaleString()}</div>
+            </div>
+          </div>
+          <button onClick={() => { refreshWallet(); loadTxs(); }} className="inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-xs hover:bg-accent">
+            <RefreshCw className="h-3.5 w-3.5" /> ផ្ទុកឡើងវិញ
+          </button>
+        </section>
+
+        {/* Transactions / Topup history */}
+        <section className="glass rounded-2xl border border-border/60 p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="font-semibold text-sm inline-flex items-center gap-2">
+              <Receipt className="h-4 w-4 text-primary" /> ប្រវត្តិ Topup
+            </h2>
+            <span className="text-[11px] text-muted-foreground">{txs.length} កំណត់ត្រា</span>
+          </div>
+
+          {txLoading ? (
+            <div className="text-xs text-muted-foreground py-6 text-center">កំពុងផ្ទុក…</div>
+          ) : txs.length === 0 ? (
+            <div className="text-xs text-muted-foreground py-6 text-center">មិនទាន់មានការ Topup នៅឡើយទេ។</div>
+          ) : (
+            <div className="overflow-x-auto -mx-2">
+              <table className="w-full text-sm">
+                <thead className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                  <tr className="border-b border-border/60">
+                    <th className="text-left px-2 py-2">ពេលវេលា</th>
+                    <th className="text-right px-2 py-2">USD</th>
+                    <th className="text-right px-2 py-2">Balance</th>
+                    <th className="text-center px-2 py-2">ស្ថានភាព</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {txs.map((t) => {
+                    const expired = t.status === "pending" && new Date(t.expires_at).getTime() < Date.now();
+                    const status = expired ? "expired" : t.status;
+                    return (
+                      <tr key={t.id} className="border-b border-border/30 hover:bg-muted/10">
+                        <td className="px-2 py-2.5 text-xs">
+                          <div>{new Date(t.created_at).toLocaleString()}</div>
+                          {t.paid_at && <div className="text-[10px] text-emerald-400 mt-0.5">បានបង់: {new Date(t.paid_at).toLocaleString()}</div>}
+                        </td>
+                        <td className="px-2 py-2.5 text-right font-mono text-xs">${Number(t.amount_usd).toFixed(2)}</td>
+                        <td className="px-2 py-2.5 text-right font-semibold text-xs">{t.coins.toLocaleString()}</td>
+                        <td className="px-2 py-2.5 text-center"><StatusPill status={status} /></td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
+
         {/* Account details */}
         <section className="glass rounded-2xl border border-border/60 p-6">
           <h2 className="font-semibold text-sm mb-4">ព័ត៌មានគណនី</h2>
