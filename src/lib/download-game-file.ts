@@ -1,6 +1,9 @@
+import { validateGameFileUrl } from "./validate-game-file";
+
 /**
  * Resolve the URL the Download button should open for a given stored
- * `file_path` value. External http(s) links are returned as-is. In-bucket
+ * `file_path` value. External http(s) links are validated (non-empty,
+ * http/https only, allowed file extension) before being returned. In-bucket
  * paths are resolved through a signed URL from Storage.
  *
  * The Storage signer is injected so this is fully testable without the real
@@ -29,6 +32,8 @@ export async function resolveDownloadUrl(
 ): Promise<ResolveDownloadResult> {
   if (!filePath) return { ok: false, error: "មិនទាន់មានឯកសារ" };
   if (isExternalDownload(filePath)) {
+    const err = validateGameFileUrl(filePath);
+    if (err) return { ok: false, error: err };
     return { ok: true, url: filePath, external: true };
   }
   const { data, error } = await signer(

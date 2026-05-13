@@ -460,13 +460,17 @@ function GameRowEditor({ game, busy, onSave, onDelete, onReplaceFile, validateFi
             <button
               type="button"
               onClick={async () => {
-                if (/^https?:\/\//i.test(game.file_path!)) {
-                  window.open(game.file_path!, "_blank");
+                const { resolveDownloadUrl } = await import("@/lib/download-game-file");
+                const result = await resolveDownloadUrl(
+                  game.file_path,
+                  (path, exp, opts) => supabase.storage.from("game-files").createSignedUrl(path, exp, opts),
+                  { forceDownload: true },
+                );
+                if (!result.ok) {
+                  onValidationError(result.error);
                   return;
                 }
-                const { data, error } = await supabase.storage.from("game-files").createSignedUrl(game.file_path!, 300, { download: true });
-                if (error || !data?.signedUrl) return;
-                window.open(data.signedUrl, "_blank");
+                window.open(result.url, "_blank", "noopener,noreferrer");
               }}
               className="text-[10px] text-emerald-400 hover:underline"
             >ទាញយក</button>

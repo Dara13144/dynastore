@@ -4,6 +4,7 @@ import {
   isExternalDownload,
   type SignedUrlSigner,
 } from "./download-game-file";
+import { GAME_FILE_URL_ERRORS } from "./validate-game-file";
 
 const okSigner = (url = "https://storage.example/signed?token=abc"): SignedUrlSigner =>
   vi.fn(async () => ({ data: { signedUrl: url }, error: null }));
@@ -46,6 +47,38 @@ describe("resolveDownloadUrl - external http(s) links", () => {
     expect(r.ok).toBe(true);
     if (r.ok) expect(r.external).toBe(true);
     expect(signer).not.toHaveBeenCalled();
+  });
+});
+
+describe("resolveDownloadUrl - external link validation", () => {
+  it("rejects http(s) URLs with a disallowed extension (.exe)", async () => {
+    const signer = okSigner();
+    const r = await resolveDownloadUrl("https://evil.test/payload.exe", signer);
+    expect(r).toEqual({ ok: false, error: GAME_FILE_URL_ERRORS.BAD_EXTENSION });
+    expect(signer).not.toHaveBeenCalled();
+  });
+
+  it("rejects http(s) URLs with no file extension", async () => {
+    const signer = okSigner();
+    const r = await resolveDownloadUrl("https://example.com/", signer);
+    expect(r).toEqual({ ok: false, error: GAME_FILE_URL_ERRORS.BAD_EXTENSION });
+    expect(signer).not.toHaveBeenCalled();
+  });
+
+  it("accepts allowed archive extensions over https", async () => {
+    for (const ext of [".zip", ".rar", ".7z", ".tar", ".gz", ".tgz"]) {
+      const signer = okSigner();
+      const url = `https://cdn.example/file${ext}`;
+      const r = await resolveDownloadUrl(url, signer);
+      expect(r).toEqual({ ok: true, url, external: true });
+      expect(signer).not.toHaveBeenCalled();
+    }
+  });
+
+  it("treats non-http(s) schemes as in-bucket paths (signer is called)", async () => {
+    const signer = okSigner();
+    await resolveDownloadUrl("ftp://example.com/x.zip", signer);
+    expect(signer).toHaveBeenCalledTimes(1);
   });
 });
 
