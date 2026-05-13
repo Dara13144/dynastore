@@ -114,7 +114,7 @@ export const createTopup = createServerFn({ method: "POST" })
 
     const { data: existingPending } = data.forceNew ? { data: null } : await supabaseAdmin
       .from("transactions")
-      .select("order_id, bakong_md5, qr_string, amount_usd, coins, expires_at")
+      .select("order_id, bakong_md5, qr_string, amount_usd, coins, expires_at, created_at")
       .eq("user_id", userId)
       .eq("status", "pending")
       .eq("amount_usd", data.amountUsd)
@@ -131,6 +131,7 @@ export const createTopup = createServerFn({ method: "POST" })
         balance: existingPending.coins,
         amountUsd: Number(existingPending.amount_usd),
         expiresAt: existingPending.expires_at,
+        issuedAt: existingPending.created_at,
       };
     }
 
