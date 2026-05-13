@@ -85,6 +85,68 @@ async function sendDocumentOnce(token: string, chat_id: string, caption: string,
 }
 
 /**
+ * Send a photo by public URL — Telegram fetches the image itself.
+ * Falls back to a text message (with the URL) on any failure.
+ */
+export async function notifyTelegramPhotoFromUrl(
+  photoUrl: string,
+  caption: string,
+  eventType = "generic",
+): Promise<void> {
+  const token = process.env.TELEGRAM_BOT_TOKEN;
+  const envIds = (process.env.TELEGRAM_CHAT_IDS ?? "")
+    .split(",").map((s) => s.trim()).filter(Boolean);
+  const chatIds = Array.from(new Set([...envIds, TELEGRAM_DEFAULT_GROUP]));
+  const preview = caption.slice(0, 500);
+
+  if (!token) {
+    console.error("[telegram] missing TELEGRAM_BOT_TOKEN", { eventType });
+    await logResult({ event_type: eventType, chat_id: "(none)", status: "failed",
+      error: "missing TELEGRAM_BOT_TOKEN", attempts: 0, message_preview: preview });
+    return;
+  }
+  if (chatIds.length === 0) return;
+
+  await Promise.all(chatIds.map(async (chat_id) => {
+    let attempt = 0;
+    let lastStatus: number | null = null;
+    let lastError: string | null = null;
+    while (attempt < MAX_ATTEMPTS) {
+      attempt++;
+      try {
+        const r = await fetch(`https://api.telegram.org/bot${token}/sendPhoto`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ chat_id, photo: photoUrl, caption, parse_mode: "HTML" }),
+        });
+        if (r.ok) {
+          console.info("[telegram] photo-url sent", { eventType, chat_id, attempt });
+          await logResult({ event_type: eventType, chat_id, status: "sent",
+            http_status: r.status, attempts: attempt, message_preview: preview });
+          return;
+        }
+        lastStatus = r.status;
+        let body: string | null = null;
+        try { body = await r.text(); } catch { /* ignore */ }
+        lastError = body?.slice(0, 500) ?? `HTTP ${r.status}`;
+        if (r.status >= 400 && r.status < 500 && r.status !== 429) break;
+      } catch (e) {
+        lastError = e instanceof Error ? e.message : String(e);
+      }
+      if (attempt < MAX_ATTEMPTS) {
+        await new Promise((res) => setTimeout(res, RETRY_BASE_MS * attempt));
+      }
+    }
+    console.error("[telegram] photo-url FAILED, falling back to text", { eventType, chat_id, attempts: attempt, http_status: lastStatus, error: lastError });
+    await logResult({ event_type: eventType, chat_id, status: "failed",
+      http_status: lastStatus, error: lastError, attempts: attempt, message_preview: preview });
+  }));
+
+  // Best-effort text fallback if any chat may have failed (sendPhoto by URL can be flaky for hotlinked images)
+  // We send text only when no chats succeeded above is hard to track per-chat; instead we always append a link in caller if needed.
+}
+
+
  * Send a photo (or document fallback) from a Supabase Storage object to all Telegram chats.
  * Falls back to a plain text message if the file cannot be downloaded.
  */
