@@ -133,8 +133,34 @@ export const createTopup = createServerFn({ method: "POST" })
       });
       if (!error) { lastErr = null; break; }
       lastErr = error.message;
-      // Only retry on unique-violation; otherwise abort.
-      if (!/duplicate key|unique constraint/i.test(error.message)) break;
+      // On duplicate md5: if the existing row belongs to this user and is still
+      // pending+unexpired for the same pack, reuse it (idempotent). Otherwise retry.
+      if (/duplicate key|unique constraint/i.test(error.message)) {
+        const { data: existing } = await supabaseAdmin
+          .from("transactions")
+          .select("user_id, status, expires_at, amount_usd, coins, qr_payload")
+          .eq("md5", md5)
+          .maybeSingle();
+        if (
+          existing &&
+          existing.user_id === userId &&
+          existing.status === "pending" &&
+          new Date(existing.expires_at).getTime() > Date.now() &&
+          Number(existing.amount_usd) === pack.price &&
+          existing.coins === totalCoins
+        ) {
+          return {
+            md5,
+            qrPayload: existing.qr_payload,
+            amountUsd: pack.price,
+            coins: totalCoins,
+            packName: pack.name,
+            reused: true as const,
+          };
+        }
+        continue; // collision with someone else / different tx — retry with new bill number
+      }
+      break; // non-duplicate error: abort
     }
     if (lastErr) throw new Error(lastErr);
 
