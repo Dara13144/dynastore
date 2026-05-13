@@ -127,14 +127,22 @@ export const adminApproveTopup = createServerFn({ method: "POST" })
   .inputValidator((i) => z.object({ id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
     await assertAdmin(context.userId);
-    // Atomic claim: only succeeds if still pending. Prevents double approve/reject.
+    // Atomic claim: only succeeds if still pending. Prevents double credit.
     const { data: claimed, error: e0 } = await supabaseAdmin
       .from("topup_requests")
       .update({ status: "approved", reviewed_by: context.userId, reviewed_at: new Date().toISOString() })
       .eq("id", data.id).eq("status", "pending")
       .select("id, user_id, coins, amount_usd").maybeSingle();
     if (e0) throw new Error(e0.message);
-    if (!claimed) throw new Error("already_reviewed");
+    if (!claimed) {
+      // Idempotent path: request was already processed. Do NOT credit again.
+      const { data: existing } = await supabaseAdmin
+        .from("topup_requests").select("status, user_id").eq("id", data.id).maybeSingle();
+      if (!existing) throw new Error("not_found");
+      if (existing.status === "rejected") throw new Error("already_rejected");
+      const { data: w } = await supabaseAdmin.from("wallets").select("balance").eq("user_id", existing.user_id).maybeSingle();
+      return { ok: true, already_approved: true, new_balance: Number(w?.balance ?? 0), credited: 0 };
+    }
 
     const { data: wallet } = await supabaseAdmin.from("wallets").select("balance").eq("user_id", claimed.user_id).maybeSingle();
     const current = Number(wallet?.balance ?? 0);
