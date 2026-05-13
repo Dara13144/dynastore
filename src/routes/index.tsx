@@ -688,7 +688,19 @@ function TopupModal({ onClose, onToast }: { onClose: () => void; onToast: (m: st
           </div>
         )}
 
-        {/* Debug panel — last Bakong callback payload + poll result */}
+        {stage === "cancelled" && (
+          <div className="p-8 text-center space-y-3">
+            <div className="mx-auto h-14 w-14 rounded-full bg-muted/40 grid place-items-center"><X className="h-7 w-7 text-muted-foreground" /></div>
+            <div className="font-display text-xl">បានលុប QR</div>
+            <div className="text-sm text-muted-foreground">ប្រតិបត្តិការនេះត្រូវបានបោះបង់។ អ្នកអាចបង្កើត QR ថ្មីបាន។</div>
+            <div className="flex gap-2">
+              <button onClick={() => reset()} className="flex-1 rounded-xl border border-border py-2.5 text-xs hover:bg-accent">បិទ</button>
+              <button onClick={() => start(true)} className="flex-1 rounded-xl bg-primary py-2.5 text-xs font-semibold text-primary-foreground hover:opacity-90 inline-flex items-center justify-center gap-1.5">
+                <RefreshCw className="h-3.5 w-3.5" /> បង្កើតថ្មី
+              </button>
+            </div>
+          </div>
+        )}
         {(stage === "qr" || stage === "checking" || stage === "paid" || stage === "expired" || stage === "failed") && orderId && (
           <div className="border-t border-border/60 px-5 py-3 text-[11px]">
             <button onClick={() => setShowDebug((v) => !v)} className="w-full flex items-center justify-between text-muted-foreground hover:text-foreground">
