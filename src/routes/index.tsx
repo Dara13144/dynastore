@@ -448,7 +448,7 @@ function TopupModal({ onClose, onToast }: { onClose: () => void; onToast: (m: st
           setPollCount((n) => n + 1);
           recordAttempt(c.status, c.debug ?? c, c.debug?.httpStatus ?? null, c.debug?.latencyMs ?? null, c.debug?.providerMessage ?? null);
           if (c.status === "paid") {
-            stopPoll(); setStage("paid"); await refreshWallet();
+            stopPoll(); setStage("paid"); setFlash("paid"); await refreshWallet();
             onToast(`បានបន្ថែម ${r.balance.toLocaleString()} Balance!`);
           } else if (c.status === "expired") {
             stopPoll(); setStage("expired");
@@ -458,6 +458,7 @@ function TopupModal({ onClose, onToast }: { onClose: () => void; onToast: (m: st
             if (c.expiresAt) setExpiresAt(new Date(c.expiresAt).getTime());
             const dataUrl = await QRCode.toDataURL(c.qr, { width: 320, margin: 1 });
             setQrDataUrl(dataUrl);
+            setFlash("regenerated");
             onToast("បានបង្កើត QR ថ្មីដោយស្វ័យប្រវត្តិ");
           }
         } catch (e) {
