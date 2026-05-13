@@ -669,6 +669,7 @@ function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () 
     setErrMsg("");
     setTx(null);
     setSecondsLeft(POLL_WINDOW_S);
+    setEvents([]);
 
     try {
       const res = await createTopup({ data: { packId: pack.id } });
@@ -680,10 +681,14 @@ function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () 
         createdAt: now,
         expiresAt: now + POLL_WINDOW_S * 1000,
       });
+      pushEvent({ kind: "khqr", label: "KHQR generated", detail: `${res.coins} Coins · MD5 ${res.md5.slice(0, 10)}…` });
+      const clientMatch = md5Hex(res.qrPayload) === res.md5;
+      pushEvent({ kind: "md5", label: clientMatch ? "Client MD5 match ✓" : "Client MD5 mismatch ✗", detail: clientMatch ? "payload hash = server md5" : "hash mismatch" });
       setStatus("qr");
     } catch (e: any) {
       setStatus("error");
       setErrMsg(e?.message || "មានបញ្ហាបង្កើតការទូទាត់");
+      pushEvent({ kind: "error", label: "KHQR generation failed", detail: e?.message });
     }
   };
 
