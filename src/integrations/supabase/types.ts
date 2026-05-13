@@ -47,6 +47,36 @@ export type Database = {
         }
         Relationships: []
       }
+      balance_changes: {
+        Row: {
+          changed_by: string
+          created_at: string
+          id: string
+          new_balance: number
+          old_balance: number
+          reason: string | null
+          user_id: string
+        }
+        Insert: {
+          changed_by: string
+          created_at?: string
+          id?: string
+          new_balance: number
+          old_balance: number
+          reason?: string | null
+          user_id: string
+        }
+        Update: {
+          changed_by?: string
+          created_at?: string
+          id?: string
+          new_balance?: number
+          old_balance?: number
+          reason?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       games: {
         Row: {
           badge: string | null
@@ -237,10 +267,12 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      admin_set_balance: {
-        Args: { _new_balance: number; _user_id: string }
-        Returns: number
-      }
+      admin_set_balance:
+        | { Args: { _new_balance: number; _user_id: string }; Returns: number }
+        | {
+            Args: { _new_balance: number; _reason?: string; _user_id: string }
+            Returns: number
+          }
       credit_topup_atomic: {
         Args: { _md5: string }
         Returns: {
