@@ -77,9 +77,14 @@ function Header({ onSettings, onTopup }: { onSettings: () => void; onTopup: () =
         </nav>
         <div className="flex items-center gap-2">
           {authed && (
-            <button onClick={onTopup} title="បន្ថែម Balance" className="inline-flex items-center gap-1.5 rounded-full border border-primary/40 bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary hover:bg-primary/20">
-              <Wallet className="h-3.5 w-3.5" /> {balance.toLocaleString()} <Plus className="h-3 w-3" />
+            <button onClick={onTopup} title="Topup" className="inline-flex items-center gap-1.5 rounded-full bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground hover:opacity-90">
+              <Plus className="h-3.5 w-3.5" /> Topup
             </button>
+          )}
+          {authed && (
+            <span className="hidden sm:inline-flex items-center gap-1.5 rounded-full border border-primary/40 bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary">
+              <Wallet className="h-3.5 w-3.5" /> {balance.toLocaleString()}
+            </span>
           )}
           {authed && (
             <Link to="/library" className="hidden sm:inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-xs font-medium hover:bg-accent">
@@ -125,7 +130,7 @@ function Hero() {
           <span className="gradient-text">ទិញហ្គេម</span> ដោយ Balance
         </h1>
         <p className="mt-4 text-base md:text-lg text-muted-foreground">
-          បន្ថែម Balance តាម KHQR ហើយទិញហ្គេម PC/Console ភ្លាមៗ។ 1 USD = 100 Balance។
+          បន្ថែម Balance តាម KHQR ហើយទិញហ្គេម PC/Console ភ្លាមៗ។ 1 USD = 1 Balance។
         </p>
       </div>
     </section>
@@ -232,7 +237,7 @@ function DealsBanner() {
     <section id="deals" className="container mx-auto px-4 py-8">
       <div className="rounded-3xl p-8 md:p-10 text-center" style={{ background: "var(--gradient-hero)" }}>
         <h3 className="font-display text-2xl md:text-3xl text-primary-foreground">ប្រូម៉ូសិនពិសេសសប្តាហ៍នេះ</h3>
-        <p className="text-sm md:text-base text-primary-foreground/80 mt-2">បន្ថែម 10 USD នឹងទទួលបាន 1,000 Balance ភ្លាមៗ។</p>
+        <p className="text-sm md:text-base text-primary-foreground/80 mt-2">បន្ថែម 10 USD នឹងទទួលបាន 10 Balance ភ្លាមៗ។</p>
       </div>
     </section>
   );
@@ -432,7 +437,7 @@ function TopupModal({ onClose, onToast }: { onClose: () => void; onToast: (m: st
 
         {stage === "choose" && (
           <div className="p-5 space-y-4">
-            <p className="text-xs text-muted-foreground">1 USD = 100 Balance។ បង់ប្រាក់ភ្លាមៗតាម Bakong KHQR។</p>
+            <p className="text-xs text-muted-foreground">1 USD = 1 Balance។ បង់ប្រាក់ភ្លាមៗតាម Bakong KHQR។ QR មានសុពលភាព 5 នាទី។</p>
             <div className="grid grid-cols-5 gap-2">
               {PRESETS.map((p) => (
                 <button key={p} onClick={() => setAmount(p)} className={`rounded-xl border px-2 py-2 text-sm font-semibold ${amount === p ? "border-primary bg-primary/10 text-primary" : "border-border hover:bg-accent"}`}>${p}</button>
@@ -445,7 +450,7 @@ function TopupModal({ onClose, onToast }: { onClose: () => void; onToast: (m: st
             </div>
             <div className="rounded-xl bg-accent/40 px-3 py-2 text-xs flex items-center justify-between">
               <span>នឹងទទួលបាន</span>
-              <span className="font-semibold inline-flex items-center gap-1 text-primary"><Wallet className="h-3.5 w-3.5" /> {(amount * 100).toLocaleString()}</span>
+              <span className="font-semibold inline-flex items-center gap-1 text-primary"><Wallet className="h-3.5 w-3.5" /> {amount.toLocaleString()}</span>
             </div>
             <button onClick={start} className="w-full rounded-xl bg-primary py-2.5 text-sm font-semibold text-primary-foreground hover:opacity-90 inline-flex items-center justify-center gap-2">
               បង្កើត KHQR
