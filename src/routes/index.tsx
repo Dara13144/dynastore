@@ -411,7 +411,7 @@ function TopupModal({ onClose, onToast }: { onClose: () => void; onToast: (m: st
         try {
           const c = await checkFn({ data: { orderId: r.orderId } });
           setPollCount((n) => n + 1);
-          recordAttempt(c.status, c.debug ?? c, c.debug?.httpStatus ?? null, c.debug?.latencyMs ?? null);
+          recordAttempt(c.status, c.debug ?? c, c.debug?.httpStatus ?? null, c.debug?.latencyMs ?? null, c.debug?.providerMessage ?? null);
           if (c.status === "paid") {
             stopPoll(); setStage("paid"); await refreshWallet();
             onToast(`បានបន្ថែម ${r.balance.toLocaleString()} Balance!`);
@@ -421,7 +421,7 @@ function TopupModal({ onClose, onToast }: { onClose: () => void; onToast: (m: st
         } catch (e) {
           recordAttempt("error", e instanceof Error ? e.message : String(e));
         }
-      }, 3000) as unknown as number;
+      }, 2500) as unknown as number;
     } catch (e) {
       setErrorMsg(e instanceof Error ? e.message : "បរាជ័យបង្កើត KHQR");
       setStage("failed");
