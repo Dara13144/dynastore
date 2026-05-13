@@ -12,7 +12,7 @@ export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
       { title: "Dyna Store — ទិញហ្គេមដោយ KHQR" },
-      { name: "description", content: "ទិញហ្គេម PC និង Console ដោយ Bakong KHQR។ បន្ថែម coins ហើយចាប់ផ្តើមលេង។" },
+      { name: "description", content: "ទិញហ្គេម PC និង Console ដោយ Bakong KHQR។ បន្ថែម Balance ហើយចាប់ផ្តើមលេង។" },
       { property: "og:title", content: "Dyna Store" },
       { property: "og:description", content: "ហាងហ្គេមជាមួយ KHQR top-up។" },
     ],
@@ -122,10 +122,10 @@ function Hero() {
           <Sparkles className="h-3.5 w-3.5 text-primary" /> បង់ប្រាក់ភ្លាមៗដោយ Bakong KHQR
         </div>
         <h1 className="font-display text-4xl md:text-6xl tracking-tight">
-          <span className="gradient-text">ទិញហ្គេម</span> ដោយ coins
+          <span className="gradient-text">ទិញហ្គេម</span> ដោយ Balance
         </h1>
         <p className="mt-4 text-base md:text-lg text-muted-foreground">
-          បន្ថែម coins តាម KHQR ហើយទិញហ្គេម PC/Console ភ្លាមៗ។ 1 USD = 100 coins។
+          បន្ថែម Balance តាម KHQR ហើយទិញហ្គេម PC/Console ភ្លាមៗ។ 1 USD = 100 Balance។
         </p>
       </div>
     </section>
@@ -159,7 +159,7 @@ function GameCard({ game, onToast, onTopup }: { game: Game; onToast: (m: string)
 
   const buy = async () => {
     if (!authed) { onToast("សូមចូលគណនីជាមុនសិន"); return; }
-    if (balance < game.price_coins) { onToast("Coins មិនគ្រប់គ្រាន់ — សូមបន្ថែម"); onTopup(); return; }
+    if (balance < game.price_Balance) { onToast("Balance មិនគ្រប់គ្រាន់ — សូមបន្ថែម"); onTopup(); return; }
     setBusy(true);
     try {
       const r = await purchaseFn({ data: { gameId: game.id } });
@@ -191,18 +191,18 @@ function GameCard({ game, onToast, onTopup }: { game: Game; onToast: (m: string)
         <div className="mt-3 space-y-2">
           <div className="flex items-center justify-between text-xs">
             <div className="inline-flex items-center gap-1 font-semibold text-primary">
-              <Coins className="h-3.5 w-3.5" /> {game.price_coins.toLocaleString()}
+              <Coins className="h-3.5 w-3.5" /> {game.price_Balance.toLocaleString()}
             </div>
             {authed && !owned && (
-              <div className={`inline-flex items-center gap-1 ${balance >= game.price_coins ? "text-emerald-400" : "text-amber-400"}`}>
+              <div className={`inline-flex items-center gap-1 ${balance >= game.price_Balance ? "text-emerald-400" : "text-amber-400"}`}>
                 <Wallet className="h-3 w-3" /> Balance: {balance.toLocaleString()}
               </div>
             )}
           </div>
           {authed && !owned && (
             <div className="h-1.5 w-full overflow-hidden rounded-full bg-accent/40">
-              <div className={`h-full transition-all ${balance >= game.price_coins ? "bg-emerald-400" : "bg-amber-400"}`}
-                style={{ width: `${Math.min(100, (balance / game.price_coins) * 100)}%` }} />
+              <div className={`h-full transition-all ${balance >= game.price_Balance ? "bg-emerald-400" : "bg-amber-400"}`}
+                style={{ width: `${Math.min(100, (balance / game.price_Balance) * 100)}%` }} />
             </div>
           )}
           <div className="flex items-center justify-end gap-1.5">
@@ -211,7 +211,7 @@ function GameCard({ game, onToast, onTopup }: { game: Game; onToast: (m: string)
             </button>
             {owned ? (
               <button disabled className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 text-emerald-400 px-3 py-1.5 text-xs font-semibold">មាន</button>
-            ) : authed && balance < game.price_coins ? (
+            ) : authed && balance < game.price_Balance ? (
               <button onClick={onTopup} className="inline-flex items-center gap-1 rounded-full border border-amber-400/50 bg-amber-400/10 text-amber-300 px-3 py-1.5 text-xs font-semibold hover:bg-amber-400/20">
                 <Plus className="h-3.5 w-3.5" /> បន្ថែម Balance
               </button>
@@ -232,7 +232,7 @@ function DealsBanner() {
     <section id="deals" className="container mx-auto px-4 py-8">
       <div className="rounded-3xl p-8 md:p-10 text-center" style={{ background: "var(--gradient-hero)" }}>
         <h3 className="font-display text-2xl md:text-3xl text-primary-foreground">ប្រូម៉ូសិនពិសេសសប្តាហ៍នេះ</h3>
-        <p className="text-sm md:text-base text-primary-foreground/80 mt-2">បន្ថែម 10 USD នឹងទទួលបាន 1,000 coins ភ្លាមៗ។</p>
+        <p className="text-sm md:text-base text-primary-foreground/80 mt-2">បន្ថែម 10 USD នឹងទទួលបាន 1,000 Balance ភ្លាមៗ។</p>
       </div>
     </section>
   );
@@ -342,7 +342,7 @@ function TopupModal({ onClose, onToast }: { onClose: () => void; onToast: (m: st
   const [qr, setQr] = useState<string | null>(null);
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
   const [md5, setMd5] = useState<string | null>(null);
-  const [coins, setCoins] = useState(0);
+  const [Balance, setCoins] = useState(0);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [polling, setPolling] = useState(false);
   const [expiresAt, setExpiresAt] = useState<number | null>(null);
@@ -371,7 +371,7 @@ function TopupModal({ onClose, onToast }: { onClose: () => void; onToast: (m: st
     setStage("creating");
     try {
       const r = await createFn({ data: { amountUsd: amount } });
-      setQr(r.qr); setMd5(r.md5); setCoins(r.coins); setExpiresAt(new Date(r.expiresAt).getTime());
+      setQr(r.qr); setMd5(r.md5); setCoins(r.Balance); setExpiresAt(new Date(r.expiresAt).getTime());
       const dataUrl = await QRCode.toDataURL(r.qr, { width: 320, margin: 1 });
       setQrDataUrl(dataUrl);
       setStage("qr");
@@ -381,7 +381,7 @@ function TopupModal({ onClose, onToast }: { onClose: () => void; onToast: (m: st
           const c = await checkFn({ data: { md5: r.md5 } });
           if (c.status === "paid") {
             stopPoll(); setStage("paid"); await refreshWallet();
-            onToast(`បានបន្ថែម ${r.coins.toLocaleString()} coins!`);
+            onToast(`បានបន្ថែម ${r.Balance.toLocaleString()} Balance!`);
           } else if (c.status === "expired") {
             stopPoll(); setStage("expired");
           }
@@ -398,7 +398,7 @@ function TopupModal({ onClose, onToast }: { onClose: () => void; onToast: (m: st
     setStage("checking");
     try {
       const c = await checkFn({ data: { md5 } });
-      if (c.status === "paid") { stopPoll(); setStage("paid"); await refreshWallet(); onToast(`បានបន្ថែម ${coins.toLocaleString()} coins!`); }
+      if (c.status === "paid") { stopPoll(); setStage("paid"); await refreshWallet(); onToast(`បានបន្ថែម ${Balance.toLocaleString()} Balance!`); }
       else if (c.status === "expired") { stopPoll(); setStage("expired"); }
       else { setStage("qr"); onToast("មិនទាន់ទទួលបានការបង់ប្រាក់"); }
     } catch (e) {
@@ -432,7 +432,7 @@ function TopupModal({ onClose, onToast }: { onClose: () => void; onToast: (m: st
 
         {stage === "choose" && (
           <div className="p-5 space-y-4">
-            <p className="text-xs text-muted-foreground">1 USD = 100 coins។ បង់ប្រាក់ភ្លាមៗតាម Bakong KHQR។</p>
+            <p className="text-xs text-muted-foreground">1 USD = 100 Balance។ បង់ប្រាក់ភ្លាមៗតាម Bakong KHQR។</p>
             <div className="grid grid-cols-5 gap-2">
               {PRESETS.map((p) => (
                 <button key={p} onClick={() => setAmount(p)} className={`rounded-xl border px-2 py-2 text-sm font-semibold ${amount === p ? "border-primary bg-primary/10 text-primary" : "border-border hover:bg-accent"}`}>${p}</button>
@@ -464,7 +464,7 @@ function TopupModal({ onClose, onToast }: { onClose: () => void; onToast: (m: st
           <div className="p-5 space-y-3 text-center">
             <div className="text-xs text-muted-foreground inline-flex items-center gap-1.5"><ShieldCheck className="h-3.5 w-3.5 text-emerald-400" /> ស្កេនជាមួយ Bakong / ABA / ធនាគារផ្សេងៗ</div>
             <div className="mx-auto inline-block rounded-xl bg-white p-3"><img src={qrDataUrl} alt="KHQR" className="h-64 w-64" /></div>
-            <div className="text-sm font-semibold">${amount} → {coins.toLocaleString()} coins</div>
+            <div className="text-sm font-semibold">${amount} → {Balance.toLocaleString()} Balance</div>
             <div className="rounded-xl bg-amber-500/10 border border-amber-500/30 px-3 py-2 text-xs text-amber-300 inline-flex items-center gap-2 mx-auto">
               <Loader2 className={`h-3.5 w-3.5 ${polling ? "animate-spin" : ""}`} />
               <span>កំពុងរង់ចាំការបង់ប្រាក់ • ផុតក្នុង <span className="font-mono text-amber-200">{mm}:{ss}</span></span>
@@ -520,7 +520,7 @@ function TopupModal({ onClose, onToast }: { onClose: () => void; onToast: (m: st
           <div className="p-8 text-center space-y-3">
             <div className="mx-auto h-14 w-14 rounded-full bg-emerald-500/20 grid place-items-center"><Check className="h-7 w-7 text-emerald-400" /></div>
             <div className="font-display text-xl">បន្ថែមជោគជ័យ!</div>
-            <div className="text-sm text-muted-foreground">បាន {coins.toLocaleString()} coins ត្រូវបានបន្ថែមទៅ Balance របស់អ្នក។</div>
+            <div className="text-sm text-muted-foreground">បាន {Balance.toLocaleString()} Balance ត្រូវបានបន្ថែមទៅ Balance របស់អ្នក។</div>
             <div className="rounded-xl bg-emerald-500/10 border border-emerald-500/30 px-3 py-2 text-xs inline-flex items-center gap-1.5 text-emerald-300 mx-auto">
               <Wallet className="h-3.5 w-3.5" /> Balance ថ្មី: <span className="font-semibold">{balance.toLocaleString()}</span>
             </div>

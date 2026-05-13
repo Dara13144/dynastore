@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
-import { ArrowLeft, Trash2, Star, Check, Coins, Library as LibraryIcon } from "lucide-react";
+import { ArrowLeft, Trash2, Star, Check, Wallet, Library as LibraryIcon } from "lucide-react";
 import { StoreProvider, useStore } from "@/lib/store";
 import { useSession } from "@/hooks/use-session";
 import logoD from "@/assets/dyna-logo.jpeg";
@@ -47,7 +47,7 @@ function LibraryPage() {
             <p className="text-sm text-muted-foreground mt-1">មើលហ្គេមដែលអ្នកមាន និងគ្រប់គ្រងបញ្ជីចង់លេង។</p>
           </div>
           <div className="rounded-full border border-primary/40 bg-primary/10 px-3 py-1.5 text-sm font-semibold text-primary inline-flex items-center gap-1.5">
-            <Coins className="h-4 w-4" /> {balance.toLocaleString()}
+            <Wallet className="h-4 w-4" /> {balance.toLocaleString()}
           </div>
         </div>
 
@@ -72,7 +72,7 @@ function LibraryPage() {
             <Grid>
               {wishlist.map(({ l, g }) => g && (
                 <Card key={l.id} title={g.title} category={g.category} image={g.image}
-                  badge={<span className="inline-flex items-center gap-1 text-sm font-semibold text-primary"><Coins className="h-3.5 w-3.5" /> {g.price_coins.toLocaleString()}</span>}
+                  badge={<span className="inline-flex items-center gap-1 text-sm font-semibold text-primary"><Wallet className="h-3.5 w-3.5" /> {g.price_Balance.toLocaleString()}</span>}
                   action={
                     <button onClick={() => removeFromLibrary(l.id)} className="inline-flex items-center gap-1 rounded-full border border-border px-2.5 py-1 text-[11px] hover:bg-destructive hover:text-destructive-foreground hover:border-destructive">
                       <Trash2 className="h-3 w-3" /> ដក
