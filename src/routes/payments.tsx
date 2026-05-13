@@ -11,12 +11,13 @@ export const Route = createFileRoute("/payments")({
   head: () => ({
     meta: [
       { title: "ការទូទាត់ — Dyna Store" },
-      { name: "description", content: "ប្រវត្តិការទូទាត់ និងប្រតិបត្តិការ Balance របស់អ្នកនៅ Dyna Store។" },
+      { name: "description", content: "មើលប្រវត្តិការទូទាត់ KHQR, ការបញ្ចូល Balance, និងប្រតិបត្តិការទាំងអស់របស់អ្នកនៅ Dyna Store។" },
       { property: "og:title", content: "ការទូទាត់ — Dyna Store" },
       { property: "og:description", content: "មើលប្រវត្តិការទូទាត់ KHQR, ការបញ្ចូល Balance, និងប្រតិបត្តិការទាំងអស់នៅ Dyna Store។" },
       { property: "og:url", content: "https://dynastore.lovable.app/payments" },
       { name: "robots", content: "noindex" },
     ],
+    links: [{ rel: "canonical", href: "https://dynastore.lovable.app/payments" }],
   }),
   component: () => (<StoreProvider><PaymentsPage /></StoreProvider>),
 });
