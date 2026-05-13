@@ -72,7 +72,7 @@ function LibraryPage() {
             <Grid>
               {wishlist.map(({ l, g }) => g && (
                 <Card key={l.id} title={g.title} category={g.category} image={g.image}
-                  badge={<span className="inline-flex items-center gap-1 text-sm font-semibold text-primary"><Wallet className="h-3.5 w-3.5" /> {g.price_Balance.toLocaleString()}</span>}
+                  badge={<span className="inline-flex items-center gap-1 text-sm font-semibold text-primary"><Wallet className="h-3.5 w-3.5" /> {g.price_coins.toLocaleString()}</span>}
                   action={
                     <button onClick={() => removeFromLibrary(l.id)} className="inline-flex items-center gap-1 rounded-full border border-border px-2.5 py-1 text-[11px] hover:bg-destructive hover:text-destructive-foreground hover:border-destructive">
                       <Trash2 className="h-3 w-3" /> ដក

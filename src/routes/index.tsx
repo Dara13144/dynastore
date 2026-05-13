@@ -159,7 +159,7 @@ function GameCard({ game, onToast, onTopup }: { game: Game; onToast: (m: string)
 
   const buy = async () => {
     if (!authed) { onToast("សូមចូលគណនីជាមុនសិន"); return; }
-    if (balance < game.price_Balance) { onToast("Balance មិនគ្រប់គ្រាន់ — សូមបន្ថែម"); onTopup(); return; }
+    if (balance < game.price_coins) { onToast("Balance មិនគ្រប់គ្រាន់ — សូមបន្ថែម"); onTopup(); return; }
     setBusy(true);
     try {
       const r = await purchaseFn({ data: { gameId: game.id } });
@@ -191,18 +191,18 @@ function GameCard({ game, onToast, onTopup }: { game: Game; onToast: (m: string)
         <div className="mt-3 space-y-2">
           <div className="flex items-center justify-between text-xs">
             <div className="inline-flex items-center gap-1 font-semibold text-primary">
-              <Coins className="h-3.5 w-3.5" /> {game.price_Balance.toLocaleString()}
+              <Coins className="h-3.5 w-3.5" /> {game.price_coins.toLocaleString()}
             </div>
             {authed && !owned && (
-              <div className={`inline-flex items-center gap-1 ${balance >= game.price_Balance ? "text-emerald-400" : "text-amber-400"}`}>
+              <div className={`inline-flex items-center gap-1 ${balance >= game.price_coins ? "text-emerald-400" : "text-amber-400"}`}>
                 <Wallet className="h-3 w-3" /> Balance: {balance.toLocaleString()}
               </div>
             )}
           </div>
           {authed && !owned && (
             <div className="h-1.5 w-full overflow-hidden rounded-full bg-accent/40">
-              <div className={`h-full transition-all ${balance >= game.price_Balance ? "bg-emerald-400" : "bg-amber-400"}`}
-                style={{ width: `${Math.min(100, (balance / game.price_Balance) * 100)}%` }} />
+              <div className={`h-full transition-all ${balance >= game.price_coins ? "bg-emerald-400" : "bg-amber-400"}`}
+                style={{ width: `${Math.min(100, (balance / game.price_coins) * 100)}%` }} />
             </div>
           )}
           <div className="flex items-center justify-end gap-1.5">
@@ -211,7 +211,7 @@ function GameCard({ game, onToast, onTopup }: { game: Game; onToast: (m: string)
             </button>
             {owned ? (
               <button disabled className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 text-emerald-400 px-3 py-1.5 text-xs font-semibold">មាន</button>
-            ) : authed && balance < game.price_Balance ? (
+            ) : authed && balance < game.price_coins ? (
               <button onClick={onTopup} className="inline-flex items-center gap-1 rounded-full border border-amber-400/50 bg-amber-400/10 text-amber-300 px-3 py-1.5 text-xs font-semibold hover:bg-amber-400/20">
                 <Plus className="h-3.5 w-3.5" /> បន្ថែម Balance
               </button>
@@ -342,7 +342,7 @@ function TopupModal({ onClose, onToast }: { onClose: () => void; onToast: (m: st
   const [qr, setQr] = useState<string | null>(null);
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
   const [md5, setMd5] = useState<string | null>(null);
-  const [Balance, setCoins] = useState(0);
+  const [coins, setCoins] = useState(0);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [polling, setPolling] = useState(false);
   const [expiresAt, setExpiresAt] = useState<number | null>(null);
@@ -371,7 +371,7 @@ function TopupModal({ onClose, onToast }: { onClose: () => void; onToast: (m: st
     setStage("creating");
     try {
       const r = await createFn({ data: { amountUsd: amount } });
-      setQr(r.qr); setMd5(r.md5); setCoins(r.Balance); setExpiresAt(new Date(r.expiresAt).getTime());
+      setQr(r.qr); setMd5(r.md5); setCoins(r.coins); setExpiresAt(new Date(r.expiresAt).getTime());
       const dataUrl = await QRCode.toDataURL(r.qr, { width: 320, margin: 1 });
       setQrDataUrl(dataUrl);
       setStage("qr");
