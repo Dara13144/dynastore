@@ -1,7 +1,7 @@
 // Pure, testable submit logic for the admin "Create Game" action.
 // admin.tsx calls this with adapters bound to the real supabase client;
 // tests call it with mocks to verify validation gates uploads + inserts.
-import { validateGameFile } from "./validate-game-file";
+import { validateGameFile, validateGameFileUrl } from "./validate-game-file";
 
 export type GameDraft = {
   id: string;
