@@ -12,7 +12,7 @@ export const Route = createFileRoute("/payments")({
   component: () => (<StoreProvider><PaymentsPage /></StoreProvider>),
 });
 
-type Tx = { md5: string; amount_usd: number; coins: number; status: string; created_at: string; expires_at: string; paid_at: string | null };
+type Tx = { bakong_md5: string; amount_usd: number; coins: number; status: string; created_at: string; expires_at: string; paid_at: string | null };
 
 function PaymentsPage() {
   const { authed, loading } = useStore();
@@ -60,11 +60,11 @@ function PaymentsPage() {
                 </thead>
                 <tbody>
                   {rows.map((t) => (
-                    <tr key={t.md5} className="border-t border-border/60 hover:bg-muted/10">
+                    <tr key={t.bakong_md5} className="border-t border-border/60 hover:bg-muted/10">
                       <td className="px-4 py-3 text-xs">{new Date(t.created_at).toLocaleString()}</td>
                       <td className="px-4 py-3 font-mono text-[10px] text-muted-foreground">
-                        <button onClick={() => { navigator.clipboard.writeText(t.md5); toast.success("ចម្លង MD5 រួច"); }} className="inline-flex items-center gap-1 hover:text-foreground" title={t.md5}>
-                          <span className="truncate max-w-[160px] inline-block align-bottom">{t.md5}</span>
+                        <button onClick={() => { navigator.clipboard.writeText(t.bakong_md5); toast.success("ចម្លង MD5 រួច"); }} className="inline-flex items-center gap-1 hover:text-foreground" title={t.bakong_md5}>
+                          <span className="truncate max-w-[160px] inline-block align-bottom">{t.bakong_md5}</span>
                           <Copy className="h-3 w-3" />
                         </button>
                       </td>

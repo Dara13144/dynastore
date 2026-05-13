@@ -766,7 +766,7 @@ function SettingsAuditLog({ refreshKey }: { refreshKey: number }) {
 }
 
 /* ============ PAYMENTS TAB ============ */
-type TxRow = { id: string; user_id: string; md5: string; amount_usd: number; coins: number; status: string; created_at: string; expires_at: string; paid_at: string | null };
+type TxRow = { id: string; user_id: string; bakong_md5: string; amount_usd: number; coins: number; status: string; created_at: string; expires_at: string; paid_at: string | null };
 function PaymentsTab() {
   const [rows, setRows] = useState<TxRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -800,7 +800,7 @@ function PaymentsTab() {
                   <tr key={t.id} className="border-t border-border/60 hover:bg-muted/10">
                     <td className="px-4 py-3 text-xs">{new Date(t.created_at).toLocaleString()}</td>
                     <td className="px-4 py-3 font-mono text-[10px] text-muted-foreground truncate max-w-[160px]">{t.user_id}</td>
-                    <td className="px-4 py-3 font-mono text-[10px] text-muted-foreground truncate max-w-[160px]" title={t.md5}>{t.md5}</td>
+                    <td className="px-4 py-3 font-mono text-[10px] text-muted-foreground truncate max-w-[160px]" title={t.bakong_md5}>{t.bakong_md5}</td>
                     <td className="px-4 py-3 text-right">${Number(t.amount_usd).toFixed(2)}</td>
                     <td className="px-4 py-3 text-right font-semibold text-primary">{t.coins.toLocaleString()}</td>
                     <td className="px-4 py-3 text-center"><StatusPill s={t.status} /></td>
