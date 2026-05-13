@@ -450,7 +450,7 @@ function TopupModal({ onClose, onToast }: { onClose: () => void; onToast: (m: st
             </div>
             <div className="rounded-xl bg-accent/40 px-3 py-2 text-xs flex items-center justify-between">
               <span>នឹងទទួលបាន</span>
-              <span className="font-semibold inline-flex items-center gap-1 text-primary"><Wallet className="h-3.5 w-3.5" /> {(amount * 100).toLocaleString()}</span>
+              <span className="font-semibold inline-flex items-center gap-1 text-primary"><Wallet className="h-3.5 w-3.5" /> {amount.toLocaleString()}</span>
             </div>
             <button onClick={start} className="w-full rounded-xl bg-primary py-2.5 text-sm font-semibold text-primary-foreground hover:opacity-90 inline-flex items-center justify-center gap-2">
               បង្កើត KHQR
