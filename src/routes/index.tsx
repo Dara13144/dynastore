@@ -13,6 +13,9 @@ import logoD from "@/assets/dyna-logo.jpeg";
 import iconTelegram from "@/assets/social-telegram.png";
 import iconTiktok from "@/assets/social-tiktok.png";
 import iconFacebook from "@/assets/social-facebook.png";
+import payAba from "@/assets/pay-aba.jpg";
+import payAcleda from "@/assets/pay-acleda.png";
+import payWing from "@/assets/pay-wing.png";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -307,9 +310,14 @@ function Footer() {
     { label: "TikTok @dynastore0", href: "https://www.tiktok.com/@dynastore0?_r=1&_t=ZS-96Ki1RwLOSK", icon: iconTiktok },
     { label: "Facebook", href: "https://www.facebook.com/share/17miM2zVxY/", icon: iconFacebook },
   ];
+  const payments = [
+    { label: "ABA Bank", icon: payAba },
+    { label: "ACLEDA Bank", icon: payAcleda },
+    { label: "Wing Bank", icon: payWing },
+  ];
   return (
     <footer className="border-t border-border/60 mt-10">
-      <div className="container mx-auto px-4 py-8 flex flex-col items-center gap-4 text-center text-xs text-muted-foreground">
+      <div className="container mx-auto px-4 py-8 flex flex-col items-center gap-5 text-center text-xs text-muted-foreground">
         <div className="flex items-center justify-center gap-3">
           {socials.map((s) => (
             <a
@@ -325,6 +333,23 @@ function Footer() {
             </a>
           ))}
         </div>
+
+        <div className="flex flex-col items-center gap-2.5">
+          <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground/80">We Accept</div>
+          <div className="flex items-center justify-center gap-3 flex-wrap">
+            {payments.map((p) => (
+              <div
+                key={p.label}
+                title={p.label}
+                aria-label={p.label}
+                className="inline-flex h-10 w-14 items-center justify-center rounded-lg bg-white ring-1 ring-border/60 px-1.5"
+              >
+                <img src={p.icon} alt={p.label} className="max-h-8 max-w-full object-contain" />
+              </div>
+            ))}
+          </div>
+        </div>
+
         <div>© {new Date().getFullYear()} Dyna Store. All rights reserved.</div>
       </div>
     </footer>
