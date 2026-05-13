@@ -455,6 +455,8 @@ function TopupModal({ onClose, onToast }: { onClose: () => void; onToast: (m: st
     return () => { supabase.removeChannel(channel); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [orderId]);
+
+  const verifyNow = async () => {
     if (!orderId) return;
     setStage("checking");
     try {
