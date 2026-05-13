@@ -14,7 +14,21 @@ type PollDebug = {
   orderId: string | null;
   bakongMd5: string | null;
   response: string | null;
+  providerMessage: string | null;
 };
+
+// bakong-khqr throws plain objects shaped like { status: { code, errorCode, message }, data: null }.
+// Convert them to a real Error with a readable message.
+function khqrErrorMessage(e: unknown): string {
+  if (e instanceof Error) return e.message;
+  if (e && typeof e === "object") {
+    const anyE = e as { status?: { message?: string; errorCode?: string | number }; message?: string };
+    if (anyE.status?.message) return `${anyE.status.message}${anyE.status.errorCode ? ` (${anyE.status.errorCode})` : ""}`;
+    if (anyE.message) return anyE.message;
+    try { return JSON.stringify(e); } catch { /* ignore */ }
+  }
+  return String(e);
+}
 
 async function loadSettings() {
   const { data, error } = await supabaseAdmin.from("app_settings").select("*").eq("id", 1).maybeSingle();
