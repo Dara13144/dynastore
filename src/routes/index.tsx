@@ -562,6 +562,19 @@ function TopupModal({ onClose, onToast }: { onClose: () => void; onToast: (m: st
           );
         })()}
 
+        {flash && (() => {
+          const fmap = {
+            regenerated: { label: "បានបង្កើត QR ថ្មីដោយស្វ័យប្រវត្តិ", cls: "bg-sky-500/10 text-sky-300 border-sky-500/30" },
+            paid: { label: "បានទទួលការទូទាត់ — Balance ត្រូវបានបន្ថែម", cls: "bg-emerald-500/10 text-emerald-300 border-emerald-500/30" },
+            cancelled: { label: "ប្រតិបត្តិការត្រូវបានលុប", cls: "bg-muted/40 text-muted-foreground border-border" },
+          } as const;
+          const f = fmap[flash];
+          return (
+            <div className="px-5 pt-2">
+              <div className={`rounded-lg border px-3 py-2 text-[12px] font-medium ${f.cls}`}>{f.label}</div>
+            </div>
+          );
+        })()}
 
         {stage === "choose" && (
           <div className="p-5 space-y-4">
