@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { submitCreateGame, type CreateGameDeps, type GameDraft } from "./create-game";
-import { MIN_GAME_FILE_BYTES, MAX_GAME_FILE_BYTES } from "./validate-game-file";
+import { MIN_GAME_FILE_BYTES, MAX_GAME_FILE_BYTES, GAME_FILE_URL_ERRORS } from "./validate-game-file";
 
 /**
  * Integration tests for the real createGame submit path used by admin.tsx.
