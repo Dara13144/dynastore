@@ -627,36 +627,65 @@ function TopupModal({ onClose, onToast }: { onClose: () => void; onToast: (m: st
           </div>
         )}
 
-        {stage === "qr" && qrDataUrl && (
-          <div className="p-5 space-y-3 text-center">
-            <div className="text-xs text-muted-foreground inline-flex items-center gap-1.5"><ShieldCheck className="h-3.5 w-3.5 text-emerald-400" /> ស្កេនជាមួយ Bakong / ABA / ធនាគារផ្សេងៗ</div>
-            <div className="mx-auto inline-block rounded-xl bg-white p-3"><img src={qrDataUrl} alt={`KHQR Code សម្រាប់ការបង់ប្រាក់ ${amount} USD`} className="h-64 w-64" /></div>
-            <div className="text-sm font-semibold">${amount} → {coins.toLocaleString()} Balance</div>
+        {stage === "qr" && qrDataUrl && (() => {
+          const totalTtl = 5 * 60; // 5min default TTL
+          const pct = Math.max(0, Math.min(100, (remain / totalTtl) * 100));
+          const isExpired = remain <= 0;
+          const isUrgent = remain > 0 && remain <= 30;
+          const barColor = isExpired ? "bg-red-500" : isUrgent ? "bg-amber-500" : "bg-emerald-500";
+          const textColor = isExpired ? "text-red-300" : isUrgent ? "text-amber-200" : "text-emerald-200";
+          return (
+            <div className="p-5 space-y-3 text-center">
+              <div className="text-xs text-muted-foreground inline-flex items-center gap-1.5"><ShieldCheck className="h-3.5 w-3.5 text-emerald-400" /> ស្កេនជាមួយ Bakong / ABA / ធនាគារផ្សេងៗ</div>
+              <div className={`mx-auto inline-block rounded-xl bg-white p-3 transition-opacity ${isExpired ? "opacity-40 grayscale" : ""}`}>
+                <img src={qrDataUrl} alt={`KHQR Code សម្រាប់ការបង់ប្រាក់ ${amount} USD`} className="h-64 w-64" />
+              </div>
+              <div className="text-sm font-semibold">${amount} → {coins.toLocaleString()} Balance</div>
 
-            <KhqrDetails qr={qr} />
+              <KhqrDetails qr={qr} />
 
-            <div className="rounded-xl bg-amber-500/10 border border-amber-500/30 px-3 py-2 text-xs text-amber-300 inline-flex items-center gap-2 mx-auto">
-              <Loader2 className={`h-3.5 w-3.5 ${polling ? "animate-spin" : ""}`} />
-              <span>កំពុងរង់ចាំការបង់ប្រាក់ • ផុតក្នុង <span className="font-mono text-amber-200">{mm}:{ss}</span></span>
+              {/* Countdown card */}
+              <div className={`rounded-xl border px-3 py-2.5 mx-auto ${isExpired ? "bg-red-500/10 border-red-500/40" : isUrgent ? "bg-amber-500/10 border-amber-500/40" : "bg-emerald-500/10 border-emerald-500/30"}`}>
+                <div className={`flex items-center justify-between gap-2 text-xs ${textColor}`}>
+                  <span className="inline-flex items-center gap-1.5">
+                    <Loader2 className={`h-3.5 w-3.5 ${polling && !isExpired ? "animate-spin" : ""}`} />
+                    {isExpired ? "QR ផុតសុពលភាព — កំពុងបង្កើតថ្មី…" : "កំពុងរង់ចាំការបង់ប្រាក់"}
+                  </span>
+                  <span className="font-mono text-base tabular-nums">{mm}:{ss}</span>
+                </div>
+                <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-background/40">
+                  <div className={`h-full ${barColor} transition-all duration-1000 ease-linear`} style={{ width: `${pct}%` }} />
+                </div>
+              </div>
+
+              <div className="flex gap-2">
+                <a
+                  href={qr && !isExpired ? `bakong://qr?data=${encodeURIComponent(qr)}` : "#"}
+                  onClick={(e) => { if (!qr || isExpired) e.preventDefault(); }}
+                  aria-disabled={isExpired}
+                  className={`flex-1 rounded-xl py-2 text-xs font-semibold inline-flex items-center justify-center gap-1.5 ${isExpired ? "bg-muted text-muted-foreground cursor-not-allowed opacity-60" : "bg-emerald-500 text-white hover:opacity-90"}`}
+                >
+                  <Smartphone className="h-3.5 w-3.5" /> បើក Bakong
+                </a>
+                <button
+                  onClick={verifyNow}
+                  disabled={isExpired}
+                  className={`flex-1 rounded-xl py-2 text-xs font-semibold inline-flex items-center justify-center gap-1.5 ${isExpired ? "bg-muted text-muted-foreground cursor-not-allowed opacity-60" : "bg-primary text-primary-foreground hover:opacity-90"}`}
+                >
+                  <RefreshCw className="h-3.5 w-3.5" /> ផ្ទៀងផ្ទាត់
+                </button>
+                <button
+                  onClick={copyQr}
+                  disabled={isExpired}
+                  className={`flex-1 rounded-xl border border-border py-2 text-xs inline-flex items-center justify-center gap-1.5 ${isExpired ? "opacity-50 cursor-not-allowed" : "hover:bg-accent"}`}
+                >
+                  <Copy className="h-3.5 w-3.5" /> ចម្លង
+                </button>
+              </div>
+              <button onClick={() => reset()} className="w-full text-xs text-muted-foreground hover:text-foreground py-1">បោះបង់ហើយចាប់ផ្តើមឡើងវិញ</button>
             </div>
-            <div className="flex gap-2">
-              <a
-                href={qr ? `bakong://qr?data=${encodeURIComponent(qr)}` : "#"}
-                onClick={(e) => { if (!qr) e.preventDefault(); }}
-                className="flex-1 rounded-xl bg-emerald-500 py-2 text-xs font-semibold text-white hover:opacity-90 inline-flex items-center justify-center gap-1.5"
-              >
-                <Smartphone className="h-3.5 w-3.5" /> បើក Bakong
-              </a>
-              <button onClick={verifyNow} className="flex-1 rounded-xl bg-primary py-2 text-xs font-semibold text-primary-foreground hover:opacity-90 inline-flex items-center justify-center gap-1.5">
-                <RefreshCw className="h-3.5 w-3.5" /> ផ្ទៀងផ្ទាត់
-              </button>
-              <button onClick={copyQr} className="flex-1 rounded-xl border border-border py-2 text-xs hover:bg-accent inline-flex items-center justify-center gap-1.5">
-                <Copy className="h-3.5 w-3.5" /> ចម្លង
-              </button>
-            </div>
-            <button onClick={() => reset()} className="w-full text-xs text-muted-foreground hover:text-foreground py-1">បោះបង់ហើយចាប់ផ្តើមឡើងវិញ</button>
-          </div>
-        )}
+          );
+        })()}
 
 
         {stage === "checking" && (
