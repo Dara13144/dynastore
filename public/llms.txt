@@ -1,0 +1,15 @@
+# Dyna Store
+
+> Cambodian gaming store — buy PC and console games with Bakong KHQR top-up.
+
+Dyna Store lets users top up a wallet using KHQR (Bakong, ABA, and other Cambodian banks) or by uploading a manual payment receipt, then purchase games from the catalog. Owned games can be downloaded directly from the user's library.
+
+## Pages
+
+- [Home](/): Game catalog, top-up wallet, featured titles.
+- [Sign in](/login): Email and Google sign-in.
+
+## Optional
+
+- [Library](/library): Authenticated user's purchased games and downloads.
+- [Account](/account): Authenticated user profile and settings.
