@@ -296,8 +296,33 @@ export const checkTopup = createServerFn({ method: "POST" })
       // Auto-regenerate fresh KHQR instead of dead-ending the user with "expired".
       return await regenerate("auto_regen_after_expiry");
     }
+    // ---- Hardened guards on stored QR / MD5 ----
+    // 1) Missing fields → regenerate.
     if (!tx.bakong_md5 || !tx.qr_string) {
       return await regenerate("missing_qr_or_md5");
+    }
+    // 2) Structural sanity: KHQR must be a TLV string of >=50 chars starting "0002".
+    //    Anything else (e.g. legacy "{}" payloads) is corrupt → regenerate.
+    if (
+      typeof tx.qr_string !== "string" ||
+      tx.qr_string.length < 50 ||
+      !tx.qr_string.startsWith("0002")
+    ) {
+      return await regenerate("malformed_qr_string");
+    }
+    // 3) MD5 hex sanity (32 lowercase hex chars).
+    if (!/^[a-f0-9]{32}$/i.test(tx.bakong_md5)) {
+      return await regenerate("malformed_md5");
+    }
+    // 4) Recompute MD5 of stored QR — if it disagrees with stored md5, the row
+    //    is inconsistent (corrupted write or partial migration). Regenerate.
+    try {
+      const recomputed = md5Hex(tx.qr_string);
+      if (recomputed.toLowerCase() !== tx.bakong_md5.toLowerCase()) {
+        return await regenerate("md5_qr_mismatch");
+      }
+    } catch {
+      return await regenerate("md5_recompute_failed");
     }
 
     // Verify with Bakong API. Network/CDN errors and Bakong's "Invalid data" / "Transaction could
