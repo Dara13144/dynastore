@@ -179,6 +179,27 @@ function AdminDashboard() {
             ))}
           </div>
         )}
+
+        {lookupResult?.found && lookupResult.raw && (
+          <details className="mt-3 rounded border border-border bg-background" open>
+            <summary className="cursor-pointer px-3 py-2 text-xs font-semibold flex items-center justify-between">
+              <span>Raw row (all selected columns)</span>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  navigator.clipboard.writeText(JSON.stringify(lookupResult.raw, null, 2));
+                }}
+                className="px-2 py-0.5 text-[10px] rounded border border-border hover:bg-muted"
+              >
+                Copy JSON
+              </button>
+            </summary>
+            <pre className="px-3 pb-3 pt-1 text-[11px] font-mono whitespace-pre-wrap break-all overflow-x-auto">
+{JSON.stringify(lookupResult.raw, null, 2)}
+            </pre>
+          </details>
+        )}
       </section>
 
       <div className="flex flex-wrap items-center gap-2 mb-4">
