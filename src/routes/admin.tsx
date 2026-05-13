@@ -8,6 +8,7 @@ import { StoreProvider } from "@/lib/store";
 import { getAppSettings, updateAppSettings, adminSetUserBalance, listBalanceChanges, listSettingsAudit, adminSetUserRole } from "@/lib/admin.functions";
 import { validateGameFile, validateGameFileUrl } from "@/lib/validate-game-file";
 import { submitCreateGame } from "@/lib/create-game";
+import { DownloadLogsTab } from "@/components/admin/DownloadLogsTab";
 import { adminListTopupRequests, adminApproveTopup, adminRejectTopup } from "@/lib/topup.functions";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
