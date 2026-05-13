@@ -103,18 +103,20 @@ export const createTopup = createServerFn({ method: "POST" })
     const coinsPerUsd = settings?.coins_per_usd ?? 1;
     const coins = Math.round(data.amountUSD * coinsPerUsd);
 
+    const billNumber = `TRX${Date.now().toString().slice(-8)}`;
+    const terminalLabel = `T-${userId.slice(0, 6)}${Math.random().toString(36).slice(2, 6)}`.slice(0, 25);
     const encoded = await encodeKhqr({
       accountId,
-      merchantName,
+      merchantName: merchantName.replace(/\s+/g, ""),  // 59 has no spaces in your sample (DynaStore)
       merchantCity,
       mobileNumber: merchantPhone,
       acquiringBank,
       amount: data.amountUSD,
       currency: "USD",
       dynamic: true,
-      // Per-tx unique label so each QR (and its MD5) is distinct.
-      // Max 25 chars; Bakong terminalLabel is free-form.
-      terminalLabel: `${userId.slice(0, 6)}${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`.slice(0, 25),
+      storeLabel: merchantName,
+      billNumber,
+      terminalLabel,
     });
     const qrString = encoded.qr;
     const md5 = createHash("md5").update(qrString).digest("hex");
