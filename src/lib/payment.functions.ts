@@ -2,7 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
-import { notifyTelegram, formatUserById } from "@/lib/telegram.server";
+import { notifyTelegram, notifyTelegramPhotoFromUrl, formatUserById } from "@/lib/telegram.server";
 
 export const purchaseGame = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -20,13 +20,15 @@ export const purchaseGame = createServerFn({ method: "POST" })
 
     if (ok && message === "purchased") {
       const [{ data: game }, who] = await Promise.all([
-        supabaseAdmin.from("games").select("title, price_coins").eq("id", data.gameId).maybeSingle(),
+        supabaseAdmin.from("games").select("title, price_coins, image_url").eq("id", data.gameId).maybeSingle(),
         formatUserById(userId),
       ]);
-      await notifyTelegram(
-        `🎮 <b>Game Purchased</b>\n👤 ${who}\n🕹️ ${game?.title ?? data.gameId}\n💰 -${Number(game?.price_coins ?? 0).toLocaleString()} coins\n💼 Balance: ${Number(balance).toLocaleString()}`,
-        "purchase",
-      );
+      const caption = `🎮 <b>Game Purchased</b>\n👤 ${who}\n🕹️ ${game?.title ?? data.gameId}\n💰 -${Number(game?.price_coins ?? 0).toLocaleString()} coins\n💼 Balance: ${Number(balance).toLocaleString()}`;
+      if (game?.image_url) {
+        await notifyTelegramPhotoFromUrl(game.image_url, caption, "purchase");
+      } else {
+        await notifyTelegram(caption, "purchase");
+      }
     }
 
     return { ok, balance, message };
