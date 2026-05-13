@@ -3,7 +3,42 @@ import { z } from "zod";
 import { createHash } from "crypto";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
-import { encodeKhqr } from "./khqr-encode";
+// Inline minimal KHQR (EMV-style TLV + CRC16-CCITT/0x1021) encoder
+function tlv(id: string, val: string) {
+  return id + val.length.toString().padStart(2, "0") + val;
+}
+function crc16(s: string) {
+  let crc = 0xffff;
+  for (let i = 0; i < s.length; i++) {
+    crc ^= s.charCodeAt(i) << 8;
+    for (let j = 0; j < 8; j++) crc = (crc & 0x8000) ? ((crc << 1) ^ 0x1021) & 0xffff : (crc << 1) & 0xffff;
+  }
+  return crc.toString(16).toUpperCase().padStart(4, "0");
+}
+async function encodeKhqr(o: {
+  accountId: string; merchantName: string; merchantCity: string;
+  mobileNumber?: string; acquiringBank?: string;
+  amount: number; currency: "USD" | "KHR"; dynamic: boolean; terminalLabel?: string;
+}) {
+  const merchantAccount =
+    tlv("00", "kh.gov.nbc.bakong") +
+    tlv("01", o.accountId) +
+    (o.acquiringBank ? tlv("02", o.acquiringBank) : "");
+  const additional = o.terminalLabel ? tlv("62", tlv("07", o.terminalLabel)) : "";
+  const payload =
+    tlv("00", "01") +
+    tlv("01", o.dynamic ? "12" : "11") +
+    tlv("29", merchantAccount) +
+    tlv("52", "5999") +
+    tlv("53", o.currency === "USD" ? "840" : "116") +
+    tlv("54", o.amount.toFixed(2)) +
+    tlv("58", "KH") +
+    tlv("59", o.merchantName.slice(0, 25)) +
+    tlv("60", o.merchantCity.slice(0, 15)) +
+    additional;
+  const toCrc = payload + "6304";
+  return { qr: toCrc + crc16(toCrc) };
+}
 
 const TTL_MIN = 10;
 
