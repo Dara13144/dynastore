@@ -106,10 +106,14 @@ export const createTopup = createServerFn({ method: "POST" })
       });
       try {
         const res = new BakongKHQR().generateIndividual(info);
+        // bakong-khqr returns { status: {...}, data: null } on failure WITHOUT throwing.
+        if (res?.status && res.status.code !== 0) {
+          throw new Error(`KHQR generation rejected: ${res.status.message ?? "unknown"}${res.status.errorCode ? ` (${res.status.errorCode})` : ""}`);
+        }
         qr = res?.data?.qr;
         bakongMd5 = res?.data?.md5;
       } catch (e) {
-        throw new Error("បរាជ័យបង្កើត KHQR: " + (e instanceof Error ? e.message : String(e)));
+        throw new Error("បរាជ័យបង្កើត KHQR: " + khqrErrorMessage(e));
       }
       if (!qr || !bakongMd5) throw new Error("KHQR មិនត្រឹមត្រូវ — សូមពិនិត្យ Bakong account/credentials");
 
