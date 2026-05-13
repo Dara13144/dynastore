@@ -29,7 +29,7 @@ export type CreateGameDeps = {
 
 export type CreateGameResult =
   | { ok: true }
-  | { ok: false; reason: "missing_fields" | "invalid_file" | "upload_failed" | "insert_failed"; message: string };
+  | { ok: false; reason: "missing_fields" | "invalid_file" | "invalid_url" | "upload_failed" | "insert_failed"; message: string };
 
 export async function submitCreateGame(
   draft: GameDraft,
@@ -57,7 +57,12 @@ export async function submitCreateGame(
     file_path = up.path;
     file_size_bytes = up.size;
   } else if (draft.file_url && draft.file_url.trim()) {
-    // External link path: store the URL directly as file_path. No upload, no size.
+    // External link path: validate the URL BEFORE inserting.
+    const urlErr = validateGameFileUrl(draft.file_url);
+    if (urlErr) {
+      deps.onError?.(urlErr);
+      return { ok: false, reason: "invalid_url", message: urlErr };
+    }
     file_path = draft.file_url.trim();
   }
   const { error } = await deps.insertGame({
