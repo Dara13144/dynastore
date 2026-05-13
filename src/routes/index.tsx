@@ -363,7 +363,8 @@ function SettingsModal({ onClose, onToast }: { onClose: () => void; onToast: (m:
 
 const PRESETS = [1, 5, 10, 20, 50];
 
-type TopupStage = "choose" | "creating" | "qr" | "checking" | "paid" | "expired" | "failed";
+type TopupStage = "choose" | "creating" | "qr" | "checking" | "paid" | "expired" | "failed" | "cancelled";
+type FlashKind = "regenerated" | "paid" | "cancelled" | null;
 
 function TopupModal({ onClose, onToast }: { onClose: () => void; onToast: (m: string) => void }) {
   const { authed, balance, refreshWallet } = useStore();
@@ -384,6 +385,12 @@ function TopupModal({ onClose, onToast }: { onClose: () => void; onToast: (m: st
   const [attempts, setAttempts] = useState<Array<{ at: string; status: string; httpStatus: number | null; latencyMs: number | null; payload: unknown; providerMessage?: string | null }>>([]);
   const [showDebug, setShowDebug] = useState(false);
   const [pollCount, setPollCount] = useState(0);
+  const [flash, setFlash] = useState<FlashKind>(null);
+  useEffect(() => {
+    if (!flash) return;
+    const t = window.setTimeout(() => setFlash(null), 4000);
+    return () => window.clearTimeout(t);
+  }, [flash]);
 
   const createFn = useServerFn(createTopup);
   const checkFn = useServerFn(checkTopup);
@@ -395,8 +402,8 @@ function TopupModal({ onClose, onToast }: { onClose: () => void; onToast: (m: st
     try {
       await cancelFn({ data: { orderId } });
       stopPoll();
+      setStage("cancelled"); setFlash("cancelled");
       onToast("បានលុប QR");
-      reset();
     } catch (e) {
       onToast(e instanceof Error ? e.message : "បរាជ័យលុប");
     } finally {
@@ -441,7 +448,7 @@ function TopupModal({ onClose, onToast }: { onClose: () => void; onToast: (m: st
           setPollCount((n) => n + 1);
           recordAttempt(c.status, c.debug ?? c, c.debug?.httpStatus ?? null, c.debug?.latencyMs ?? null, c.debug?.providerMessage ?? null);
           if (c.status === "paid") {
-            stopPoll(); setStage("paid"); await refreshWallet();
+            stopPoll(); setStage("paid"); setFlash("paid"); await refreshWallet();
             onToast(`បានបន្ថែម ${r.balance.toLocaleString()} Balance!`);
           } else if (c.status === "expired") {
             stopPoll(); setStage("expired");
@@ -451,6 +458,7 @@ function TopupModal({ onClose, onToast }: { onClose: () => void; onToast: (m: st
             if (c.expiresAt) setExpiresAt(new Date(c.expiresAt).getTime());
             const dataUrl = await QRCode.toDataURL(c.qr, { width: 320, margin: 1 });
             setQrDataUrl(dataUrl);
+            setFlash("regenerated");
             onToast("បានបង្កើត QR ថ្មីដោយស្វ័យប្រវត្តិ");
           }
         } catch (e) {
@@ -478,9 +486,11 @@ function TopupModal({ onClose, onToast }: { onClose: () => void; onToast: (m: st
             stopPoll();
             await refreshWallet();
             recordAttempt("paid", payload.new, null, null, "realtime_update");
-            setStage("paid");
+            setStage("paid"); setFlash("paid");
             onToast(`បានបន្ថែម ${coins.toLocaleString()} Balance!`);
-          } else if (newStatus === "expired" || newStatus === "cancelled" || newStatus === "failed") {
+          } else if (newStatus === "cancelled") {
+            stopPoll(); setStage("cancelled"); setFlash("cancelled");
+          } else if (newStatus === "expired" || newStatus === "failed") {
             stopPoll();
             setStage(newStatus === "expired" ? "expired" : "failed");
           }
@@ -541,6 +551,7 @@ function TopupModal({ onClose, onToast }: { onClose: () => void; onToast: (m: st
             paid: { label: "ទូទាត់ជោគជ័យ", cls: "bg-emerald-500/10 text-emerald-300 border-emerald-500/30", dot: "bg-emerald-400", pulse: false },
             expired: { label: "QR ផុតកំណត់", cls: "bg-amber-500/10 text-amber-300 border-amber-500/30", dot: "bg-amber-400", pulse: false },
             failed: { label: "បរាជ័យ", cls: "bg-destructive/10 text-destructive border-destructive/30", dot: "bg-destructive", pulse: false },
+            cancelled: { label: "បានលុប QR", cls: "bg-muted/40 text-muted-foreground border-border", dot: "bg-muted-foreground", pulse: false },
           };
           const s = map[stage];
           return (
@@ -554,6 +565,19 @@ function TopupModal({ onClose, onToast }: { onClose: () => void; onToast: (m: st
           );
         })()}
 
+        {flash && (() => {
+          const fmap = {
+            regenerated: { label: "បានបង្កើត QR ថ្មីដោយស្វ័យប្រវត្តិ", cls: "bg-sky-500/10 text-sky-300 border-sky-500/30" },
+            paid: { label: "បានទទួលការទូទាត់ — Balance ត្រូវបានបន្ថែម", cls: "bg-emerald-500/10 text-emerald-300 border-emerald-500/30" },
+            cancelled: { label: "ប្រតិបត្តិការត្រូវបានលុប", cls: "bg-muted/40 text-muted-foreground border-border" },
+          } as const;
+          const f = fmap[flash];
+          return (
+            <div className="px-5 pt-2">
+              <div className={`rounded-lg border px-3 py-2 text-[12px] font-medium ${f.cls}`}>{f.label}</div>
+            </div>
+          );
+        })()}
 
         {stage === "choose" && (
           <div className="p-5 space-y-4">
@@ -664,7 +688,19 @@ function TopupModal({ onClose, onToast }: { onClose: () => void; onToast: (m: st
           </div>
         )}
 
-        {/* Debug panel — last Bakong callback payload + poll result */}
+        {stage === "cancelled" && (
+          <div className="p-8 text-center space-y-3">
+            <div className="mx-auto h-14 w-14 rounded-full bg-muted/40 grid place-items-center"><X className="h-7 w-7 text-muted-foreground" /></div>
+            <div className="font-display text-xl">បានលុប QR</div>
+            <div className="text-sm text-muted-foreground">ប្រតិបត្តិការនេះត្រូវបានបោះបង់។ អ្នកអាចបង្កើត QR ថ្មីបាន។</div>
+            <div className="flex gap-2">
+              <button onClick={() => reset()} className="flex-1 rounded-xl border border-border py-2.5 text-xs hover:bg-accent">បិទ</button>
+              <button onClick={() => start(true)} className="flex-1 rounded-xl bg-primary py-2.5 text-xs font-semibold text-primary-foreground hover:opacity-90 inline-flex items-center justify-center gap-1.5">
+                <RefreshCw className="h-3.5 w-3.5" /> បង្កើតថ្មី
+              </button>
+            </div>
+          </div>
+        )}
         {(stage === "qr" || stage === "checking" || stage === "paid" || stage === "expired" || stage === "failed") && orderId && (
           <div className="border-t border-border/60 px-5 py-3 text-[11px]">
             <button onClick={() => setShowDebug((v) => !v)} className="w-full flex items-center justify-between text-muted-foreground hover:text-foreground">
