@@ -6,6 +6,7 @@ import { useStore } from "@/lib/store";
 import { ArrowLeft, Plus, Eye, EyeOff, Trash2, Save, Loader2, Users, Gamepad2, FileArchive, Settings as SettingsIcon, Pencil, History, ChevronDown, ChevronUp, Search, Check, Wallet } from "lucide-react";
 import { StoreProvider } from "@/lib/store";
 import { getAppSettings, updateAppSettings, adminSetUserBalance, listBalanceChanges, listSettingsAudit, listTransactions } from "@/lib/admin.functions";
+import { adminConfirmTopup } from "@/lib/topup.functions";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 
@@ -929,9 +930,11 @@ type TxRow = {
 
 function TransactionsTab() {
   const listFn = useServerFn(listTransactions);
+  const confirmFn = useServerFn(adminConfirmTopup);
   const [rows, setRows] = useState<TxRow[]>([]);
   const [status, setStatus] = useState<"all" | "pending" | "paid" | "expired">("all");
   const [busy, setBusy] = useState(false);
+  const [confirming, setConfirming] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setBusy(true);
@@ -944,6 +947,22 @@ function TransactionsTab() {
       setBusy(false);
     }
   }, [listFn, status]);
+
+  const confirmRow = async (md5: string) => {
+    if (!confirm("Confirm this top-up and credit coins to the user?")) return;
+    setConfirming(md5);
+    try {
+      const r = await confirmFn({ data: { md5 } });
+      if (r.message === "credited") toast.success(`Credited ✓ — new balance ${r.new_balance.toLocaleString()}`);
+      else if (r.message === "already_credited") toast(`Already credited (balance ${r.new_balance.toLocaleString()})`);
+      else toast.error(`Cannot credit: ${r.message}`);
+      await load();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed");
+    } finally {
+      setConfirming(null);
+    }
+  };
 
   useEffect(() => { load(); }, [load]);
 
@@ -981,11 +1000,12 @@ function TransactionsTab() {
               <th className="text-left p-3">Ref</th>
               <th className="text-left p-3">Created</th>
               <th className="text-left p-3">Paid</th>
+              <th className="text-right p-3">Action</th>
             </tr>
           </thead>
           <tbody>
             {rows.length === 0 && !busy && (
-              <tr><td colSpan={7} className="p-6 text-center text-muted-foreground text-xs">គ្មានប្រតិបត្តិការ</td></tr>
+              <tr><td colSpan={8} className="p-6 text-center text-muted-foreground text-xs">គ្មានប្រតិបត្តិការ</td></tr>
             )}
             {rows.map((r) => (
               <tr key={r.id} className="border-t border-border/40">
@@ -1005,6 +1025,17 @@ function TransactionsTab() {
                 <td className="p-3 text-xs font-mono truncate max-w-[160px]" title={r.bakong_ref ?? ""}>{r.bakong_ref ?? "—"}</td>
                 <td className="p-3 text-xs text-muted-foreground">{fmt(r.created_at)}</td>
                 <td className="p-3 text-xs text-muted-foreground">{fmt(r.paid_at)}</td>
+                <td className="p-3 text-right">
+                  {r.status === "pending" ? (
+                    <button
+                      onClick={() => confirmRow(r.md5)}
+                      disabled={confirming === r.md5}
+                      className="inline-flex items-center gap-1 rounded-full bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 px-3 py-1 text-[11px] font-semibold disabled:opacity-50"
+                    >
+                      {confirming === r.md5 ? <Loader2 className="h-3 w-3 animate-spin" /> : "Confirm"}
+                    </button>
+                  ) : <span className="text-[11px] text-muted-foreground">—</span>}
+                </td>
               </tr>
             ))}
           </tbody>
