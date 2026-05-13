@@ -15,12 +15,24 @@ import { randomUUID, createHash } from "crypto";
  * Uses psql via the PG* env vars provided to the sandbox.
  */
 
+import { encodeKhqr } from "@/lib/khqr-encode";
+
 const md5Hex = (s: string) => createHash("md5").update(s, "utf8").digest("hex");
 
-// A valid KHQR-shaped payload (>=50 chars, starts with "0002").
-const VALID_QR =
-  "00020101021229180014dyna_store@bkrt5204000053038405404" +
-  "5.005802KH5910Dyna Store6010PHNOM PENH62100106testing6304ABCD";
+function freshValidQr() {
+  const { qr } = encodeKhqr({
+    accountId: "dyna_store@bkrt",
+    merchantName: "Dyna Store",
+    merchantCity: "PHNOM PENH",
+    currency: "USD",
+    amount: 1.00,
+    mobileNumber: "85512345678",
+    storeLabel: "Dyna Store",
+    terminalLabel: "vitest",
+    billNumber: `vt-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`,
+  });
+  return qr;
+}
 
 const tag = `vitest_${Date.now()}`;
 const inserted: string[] = [];
