@@ -392,13 +392,17 @@ function TopupModal({ onClose, onToast }: { onClose: () => void; onToast: (m: st
       pollRef.current = window.setInterval(async () => {
         try {
           const c = await checkFn({ data: { md5: r.md5 } });
+          setPollCount((n) => n + 1);
+          setDebug({ at: new Date().toISOString(), status: c.status, payload: c.debug ?? c });
           if (c.status === "paid") {
             stopPoll(); setStage("paid"); await refreshWallet();
             onToast(`បានបន្ថែម ${r.balance.toLocaleString()} Balance!`);
           } else if (c.status === "expired") {
             stopPoll(); setStage("expired");
           }
-        } catch { /* keep polling */ }
+        } catch (e) {
+          setDebug({ at: new Date().toISOString(), status: "error", payload: e instanceof Error ? e.message : String(e) });
+        }
       }, 3000) as unknown as number;
     } catch (e) {
       setErrorMsg(e instanceof Error ? e.message : "បរាជ័យបង្កើត KHQR");
