@@ -2,7 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
-import { notifyTelegram } from "@/lib/telegram.server";
+import { notifyTelegram, formatUserById } from "@/lib/telegram.server";
 
 export const purchaseGame = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
