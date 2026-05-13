@@ -85,7 +85,7 @@ export const checkTopup = createServerFn({ method: "POST" })
       txStatus: string;
       httpStatus: number | null;
       latencyMs: number | null;
-      response: unknown;
+      response: string | null;
     };
     const mkDebug = (p: Partial<Debug>): Debug => ({
       checkedAt, source: "db", txStatus: "unknown", httpStatus: null, latencyMs: null, response: null, ...p,
