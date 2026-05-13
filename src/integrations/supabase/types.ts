@@ -16,30 +16,18 @@ export type Database = {
     Tables: {
       app_settings: {
         Row: {
-          bakong_account_id: string | null
-          bakong_merchant_city: string | null
-          bakong_merchant_name: string | null
-          bakong_merchant_phone: string | null
           coins_per_usd: number
           id: number
           tx_ttl_min: number
           updated_at: string
         }
         Insert: {
-          bakong_account_id?: string | null
-          bakong_merchant_city?: string | null
-          bakong_merchant_name?: string | null
-          bakong_merchant_phone?: string | null
           coins_per_usd?: number
           id?: number
           tx_ttl_min?: number
           updated_at?: string
         }
         Update: {
-          bakong_account_id?: string | null
-          bakong_merchant_city?: string | null
-          bakong_merchant_name?: string | null
-          bakong_merchant_phone?: string | null
           coins_per_usd?: number
           id?: number
           tx_ttl_min?: number
@@ -178,51 +166,6 @@ export type Database = {
           },
         ]
       }
-      manual_topups: {
-        Row: {
-          amount_usd: number
-          coins: number
-          created_at: string
-          id: string
-          note: string | null
-          receipt_path: string
-          reject_reason: string | null
-          reviewed_at: string | null
-          reviewed_by: string | null
-          status: Database["public"]["Enums"]["manual_topup_status"]
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          amount_usd: number
-          coins: number
-          created_at?: string
-          id?: string
-          note?: string | null
-          receipt_path: string
-          reject_reason?: string | null
-          reviewed_at?: string | null
-          reviewed_by?: string | null
-          status?: Database["public"]["Enums"]["manual_topup_status"]
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          amount_usd?: number
-          coins?: number
-          created_at?: string
-          id?: string
-          note?: string | null
-          receipt_path?: string
-          reject_reason?: string | null
-          reviewed_at?: string | null
-          reviewed_by?: string | null
-          status?: Database["public"]["Enums"]["manual_topup_status"]
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -310,78 +253,6 @@ export type Database = {
         }
         Relationships: []
       }
-      transactions: {
-        Row: {
-          amount_usd: number
-          bakong_md5: string
-          bakong_tx_ref: string | null
-          coins: number
-          completed_at: string | null
-          created_at: string
-          expires_at: string
-          failure_reason: string | null
-          gateway_event_id: string | null
-          id: string
-          last_poll_http_status: number | null
-          last_poll_latency_ms: number | null
-          last_polled_at: string | null
-          order_id: string
-          paid_at: string | null
-          payment_method: string
-          provider_payload: Json | null
-          qr_string: string
-          status: Database["public"]["Enums"]["tx_status"]
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          amount_usd: number
-          bakong_md5: string
-          bakong_tx_ref?: string | null
-          coins: number
-          completed_at?: string | null
-          created_at?: string
-          expires_at: string
-          failure_reason?: string | null
-          gateway_event_id?: string | null
-          id?: string
-          last_poll_http_status?: number | null
-          last_poll_latency_ms?: number | null
-          last_polled_at?: string | null
-          order_id: string
-          paid_at?: string | null
-          payment_method?: string
-          provider_payload?: Json | null
-          qr_string: string
-          status?: Database["public"]["Enums"]["tx_status"]
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          amount_usd?: number
-          bakong_md5?: string
-          bakong_tx_ref?: string | null
-          coins?: number
-          completed_at?: string | null
-          created_at?: string
-          expires_at?: string
-          failure_reason?: string | null
-          gateway_event_id?: string | null
-          id?: string
-          last_poll_http_status?: number | null
-          last_poll_latency_ms?: number | null
-          last_polled_at?: string | null
-          order_id?: string
-          paid_at?: string | null
-          payment_method?: string
-          provider_payload?: Json | null
-          qr_string?: string
-          status?: Database["public"]["Enums"]["tx_status"]
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
       user_roles: {
         Row: {
           created_at: string
@@ -435,83 +306,12 @@ export type Database = {
             Args: { _new_balance: number; _reason?: string; _user_id: string }
             Returns: number
           }
-      approve_manual_topup: {
-        Args: { _admin: string; _id: string }
-        Returns: {
-          message: string
-          new_balance: number
-          ok: boolean
-        }[]
-      }
-      credit_topup_atomic: {
-        Args: { _md5: string }
-        Returns: {
-          message: string
-          new_balance: number
-          ok: boolean
-        }[]
-      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
         Returns: boolean
-      }
-      mark_transaction_poll_result: {
-        Args: {
-          _http_status: number
-          _latency_ms: number
-          _next_status?: Database["public"]["Enums"]["tx_status"]
-          _order_id: string
-          _provider_payload: Json
-        }
-        Returns: {
-          amount_usd: number
-          bakong_md5: string
-          bakong_tx_ref: string | null
-          coins: number
-          completed_at: string | null
-          created_at: string
-          expires_at: string
-          failure_reason: string | null
-          gateway_event_id: string | null
-          id: string
-          last_poll_http_status: number | null
-          last_poll_latency_ms: number | null
-          last_polled_at: string | null
-          order_id: string
-          paid_at: string | null
-          payment_method: string
-          provider_payload: Json | null
-          qr_string: string
-          status: Database["public"]["Enums"]["tx_status"]
-          updated_at: string
-          user_id: string
-        }
-        SetofOptions: {
-          from: "*"
-          to: "transactions"
-          isOneToOne: true
-          isSetofReturn: false
-        }
-      }
-      process_khqr_payment_atomic: {
-        Args: {
-          _bakong_tx_ref?: string
-          _gateway_event_id?: string
-          _order_id: string
-          _provider_payload?: Json
-        }
-        Returns: {
-          credited_coins: number
-          message: string
-          new_balance: number
-          ok: boolean
-          order_id: string
-          status: Database["public"]["Enums"]["tx_status"]
-          transaction_id: string
-        }[]
       }
       purchase_game_atomic: {
         Args: { _game_id: string; _user_id: string }
@@ -521,21 +321,9 @@ export type Database = {
           ok: boolean
         }[]
       }
-      reject_manual_topup: {
-        Args: { _admin: string; _id: string; _reason: string }
-        Returns: boolean
-      }
     }
     Enums: {
       app_role: "admin" | "user"
-      manual_topup_status: "pending" | "approved" | "rejected"
-      tx_status:
-        | "pending"
-        | "paid"
-        | "expired"
-        | "cancelled"
-        | "completed"
-        | "failed"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -664,15 +452,6 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "user"],
-      manual_topup_status: ["pending", "approved", "rejected"],
-      tx_status: [
-        "pending",
-        "paid",
-        "expired",
-        "cancelled",
-        "completed",
-        "failed",
-      ],
     },
   },
 } as const
