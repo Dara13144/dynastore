@@ -386,12 +386,12 @@ function TopupModal({ onClose, onToast }: { onClose: () => void; onToast: (m: st
     setAttempts((prev) => [entry, ...prev].slice(0, 10));
   };
 
-  const start = async () => {
+  const start = async (forceNew = false) => {
     if (!authed) { onToast("សូមចូលគណនីជាមុនសិន"); return; }
     setErrorMsg(null);
     setStage("creating");
     try {
-      const r = await createFn({ data: { amountUsd: amount } });
+      const r = await createFn({ data: { amountUsd: amount, forceNew } });
       setQr(r.qr); setOrderId(r.orderId); setBakongMd5(r.bakongMd5); setCoins(r.balance); setExpiresAt(new Date(r.expiresAt).getTime());
       const dataUrl = await QRCode.toDataURL(r.qr, { width: 320, margin: 1 });
       setQrDataUrl(dataUrl);
@@ -499,7 +499,7 @@ function TopupModal({ onClose, onToast }: { onClose: () => void; onToast: (m: st
               <span>នឹងទទួលបាន</span>
               <span className="font-semibold inline-flex items-center gap-1 text-primary"><Wallet className="h-3.5 w-3.5" /> {amount.toLocaleString()}</span>
             </div>
-            <button onClick={start} className="w-full rounded-xl bg-primary py-2.5 text-sm font-semibold text-primary-foreground hover:opacity-90 inline-flex items-center justify-center gap-2">
+            <button onClick={() => start()} className="w-full rounded-xl bg-primary py-2.5 text-sm font-semibold text-primary-foreground hover:opacity-90 inline-flex items-center justify-center gap-2">
               បង្កើត KHQR
             </button>
           </div>
@@ -529,7 +529,7 @@ function TopupModal({ onClose, onToast }: { onClose: () => void; onToast: (m: st
                 <Copy className="h-3.5 w-3.5" /> ចម្លង QR
               </button>
             </div>
-            <button onClick={reset} className="w-full text-xs text-muted-foreground hover:text-foreground py-1">បោះបង់ហើយចាប់ផ្តើមឡើងវិញ</button>
+            <button onClick={() => reset()} className="w-full text-xs text-muted-foreground hover:text-foreground py-1">បោះបង់ហើយចាប់ផ្តើមឡើងវិញ</button>
           </div>
         )}
 
@@ -546,8 +546,8 @@ function TopupModal({ onClose, onToast }: { onClose: () => void; onToast: (m: st
             <div className="font-display text-xl">QR ផុតកំណត់</div>
             <div className="text-sm text-muted-foreground">មិនទាន់ទទួលបានការបង់ប្រាក់ក្នុងរយៈពេលកំណត់ទេ។ បង្កើត QR ថ្មីដើម្បីសាកល្បងម្តងទៀត។</div>
             <div className="flex gap-2">
-              <button onClick={reset} className="flex-1 rounded-xl border border-border py-2.5 text-xs hover:bg-accent">បិទ</button>
-              <button onClick={start} className="flex-1 rounded-xl bg-primary py-2.5 text-xs font-semibold text-primary-foreground hover:opacity-90 inline-flex items-center justify-center gap-1.5">
+              <button onClick={() => reset()} className="flex-1 rounded-xl border border-border py-2.5 text-xs hover:bg-accent">បិទ</button>
+              <button onClick={() => start(true)} className="flex-1 rounded-xl bg-primary py-2.5 text-xs font-semibold text-primary-foreground hover:opacity-90 inline-flex items-center justify-center gap-1.5">
                 <RefreshCw className="h-3.5 w-3.5" /> បង្កើតថ្មី
               </button>
             </div>
@@ -560,8 +560,8 @@ function TopupModal({ onClose, onToast }: { onClose: () => void; onToast: (m: st
             <div className="font-display text-xl">មានបញ្ហា</div>
             <div className="text-sm text-muted-foreground break-words">{errorMsg ?? "មិនអាចភ្ជាប់ទៅប្រព័ន្ធបង់ប្រាក់បានទេ។"}</div>
             <div className="flex gap-2">
-              <button onClick={reset} className="flex-1 rounded-xl border border-border py-2.5 text-xs hover:bg-accent">បោះបង់</button>
-              <button onClick={start} className="flex-1 rounded-xl bg-primary py-2.5 text-xs font-semibold text-primary-foreground hover:opacity-90 inline-flex items-center justify-center gap-1.5">
+              <button onClick={() => reset()} className="flex-1 rounded-xl border border-border py-2.5 text-xs hover:bg-accent">បោះបង់</button>
+              <button onClick={() => start(true)} className="flex-1 rounded-xl bg-primary py-2.5 text-xs font-semibold text-primary-foreground hover:opacity-90 inline-flex items-center justify-center gap-1.5">
                 <RefreshCw className="h-3.5 w-3.5" /> សាកល្បងម្តងទៀត
               </button>
             </div>
@@ -577,7 +577,7 @@ function TopupModal({ onClose, onToast }: { onClose: () => void; onToast: (m: st
               <Wallet className="h-3.5 w-3.5" /> Balance ថ្មី: <span className="font-semibold">{balance.toLocaleString()}</span>
             </div>
             <div className="flex gap-2">
-              <button onClick={reset} className="flex-1 rounded-xl border border-border py-2.5 text-xs hover:bg-accent">បន្ថែមទៀត</button>
+              <button onClick={() => reset()} className="flex-1 rounded-xl border border-border py-2.5 text-xs hover:bg-accent">បន្ថែមទៀត</button>
               <button onClick={onClose} className="flex-1 rounded-xl bg-primary py-2.5 text-xs font-semibold text-primary-foreground hover:opacity-90">បិទ</button>
             </div>
           </div>

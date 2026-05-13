@@ -35,7 +35,7 @@ async function loadSettings() {
 
 export const createTopup = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((i) => z.object({ amountUsd: z.number().min(1).max(1000) }).parse(i))
+  .inputValidator((i) => z.object({ amountUsd: z.number().min(1).max(1000), forceNew: z.boolean().optional() }).parse(i))
   .handler(async ({ data, context }) => {
     const { userId } = context;
     const { coinsPerUsd, ttlMin, accountId, merchantName, merchantCity, phone } = await loadSettings();
@@ -43,7 +43,18 @@ export const createTopup = createServerFn({ method: "POST" })
     const coins = Math.round(data.amountUsd * coinsPerUsd);
     const expires = new Date(Date.now() + ttlMin * 60_000).toISOString();
 
-    const { data: existingPending } = await supabaseAdmin
+    // If forceNew, mark any still-pending transactions for this user+amount as cancelled
+    // so a fresh KHQR is generated instead of reusing the previous (now-expired) one.
+    if (data.forceNew) {
+      await supabaseAdmin
+        .from("transactions")
+        .update({ status: "cancelled", failure_reason: "user_requested_new_qr", updated_at: new Date().toISOString() })
+        .eq("user_id", userId)
+        .eq("status", "pending")
+        .eq("amount_usd", data.amountUsd);
+    }
+
+    const { data: existingPending } = data.forceNew ? { data: null } : await supabaseAdmin
       .from("transactions")
       .select("order_id, bakong_md5, qr_string, amount_usd, coins, expires_at")
       .eq("user_id", userId)
