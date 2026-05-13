@@ -56,6 +56,7 @@ export const lookupTransactionByMd5 = createServerFn({ method: "POST" })
     return {
       found: true as const,
       md5,
+      raw: row,
       transaction: {
         id: row.id,
         md5: row.md5,
