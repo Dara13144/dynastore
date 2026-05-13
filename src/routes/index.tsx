@@ -1000,9 +1000,9 @@ function CoinShop({ onBuyPack }: { onBuyPack: (p: CoinPack) => void }) {
     <section id="coins" className="mx-auto max-w-7xl px-4 py-16 md:px-6 md:py-20">
       <div className="mx-auto max-w-2xl text-center">
         <div className="inline-flex items-center gap-2 rounded-full bg-coin/15 px-3 py-1 text-xs font-medium text-coin ring-1 ring-coin/30">
-          <Coins className="h-3.5 w-3.5" /> Coin Shop
+          <Coins className="h-3.5 w-3.5" /> Add Balance
         </div>
-        <h2 className="mt-4 font-display text-4xl md:text-5xl">Topup <span className="text-coin">Coins</span></h2>
+        <h2 className="mt-4 font-display text-4xl md:text-5xl">Add <span className="text-coin">Balance</span></h2>
         <p className="mt-3 text-muted-foreground">ជ្រើសរើសកញ្ចប់តម្លៃ ហើយបង់ប្រាក់តាម Bakong KHQR។ Coins នឹងចូល Wallet បន្ទាប់ពីការបង់ប្រាក់ត្រូវបានផ្ទៀងផ្ទាត់។</p>
       </div>
       {hasError && (
