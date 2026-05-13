@@ -122,6 +122,7 @@ function GamesTab() {
     price_coins: 0, visible: true, image_url: "", file_path: null, file_size_bytes: null,
   });
   const [draftFile, setDraftFile] = useState<File | null>(null);
+  const [draftFileError, setDraftFileError] = useState<string | null>(null);
 
   const showToast = (m: string) => { setToast(m); setTimeout(() => setToast(null), 2200); };
 
