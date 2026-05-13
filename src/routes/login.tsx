@@ -14,6 +14,7 @@ export const Route = createFileRoute("/login")({
       { property: "og:description", content: "ចូលប្រើដោយ Email ឬ Google ដើម្បីបន្ថែម Balance, ទិញហ្គេម, និងគ្រប់គ្រងបណ្ណាល័យរបស់អ្នកនៅ Dyna Store។" },
       { property: "og:url", content: "https://dynastore.lovable.app/login" },
     ],
+    links: [{ rel: "canonical", href: "https://dynastore.lovable.app/login" }],
   }),
   component: LoginPage,
 });

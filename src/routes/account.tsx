@@ -20,12 +20,13 @@ export const Route = createFileRoute("/account")({
   head: () => ({
     meta: [
       { title: "គណនី — Dyna Store" },
-      { name: "description", content: "មើល និងកែប្រែព័ត៌មានគណនី Dyna Store របស់អ្នក។" },
+      { name: "description", content: "មើល និងកែប្រែព័ត៌មានគណនី Dyna Store, គ្រប់គ្រង Balance, និងការកំណត់ផ្ទាល់ខ្លួនរបស់អ្នក។" },
       { property: "og:title", content: "គណនី — Dyna Store" },
       { property: "og:description", content: "គ្រប់គ្រងព័ត៌មានគណនី Dyna Store, Balance, និងការកំណត់ផ្ទាល់ខ្លួនរបស់អ្នក។" },
       { property: "og:url", content: "https://dynastore.lovable.app/account" },
       { name: "robots", content: "noindex" },
     ],
+    links: [{ rel: "canonical", href: "https://dynastore.lovable.app/account" }],
   }),
   component: () => (
     <StoreProvider>
