@@ -344,3 +344,173 @@ function UsersTab() {
     </div>
   );
 }
+
+function UserRowEditor({ user, onUpdate }: { user: UserRow; onUpdate: (b: number) => void }) {
+  const [editing, setEditing] = useState(false);
+  const [val, setVal] = useState(String(user.balance));
+  const [busy, setBusy] = useState(false);
+  const setBalance = useServerFn(adminSetUserBalance);
+  const save = async () => {
+    const n = Number(val);
+    if (!Number.isFinite(n) || n < 0) return;
+    setBusy(true);
+    try {
+      const r = await setBalance({ data: { user_id: user.user_id, new_balance: Math.floor(n) } });
+      onUpdate(r.balance);
+      setEditing(false);
+    } catch (e) { alert(e instanceof Error ? e.message : "បរាជ័យ"); }
+    finally { setBusy(false); }
+  };
+  return (
+    <tr className="border-t border-border/60 hover:bg-muted/10">
+      <td className="px-4 py-3 font-medium">{user.display_name}</td>
+      <td className="px-4 py-3 font-mono text-[11px] text-muted-foreground truncate max-w-[200px]">{user.user_id}</td>
+      <td className="px-4 py-3 text-right font-semibold text-primary">
+        {editing ? (
+          <span className="inline-flex items-center gap-1">
+            <input type="number" min={0} value={val} onChange={(e) => setVal(e.target.value)} className="w-24 text-right rounded bg-input px-2 py-1 text-xs ring-1 ring-border focus:ring-primary outline-none" />
+            <button disabled={busy} onClick={save} className="rounded-full bg-primary/10 text-primary px-2 py-1 text-[11px] font-semibold disabled:opacity-50">Save</button>
+            <button onClick={() => { setEditing(false); setVal(String(user.balance)); }} className="text-[11px] text-muted-foreground">×</button>
+          </span>
+        ) : (
+          <button onClick={() => { setVal(String(user.balance)); setEditing(true); }} className="inline-flex items-center gap-1 hover:underline">
+            {user.balance.toLocaleString()} <Pencil className="h-3 w-3 text-muted-foreground" />
+          </button>
+        )}
+      </td>
+      <td className="px-4 py-3 text-right">{user.owned}</td>
+      <td className="px-4 py-3 text-center">
+        {user.is_admin ? <span className="inline-flex items-center rounded-full bg-primary/15 text-primary px-2 py-0.5 text-[10px] font-semibold">Admin</span>
+          : <span className="text-[10px] text-muted-foreground">User</span>}
+      </td>
+      <td className="px-4 py-3 text-xs text-muted-foreground">{new Date(user.created_at).toLocaleDateString()}</td>
+    </tr>
+  );
+}
+
+/* ============ SETTINGS TAB ============ */
+type Settings = {
+  coins_per_usd: number; tx_ttl_min: number;
+  bakong_account_id: string | null; bakong_merchant_name: string | null;
+  bakong_merchant_city: string | null; bakong_merchant_phone: string | null;
+};
+function SettingsTab() {
+  const [s, setS] = useState<Settings | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState<string | null>(null);
+  const get = useServerFn(getAppSettings);
+  const upd = useServerFn(updateAppSettings);
+
+  useEffect(() => { (async () => {
+    try { const r = await get({}); setS(r as Settings); }
+    catch (e) { setMsg(e instanceof Error ? e.message : "បរាជ័យ"); }
+  })(); }, [get]);
+
+  const save = async () => {
+    if (!s) return;
+    setBusy(true); setMsg(null);
+    try {
+      await upd({ data: {
+        coins_per_usd: Number(s.coins_per_usd) || 1,
+        tx_ttl_min: Number(s.tx_ttl_min) || 5,
+        bakong_account_id: s.bakong_account_id || null,
+        bakong_merchant_name: s.bakong_merchant_name || null,
+        bakong_merchant_city: s.bakong_merchant_city || null,
+        bakong_merchant_phone: s.bakong_merchant_phone || null,
+      }});
+      setMsg("រក្សាទុករួច");
+    } catch (e) { setMsg(e instanceof Error ? e.message : "បរាជ័យ"); }
+    finally { setBusy(false); setTimeout(() => setMsg(null), 2500); }
+  };
+
+  if (!s) return <div className="text-center py-12 text-muted-foreground"><Loader2 className="h-5 w-5 animate-spin inline" /></div>;
+
+  return (
+    <div className="max-w-2xl mx-auto space-y-5">
+      <h2 className="font-display text-xl">ការកំណត់ប្រព័ន្ធ</h2>
+      <div className="rounded-2xl glass p-5 space-y-4">
+        <h3 className="font-semibold text-sm">អត្រាប្តូរ & ពេលផុតកំណត់</h3>
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="1 USD = ? Balance" type="number" value={String(s.coins_per_usd)} onChange={(v) => setS({ ...s, coins_per_usd: Number(v) || 1 })} />
+          <Field label="QR ផុតកំណត់ (នាទី)" type="number" value={String(s.tx_ttl_min)} onChange={(v) => setS({ ...s, tx_ttl_min: Number(v) || 5 })} />
+        </div>
+      </div>
+      <div className="rounded-2xl glass p-5 space-y-4">
+        <h3 className="font-semibold text-sm">Bakong Merchant</h3>
+        <div className="grid grid-cols-1 gap-3">
+          <Field label="Bakong Account ID (ឧ. dyna_store@aclb)" value={s.bakong_account_id ?? ""} onChange={(v) => setS({ ...s, bakong_account_id: v })} />
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Merchant Name" value={s.bakong_merchant_name ?? ""} onChange={(v) => setS({ ...s, bakong_merchant_name: v })} />
+            <Field label="Merchant City" value={s.bakong_merchant_city ?? ""} onChange={(v) => setS({ ...s, bakong_merchant_city: v })} />
+          </div>
+          <Field label="Merchant Phone" value={s.bakong_merchant_phone ?? ""} onChange={(v) => setS({ ...s, bakong_merchant_phone: v })} />
+        </div>
+      </div>
+      <div className="flex items-center gap-3">
+        <button disabled={busy} onClick={save} className="inline-flex items-center gap-1.5 rounded-full bg-primary px-5 py-2 text-xs font-semibold text-primary-foreground disabled:opacity-50">
+          <Save className="h-3.5 w-3.5" /> {busy ? "កំពុងរក្សាទុក…" : "រក្សាទុក"}
+        </button>
+        {msg && <span className="text-xs text-muted-foreground">{msg}</span>}
+      </div>
+    </div>
+  );
+}
+
+/* ============ PAYMENTS TAB ============ */
+type TxRow = { id: string; user_id: string; md5: string; amount_usd: number; coins: number; status: string; created_at: string; expires_at: string; paid_at: string | null };
+function PaymentsTab() {
+  const [rows, setRows] = useState<TxRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const list = useServerFn(listAllTransactions);
+  useEffect(() => { (async () => {
+    try { const r = await list({}); setRows(r as TxRow[]); }
+    finally { setLoading(false); }
+  })(); }, [list]);
+
+  return (
+    <div className="space-y-4">
+      <h2 className="font-display text-xl">ប្រវត្តិការទូទាត់ ({rows.length})</h2>
+      <div className="rounded-2xl glass overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-muted/30 text-xs uppercase tracking-wider text-muted-foreground">
+              <tr>
+                <th className="text-left px-4 py-3">ពេលវេលា</th>
+                <th className="text-left px-4 py-3">User</th>
+                <th className="text-left px-4 py-3">MD5</th>
+                <th className="text-right px-4 py-3">USD</th>
+                <th className="text-right px-4 py-3">Balance</th>
+                <th className="text-center px-4 py-3">ស្ថានភាព</th>
+                <th className="text-left px-4 py-3">ផុត / បង់</th>
+              </tr>
+            </thead>
+            <tbody>
+              {loading ? <tr><td colSpan={7} className="text-center py-8 text-xs text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin inline" /></td></tr>
+                : rows.length === 0 ? <tr><td colSpan={7} className="text-center py-8 text-xs text-muted-foreground">គ្មានទិន្នន័យ។</td></tr>
+                : rows.map(t => (
+                  <tr key={t.id} className="border-t border-border/60 hover:bg-muted/10">
+                    <td className="px-4 py-3 text-xs">{new Date(t.created_at).toLocaleString()}</td>
+                    <td className="px-4 py-3 font-mono text-[10px] text-muted-foreground truncate max-w-[160px]">{t.user_id}</td>
+                    <td className="px-4 py-3 font-mono text-[10px] text-muted-foreground truncate max-w-[160px]" title={t.md5}>{t.md5}</td>
+                    <td className="px-4 py-3 text-right">${Number(t.amount_usd).toFixed(2)}</td>
+                    <td className="px-4 py-3 text-right font-semibold text-primary">{t.coins.toLocaleString()}</td>
+                    <td className="px-4 py-3 text-center"><StatusPill s={t.status} /></td>
+                    <td className="px-4 py-3 text-[11px] text-muted-foreground">
+                      {t.paid_at ? `Paid ${new Date(t.paid_at).toLocaleString()}` : `Exp ${new Date(t.expires_at).toLocaleString()}`}
+                    </td>
+                  </tr>
+                ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function StatusPill({ s }: { s: string }) {
+  const cls = s === "paid" ? "bg-emerald-500/15 text-emerald-400"
+    : s === "pending" ? "bg-amber-500/15 text-amber-400"
+    : "bg-muted text-muted-foreground";
+  return <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold ${cls}`}>{s}</span>;
+}
