@@ -953,11 +953,14 @@ function TopupsTab() {
   useEffect(() => { load(); }, [load]);
 
   const approve = async (id: string) => {
-    if (!confirm("Approve this top-up and credit coins?")) return;
     setActing(id);
     try {
       const r = await approveFn({ data: { id } });
-      toast.success(`✓ Credited +${r.credited.toLocaleString()} coins (new balance ${r.new_balance.toLocaleString()})`);
+      if ((r as any).already_approved) {
+        toast(`Already approved · balance ${r.new_balance.toLocaleString()}`);
+      } else {
+        toast.success(`✓ Credited +${r.credited.toLocaleString()} coins · new balance ${r.new_balance.toLocaleString()}`);
+      }
       await load();
     } catch (e) { toast.error(e instanceof Error ? e.message : "Failed"); }
     finally { setActing(null); }
