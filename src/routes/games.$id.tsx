@@ -49,7 +49,7 @@ function GameDetailPage() {
   const download = async () => {
     setDownloading(true);
     try {
-      const { url } = await downloadFn({ data: { gameId: game.id } });
+      const { url } = await downloadFn({ data: { gameId: game.id, via: "direct" } });
       const a = document.createElement("a");
       a.href = url; a.rel = "noopener"; a.click();
       toast.success("កំពុងទាញយកឯកសារ…");
@@ -101,7 +101,7 @@ function GameDetailPage() {
                     onClick={async () => {
                       setDownloading(true);
                       try {
-                        const { url } = await downloadFn({ data: { gameId: game.id } });
+                        const { url } = await downloadFn({ data: { gameId: game.id, via: "link" } });
                         window.open(url, "_blank", "noopener,noreferrer");
                         toast.success("បើកតំណទាញយក…");
                       } catch (e) {
