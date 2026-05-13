@@ -252,10 +252,8 @@ export const checkTopup = createServerFn({ method: "POST" })
       return { status: "expired" as const, balance: null as number | null, debug: mkDebug({ source: "db", txStatus: "expired", bakongMd5: tx.bakong_md5, providerMessage: "expired_before_payment" }) };
     }
 
-    // Reject tampered/invalid MD5/QR pairs early — never call Bakong with a bad MD5.
-    if (!tx.bakong_md5 || !tx.qr_string || md5Hex(tx.qr_string) !== tx.bakong_md5) {
-      await supabaseAdmin.from("transactions").update({ status: "failed", failure_reason: "md5_mismatch" }).eq("order_id", data.orderId).eq("status", "pending");
-      throw new Error("KHQR មិនត្រឹមត្រូវ — MD5 មិនត្រូវនឹង QR (សូមបង្កើត QR ថ្មី)");
+    if (!tx.bakong_md5) {
+      throw new Error("KHQR មិនត្រឹមត្រូវ — សូមបង្កើត QR ថ្មី");
     }
 
     // Verify with Bakong API. Network/CDN errors and Bakong's "Invalid data" / "Transaction could
