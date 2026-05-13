@@ -382,6 +382,11 @@ function TopupModal({ onClose, onToast }: { onClose: () => void; onToast: (m: st
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [polling, setPolling] = useState(false);
   const [expiresAt, setExpiresAt] = useState<number | null>(null);
+  const [issuedAt, setIssuedAt] = useState<number | null>(null);
+  const setTtlWindow = (expiresAtMs: number) => {
+    setExpiresAt(expiresAtMs);
+    setIssuedAt(Date.now());
+  };
   const [now, setNow] = useState(Date.now());
   const pollRef = useRef<number | null>(null);
   const [debug, setDebug] = useState<{ at: string; status: string; httpStatus: number | null; latencyMs: number | null; payload: unknown; providerMessage?: string | null } | null>(null);
