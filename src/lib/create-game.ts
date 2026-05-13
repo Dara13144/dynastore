@@ -56,6 +56,9 @@ export async function submitCreateGame(
     if (!up) return { ok: false, reason: "upload_failed", message: "upload_failed" };
     file_path = up.path;
     file_size_bytes = up.size;
+  } else if (draft.file_url && draft.file_url.trim()) {
+    // External link path: store the URL directly as file_path. No upload, no size.
+    file_path = draft.file_url.trim();
   }
   const { error } = await deps.insertGame({
     id: draft.id.trim(),
