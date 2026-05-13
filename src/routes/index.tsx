@@ -189,14 +189,16 @@ function GameCard({ game, onToast, onTopup }: { game: Game; onToast: (m: string)
 
   return (
     <article className="group glass rounded-2xl border border-border/60 overflow-hidden transition hover:-translate-y-0.5 hover:shadow-[var(--shadow-card)]">
-      <div className="relative aspect-[16/10] overflow-hidden">
+      <Link to="/games/$id" params={{ id: game.id }} className="block relative aspect-[16/10] overflow-hidden">
         <img src={game.image} alt={game.title} className="h-full w-full object-cover transition group-hover:scale-105" />
         {game.badge && <span className="absolute top-3 left-3 rounded-full bg-primary px-2.5 py-0.5 text-[10px] font-semibold text-primary-foreground">{game.badge}</span>}
         {owned && <span className="absolute top-3 right-3 rounded-full bg-emerald-500 px-2.5 py-0.5 text-[10px] font-semibold text-white inline-flex items-center gap-1"><Check className="h-3 w-3" /> ជាកម្មសិទ្ធ</span>}
-      </div>
+      </Link>
       <div className="p-4">
         <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{game.category}</div>
-        <h3 className="font-display text-lg mt-0.5">{game.title}</h3>
+        <Link to="/games/$id" params={{ id: game.id }} className="block">
+          <h3 className="font-display text-lg mt-0.5 hover:text-primary transition">{game.title}</h3>
+        </Link>
         <p className="text-xs text-muted-foreground mt-1.5 line-clamp-2">{game.description}</p>
         <div className="mt-3 space-y-2">
           <div className="flex items-center justify-between text-xs">

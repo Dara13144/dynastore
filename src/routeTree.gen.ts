@@ -15,6 +15,7 @@ import { Route as LibraryRouteImport } from './routes/library'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as AccountRouteImport } from './routes/account'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as GamesIdRouteImport } from './routes/games.$id'
 
 const PaymentsRoute = PaymentsRouteImport.update({
   id: '/payments',
@@ -46,6 +47,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const GamesIdRoute = GamesIdRouteImport.update({
+  id: '/games/$id',
+  path: '/games/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -54,6 +60,7 @@ export interface FileRoutesByFullPath {
   '/library': typeof LibraryRoute
   '/login': typeof LoginRoute
   '/payments': typeof PaymentsRoute
+  '/games/$id': typeof GamesIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -62,6 +69,7 @@ export interface FileRoutesByTo {
   '/library': typeof LibraryRoute
   '/login': typeof LoginRoute
   '/payments': typeof PaymentsRoute
+  '/games/$id': typeof GamesIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -71,12 +79,27 @@ export interface FileRoutesById {
   '/library': typeof LibraryRoute
   '/login': typeof LoginRoute
   '/payments': typeof PaymentsRoute
+  '/games/$id': typeof GamesIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/account' | '/admin' | '/library' | '/login' | '/payments'
+  fullPaths:
+    | '/'
+    | '/account'
+    | '/admin'
+    | '/library'
+    | '/login'
+    | '/payments'
+    | '/games/$id'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/account' | '/admin' | '/library' | '/login' | '/payments'
+  to:
+    | '/'
+    | '/account'
+    | '/admin'
+    | '/library'
+    | '/login'
+    | '/payments'
+    | '/games/$id'
   id:
     | '__root__'
     | '/'
@@ -85,6 +108,7 @@ export interface FileRouteTypes {
     | '/library'
     | '/login'
     | '/payments'
+    | '/games/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -94,6 +118,7 @@ export interface RootRouteChildren {
   LibraryRoute: typeof LibraryRoute
   LoginRoute: typeof LoginRoute
   PaymentsRoute: typeof PaymentsRoute
+  GamesIdRoute: typeof GamesIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -140,6 +165,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/games/$id': {
+      id: '/games/$id'
+      path: '/games/$id'
+      fullPath: '/games/$id'
+      preLoaderRoute: typeof GamesIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -150,6 +182,7 @@ const rootRouteChildren: RootRouteChildren = {
   LibraryRoute: LibraryRoute,
   LoginRoute: LoginRoute,
   PaymentsRoute: PaymentsRoute,
+  GamesIdRoute: GamesIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
