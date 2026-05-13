@@ -358,6 +358,9 @@ function TopupModal({ onClose, onToast }: { onClose: () => void; onToast: (m: st
   const [expiresAt, setExpiresAt] = useState<number | null>(null);
   const [now, setNow] = useState(Date.now());
   const pollRef = useRef<number | null>(null);
+  const [debug, setDebug] = useState<{ at: string; status: string; payload: unknown } | null>(null);
+  const [showDebug, setShowDebug] = useState(false);
+  const [pollCount, setPollCount] = useState(0);
 
   const createFn = useServerFn(createTopup);
   const checkFn = useServerFn(checkTopup);
@@ -389,13 +392,17 @@ function TopupModal({ onClose, onToast }: { onClose: () => void; onToast: (m: st
       pollRef.current = window.setInterval(async () => {
         try {
           const c = await checkFn({ data: { md5: r.md5 } });
+          setPollCount((n) => n + 1);
+          setDebug({ at: new Date().toISOString(), status: c.status, payload: c.debug ?? c });
           if (c.status === "paid") {
             stopPoll(); setStage("paid"); await refreshWallet();
             onToast(`បានបន្ថែម ${r.balance.toLocaleString()} Balance!`);
           } else if (c.status === "expired") {
             stopPoll(); setStage("expired");
           }
-        } catch { /* keep polling */ }
+        } catch (e) {
+          setDebug({ at: new Date().toISOString(), status: "error", payload: e instanceof Error ? e.message : String(e) });
+        }
       }, 3000) as unknown as number;
     } catch (e) {
       setErrorMsg(e instanceof Error ? e.message : "បរាជ័យបង្កើត KHQR");
@@ -408,16 +415,19 @@ function TopupModal({ onClose, onToast }: { onClose: () => void; onToast: (m: st
     setStage("checking");
     try {
       const c = await checkFn({ data: { md5 } });
+      setPollCount((n) => n + 1);
+      setDebug({ at: new Date().toISOString(), status: c.status, payload: c.debug ?? c });
       if (c.status === "paid") { stopPoll(); setStage("paid"); await refreshWallet(); onToast(`បានបន្ថែម ${coins.toLocaleString()} Balance!`); }
       else if (c.status === "expired") { stopPoll(); setStage("expired"); }
       else { setStage("qr"); onToast("មិនទាន់ទទួលបានការបង់ប្រាក់"); }
     } catch (e) {
+      setDebug({ at: new Date().toISOString(), status: "error", payload: e instanceof Error ? e.message : String(e) });
       setErrorMsg(e instanceof Error ? e.message : "បរាជ័យផ្ទៀងផ្ទាត់");
       setStage("failed");
     }
   };
 
-  const reset = () => { stopPoll(); setQr(null); setQrDataUrl(null); setMd5(null); setCoins(0); setExpiresAt(null); setErrorMsg(null); setStage("choose"); };
+  const reset = () => { stopPoll(); setQr(null); setQrDataUrl(null); setMd5(null); setCoins(0); setExpiresAt(null); setErrorMsg(null); setDebug(null); setPollCount(0); setStage("choose"); };
 
   const copyQr = async () => {
     if (!qr) return;
@@ -562,6 +572,31 @@ function TopupModal({ onClose, onToast }: { onClose: () => void; onToast: (m: st
               <button onClick={reset} className="flex-1 rounded-xl border border-border py-2.5 text-xs hover:bg-accent">បន្ថែមទៀត</button>
               <button onClick={onClose} className="flex-1 rounded-xl bg-primary py-2.5 text-xs font-semibold text-primary-foreground hover:opacity-90">បិទ</button>
             </div>
+          </div>
+        )}
+
+        {/* Debug panel — last Bakong callback payload + poll result */}
+        {(stage === "qr" || stage === "checking" || stage === "paid" || stage === "expired" || stage === "failed") && md5 && (
+          <div className="border-t border-border/60 px-5 py-3 text-[11px]">
+            <button onClick={() => setShowDebug((v) => !v)} className="w-full flex items-center justify-between text-muted-foreground hover:text-foreground">
+              <span className="inline-flex items-center gap-1.5 font-semibold">
+                <span className={`h-1.5 w-1.5 rounded-full ${debug?.status === "paid" ? "bg-emerald-400" : debug?.status === "expired" ? "bg-amber-400" : debug?.status === "error" ? "bg-destructive" : "bg-sky-400"}`} />
+                Debug • polls: {pollCount}{debug?.status ? ` • last: ${debug.status}` : ""}
+              </span>
+              <span>{showDebug ? "▾" : "▸"}</span>
+            </button>
+            {showDebug && (
+              <div className="mt-2 space-y-1.5">
+                <div className="flex justify-between gap-2"><span className="text-muted-foreground">md5</span><span className="font-mono truncate max-w-[240px]" title={md5}>{md5}</span></div>
+                <div className="flex justify-between gap-2"><span className="text-muted-foreground">checked at</span><span className="font-mono">{debug?.at ?? "—"}</span></div>
+                <div className="flex justify-between gap-2"><span className="text-muted-foreground">expires at</span><span className="font-mono">{expiresAt ? new Date(expiresAt).toISOString() : "—"}</span></div>
+                <div>
+                  <div className="text-muted-foreground mb-1">last payload</div>
+                  <pre className="max-h-48 overflow-auto rounded-lg bg-muted/30 border border-border/40 p-2 font-mono text-[10px] whitespace-pre-wrap break-all">{debug ? JSON.stringify(debug.payload, null, 2) : "(no poll yet)"}</pre>
+                </div>
+                <button onClick={() => { if (debug) navigator.clipboard.writeText(JSON.stringify(debug, null, 2)); }} className="text-primary hover:underline">ចម្លងព័ត៌មាន Debug</button>
+              </div>
+            )}
           </div>
         )}
       </div>
