@@ -178,9 +178,6 @@ function AccountPage() {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <button onClick={() => setTopupOpen(true)} className="inline-flex items-center gap-1.5 rounded-full bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground hover:opacity-90">
-              បញ្ចូល Balance
-            </button>
             <button onClick={() => { refreshWallet(); }} className="inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-xs hover:bg-accent">
               <RefreshCw className="h-3.5 w-3.5" /> ផ្ទុកឡើងវិញ
             </button>
