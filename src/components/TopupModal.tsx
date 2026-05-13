@@ -141,17 +141,30 @@ export function TopupModal({ onClose, onToast }: Props) {
           {history.length > 0 && (
             <div className="pt-2 border-t border-border/60">
               <div className="text-[11px] uppercase tracking-wider text-muted-foreground mb-2">ប្រវត្តិសំណើ</div>
-              <div className="space-y-1.5 max-h-40 overflow-y-auto">
+              <div className="space-y-1.5 max-h-56 overflow-y-auto">
                 {history.map((h) => (
-                  <div key={h.id} className="flex items-center justify-between text-xs rounded-lg bg-muted/30 px-3 py-2">
-                    <div className="flex items-center gap-2">
-                      {h.status === "approved" && <Check className="h-3.5 w-3.5 text-emerald-400" />}
-                      {h.status === "pending" && <Clock className="h-3.5 w-3.5 text-amber-400" />}
-                      {h.status === "rejected" && <AlertCircle className="h-3.5 w-3.5 text-destructive" />}
-                      <span className="font-mono">${Number(h.amount_usd).toFixed(2)}</span>
-                      <span className="text-muted-foreground">→ {Number(h.coins).toLocaleString()} coins</span>
+                  <div key={h.id} className="flex items-center gap-2 text-xs rounded-lg bg-muted/30 px-2 py-1.5">
+                    {h.slip_url ? (
+                      <a href={h.slip_url} target="_blank" rel="noreferrer" className="shrink-0">
+                        <img src={h.slip_url} alt="slip" className="h-10 w-10 rounded object-cover ring-1 ring-border" />
+                      </a>
+                    ) : (
+                      <div className="h-10 w-10 rounded bg-muted/50 shrink-0" />
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5">
+                        {h.status === "approved" && <Check className="h-3.5 w-3.5 text-emerald-400" />}
+                        {h.status === "pending" && <Clock className="h-3.5 w-3.5 text-amber-400" />}
+                        {h.status === "rejected" && <AlertCircle className="h-3.5 w-3.5 text-destructive" />}
+                        <span className="font-mono">${Number(h.amount_usd).toFixed(2)}</span>
+                        <span className="text-muted-foreground">→ {Number(h.coins).toLocaleString()}</span>
+                        <span className={`ml-auto text-[10px] uppercase font-semibold ${h.status === "approved" ? "text-emerald-400" : h.status === "rejected" ? "text-destructive" : "text-amber-400"}`}>{h.status}</span>
+                      </div>
+                      <div className="text-muted-foreground text-[10px] truncate">
+                        {new Date(h.created_at).toLocaleString()}
+                        {h.status === "rejected" && h.reject_reason ? ` · ${h.reject_reason}` : ""}
+                      </div>
                     </div>
-                    <span className="text-muted-foreground text-[10px]">{new Date(h.created_at).toLocaleString()}</span>
                   </div>
                 ))}
               </div>
