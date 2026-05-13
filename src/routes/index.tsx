@@ -65,15 +65,20 @@ function Header({ onSettings, onTopup }: { onSettings: () => void; onTopup: () =
           <img src={logoD} alt="Dyna Store" className="h-9 w-9 rounded-xl" />
           <span className="font-display text-xl gradient-text">Dyna Store</span>
         </Link>
-        <nav className="hidden md:flex items-center gap-6 text-sm text-muted-foreground">
+        <nav className="hidden md:flex items-center gap-5 text-sm text-muted-foreground">
           <a href="#games" className="hover:text-foreground transition">ហ្គេម</a>
           <a href="#deals" className="hover:text-foreground transition">ប្រូម៉ូសិន</a>
           <a href="#community" className="hover:text-foreground transition">សហគមន៍</a>
+          {authed && (
+            <button onClick={onTopup} className="hover:text-primary transition inline-flex items-center gap-1">
+              <Wallet className="h-3.5 w-3.5" /> បន្ថែម Balance
+            </button>
+          )}
         </nav>
         <div className="flex items-center gap-2">
           {authed && (
-            <button onClick={onTopup} className="inline-flex items-center gap-1.5 rounded-full border border-primary/40 bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary hover:bg-primary/20">
-              <Coins className="h-3.5 w-3.5" /> {balance.toLocaleString()} <Plus className="h-3 w-3" />
+            <button onClick={onTopup} title="បន្ថែម Balance" className="inline-flex items-center gap-1.5 rounded-full border border-primary/40 bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary hover:bg-primary/20">
+              <Wallet className="h-3.5 w-3.5" /> {balance.toLocaleString()} <Plus className="h-3 w-3" />
             </button>
           )}
           {authed && (
