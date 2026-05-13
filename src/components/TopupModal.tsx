@@ -24,6 +24,8 @@ export function TopupModal({ onClose, onToast }: Props) {
   const [slipPreview, setSlipPreview] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [history, setHistory] = useState<Awaited<ReturnType<typeof listFn>>>([]);
+  const [qrName, setQrName] = useState("dynastore-khqr");
+  const [exporting, setExporting] = useState(false);
 
   const coins = useMemo(() => Math.round(amount * rate), [amount, rate]);
 
