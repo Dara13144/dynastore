@@ -141,7 +141,7 @@ describe("createGame integration - boundary file sizes", () => {
     expect(h.insert).toHaveBeenCalledTimes(1);
   });
 
-  it("accepts a file at exactly 5000GB (uploads + inserts)", async () => {
+  it("accepts a file at exactly the maximum (1e80 bytes) (uploads + inserts)", async () => {
     const r = await h.createGame({ id: "g2", title: "G2", file: { name: "g.zip", size: MAX_GAME_FILE_BYTES } });
     expect(r).toEqual({ ok: true, error: null });
     expect(h.upload).toHaveBeenCalledTimes(1);
@@ -156,8 +156,8 @@ describe("createGame integration - boundary file sizes", () => {
     expect(h.insert).not.toHaveBeenCalled();
   });
 
-  it("rejects 1 byte over 5000GB BEFORE uploading or inserting", async () => {
-    const r = await h.createGame({ id: "g4", title: "G4", file: { name: "g.zip", size: MAX_GAME_FILE_BYTES + 1 } });
+  it("rejects sizes above the maximum BEFORE uploading or inserting", async () => {
+    const r = await h.createGame({ id: "g4", title: "G4", file: { name: "g.zip", size: Number.POSITIVE_INFINITY } });
     expect(r.ok).toBe(false);
     expect(r.error).toContain("ធំពេក");
     expect(h.upload).not.toHaveBeenCalled();
