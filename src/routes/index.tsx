@@ -9,6 +9,9 @@ import { TopupModal } from "@/components/TopupModal";
 
 import heroImg from "@/assets/hero-arcade.jpg";
 import logoD from "@/assets/dyna-logo.jpeg";
+import iconTelegram from "@/assets/social-telegram.png";
+import iconTiktok from "@/assets/social-tiktok.png";
+import iconFacebook from "@/assets/social-facebook.png";
 
 export const Route = createFileRoute("/")({
   head: () => ({
