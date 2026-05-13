@@ -71,6 +71,7 @@ function AdminPage() {
             <TabBtn active={tab === "games"} onClick={() => setTab("games")} icon={<Gamepad2 className="h-3.5 w-3.5" />} label="ហ្គេម" />
             <TabBtn active={tab === "users"} onClick={() => setTab("users")} icon={<Users className="h-3.5 w-3.5" />} label="អ្នកប្រើ" />
             <TabBtn active={tab === "payments"} onClick={() => setTab("payments")} icon={<Receipt className="h-3.5 w-3.5" />} label="ការទូទាត់" />
+            <TabBtn active={tab === "topups"} onClick={() => setTab("topups")} icon={<Inbox className="h-3.5 w-3.5" />} label="សំណើបញ្ចូលលុយ" />
             <TabBtn active={tab === "settings"} onClick={() => setTab("settings")} icon={<SettingsIcon className="h-3.5 w-3.5" />} label="កំណត់" />
           </nav>
         </div>
@@ -80,6 +81,7 @@ function AdminPage() {
         {tab === "games" && <GamesTab />}
         {tab === "users" && <UsersTab />}
         {tab === "payments" && <PaymentsTab />}
+        {tab === "topups" && <TopupRequestsTab />}
         {tab === "settings" && <SettingsTab />}
       </main>
     </div>
