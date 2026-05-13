@@ -330,11 +330,12 @@ function UsersTab() {
                 <th className="text-right px-4 py-3">ហ្គេមដែលបាន</th>
                 <th className="text-center px-4 py-3">តួនាទី</th>
                 <th className="text-left px-4 py-3">បង្កើត</th>
+                <th className="text-right px-4 py-3">សកម្មភាព</th>
               </tr>
             </thead>
             <tbody>
-              {loading ? <tr><td colSpan={6} className="text-center py-8 text-xs text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin inline" /></td></tr>
-                : rows.length === 0 ? <tr><td colSpan={6} className="text-center py-8 text-xs text-muted-foreground">គ្មានអ្នកប្រើ។</td></tr>
+              {loading ? <tr><td colSpan={7} className="text-center py-8 text-xs text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin inline" /></td></tr>
+                : rows.length === 0 ? <tr><td colSpan={7} className="text-center py-8 text-xs text-muted-foreground">គ្មានអ្នកប្រើ។</td></tr>
                 : rows.map((u) => (
                   <UserRowEditor key={u.user_id} user={u} onUpdate={(b) => setRows(rs => rs.map(x => x.user_id === u.user_id ? { ...x, balance: b } : x))} />
                 ))}
