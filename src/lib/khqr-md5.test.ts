@@ -5,7 +5,7 @@ import { encodeKhqr } from "@/lib/khqr-encode";
 const md5Hex = (s: string) => createHash("md5").update(s, "utf8").digest("hex");
 
 const baseInput = {
-  accountId: "test_user@bkrt",
+  accountId: "ben_sothida@bkrt",
   merchantName: "Dyna Store",
   merchantCity: "PHNOM PENH",
   currency: "USD" as const,
