@@ -189,7 +189,7 @@ function GamesTab() {
             <Field label="Category" value={draft.category} onChange={(v) => setDraft({ ...draft, category: v })} />
             <Field label="Badge" value={draft.badge ?? ""} onChange={(v) => setDraft({ ...draft, badge: v })} />
             <Field label="Description" value={draft.description ?? ""} onChange={(v) => setDraft({ ...draft, description: v })} />
-            <Field label="Price (Balance)" type="number" value={String(draft.price_coins)} onChange={(v) => setDraft({ ...draft, price_coins: Number(v) || 0 })} />
+            <Field label="តម្លៃ (Balance)" type="number" value={draft.price_coins ? String(draft.price_coins) : ""} placeholder="ឧ. 1500" onChange={(v) => setDraft({ ...draft, price_coins: Number(v) || 0 })} />
             <Field label="Image URL (cover)" value={draft.image_url ?? ""} onChange={(v) => setDraft({ ...draft, image_url: v })} />
             <label className="block">
               <span className="block text-[10px] uppercase tracking-wider text-muted-foreground mb-1">Game File (zip/installer)</span>
