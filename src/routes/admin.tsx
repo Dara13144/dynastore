@@ -3,10 +3,9 @@ import { useEffect, useState, useCallback } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { useStore } from "@/lib/store";
-import { ArrowLeft, Plus, Eye, EyeOff, Trash2, Save, Loader2, Users, Gamepad2, FileArchive, Settings as SettingsIcon, Receipt, Pencil, History, ChevronDown, ChevronUp, Search, Inbox, ExternalLink, Check, X as XIcon } from "lucide-react";
+import { ArrowLeft, Plus, Eye, EyeOff, Trash2, Save, Loader2, Users, Gamepad2, FileArchive, Settings as SettingsIcon, Pencil, History, ChevronDown, ChevronUp, Search, Check } from "lucide-react";
 import { StoreProvider } from "@/lib/store";
-import { getAppSettings, updateAppSettings, adminSetUserBalance, listAllTransactions, listBalanceChanges, listSettingsAudit } from "@/lib/admin.functions";
-import { adminListManualTopups, adminApproveManualTopup, adminRejectManualTopup, adminGetReceiptUrl } from "@/lib/topup.functions";
+import { getAppSettings, updateAppSettings, adminSetUserBalance, listBalanceChanges, listSettingsAudit } from "@/lib/admin.functions";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 
@@ -41,7 +40,7 @@ function AdminPage() {
   const { authed, loading } = useStore();
   const navigate = useNavigate();
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
-  const [tab, setTab] = useState<"games" | "users" | "payments" | "topups" | "content" | "settings">("games");
+  const [tab, setTab] = useState<"games" | "users" | "content" | "settings">("games");
 
   useEffect(() => {
     if (loading) return;
@@ -80,8 +79,6 @@ function AdminPage() {
           <nav className="flex gap-1 rounded-full bg-muted/30 p-1 overflow-x-auto">
             <TabBtn active={tab === "games"} onClick={() => setTab("games")} icon={<Gamepad2 className="h-3.5 w-3.5" />} label="ហ្គេម" />
             <TabBtn active={tab === "users"} onClick={() => setTab("users")} icon={<Users className="h-3.5 w-3.5" />} label="អ្នកប្រើ" />
-            <TabBtn active={tab === "payments"} onClick={() => setTab("payments")} icon={<Receipt className="h-3.5 w-3.5" />} label="ការទូទាត់" />
-            <TabBtn active={tab === "topups"} onClick={() => setTab("topups")} icon={<Inbox className="h-3.5 w-3.5" />} label="សំណើបញ្ចូលលុយ" />
             <TabBtn active={tab === "content"} onClick={() => setTab("content")} icon={<Pencil className="h-3.5 w-3.5" />} label="មាតិកា" />
             <TabBtn active={tab === "settings"} onClick={() => setTab("settings")} icon={<SettingsIcon className="h-3.5 w-3.5" />} label="កំណត់" />
           </nav>
@@ -91,8 +88,6 @@ function AdminPage() {
       <main className="container mx-auto px-4 py-6">
         {tab === "games" && <GamesTab />}
         {tab === "users" && <UsersTab />}
-        {tab === "payments" && <PaymentsTab />}
-        {tab === "topups" && <TopupRequestsTab />}
         {tab === "content" && <ContentTab />}
         {tab === "settings" && <SettingsTab />}
       </main>
@@ -662,8 +657,6 @@ function UserRowEditor({ user, onUpdate }: { user: UserRow; onUpdate: (b: number
 /* ============ SETTINGS TAB ============ */
 type Settings = {
   coins_per_usd: number; tx_ttl_min: number;
-  bakong_account_id: string | null; bakong_merchant_name: string | null;
-  bakong_merchant_city: string | null; bakong_merchant_phone: string | null;
 };
 function SettingsTab() {
   const [s, setS] = useState<Settings | null>(null);
@@ -684,10 +677,6 @@ function SettingsTab() {
       await upd({ data: {
         coins_per_usd: Number(s.coins_per_usd) || 1,
         tx_ttl_min: Number(s.tx_ttl_min) || 5,
-        bakong_account_id: s.bakong_account_id || null,
-        bakong_merchant_name: s.bakong_merchant_name || null,
-        bakong_merchant_city: s.bakong_merchant_city || null,
-        bakong_merchant_phone: s.bakong_merchant_phone || null,
       }});
       setMsg("រក្សាទុករួច");
     } catch (e) { setMsg(e instanceof Error ? e.message : "បរាជ័យ"); }
@@ -700,21 +689,10 @@ function SettingsTab() {
     <div className="max-w-2xl mx-auto space-y-5">
       <h2 className="font-display text-xl">ការកំណត់ប្រព័ន្ធ</h2>
       <div className="rounded-2xl glass p-5 space-y-4">
-        <h3 className="font-semibold text-sm">អត្រាប្តូរ & ពេលផុតកំណត់</h3>
-        <div className="grid grid-cols-2 gap-3">
-          <Field label="១ ដុល្លារ = ? សមតុល្យ" type="number" value={String(s.coins_per_usd)} onChange={(v) => setS({ ...s, coins_per_usd: Number(v) || 1 })} />
-          <Field label="QR ផុតកំណត់ (នាទី)" type="number" value={String(s.tx_ttl_min)} onChange={(v) => setS({ ...s, tx_ttl_min: Number(v) || 5 })} />
-        </div>
-      </div>
-      <div className="rounded-2xl glass p-5 space-y-4">
-        <h3 className="font-semibold text-sm">ព័ត៌មាន Bakong Merchant</h3>
+        <h3 className="font-semibold text-sm">អត្រាប្តូរ</h3>
         <div className="grid grid-cols-1 gap-3">
-          <Field label="លេខគណនី Bakong (ឧ. dyna_store@aclb)" value={s.bakong_account_id ?? ""} onChange={(v) => setS({ ...s, bakong_account_id: v })} />
-          <div className="grid grid-cols-2 gap-3">
-            <Field label="ឈ្មោះហាង" value={s.bakong_merchant_name ?? ""} onChange={(v) => setS({ ...s, bakong_merchant_name: v })} />
-            <Field label="ទីក្រុង" value={s.bakong_merchant_city ?? ""} onChange={(v) => setS({ ...s, bakong_merchant_city: v })} />
-          </div>
-          <Field label="លេខទូរស័ព្ទ" value={s.bakong_merchant_phone ?? ""} onChange={(v) => setS({ ...s, bakong_merchant_phone: v })} />
+          <Field label="១ ដុល្លារ = ? សមតុល្យ" type="number" value={String(s.coins_per_usd)} onChange={(v) => setS({ ...s, coins_per_usd: Number(v) || 1 })} />
+          <Field label="TTL (នាទី)" type="number" value={String(s.tx_ttl_min)} onChange={(v) => setS({ ...s, tx_ttl_min: Number(v) || 5 })} />
         </div>
       </div>
       <div className="flex items-center gap-3">
