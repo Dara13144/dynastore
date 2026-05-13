@@ -444,7 +444,7 @@ function TopupModal({ onClose, onToast }: { onClose: () => void; onToast: (m: st
     setStage("creating");
     try {
       const r = await createFn({ data: { amountUsd: amount, forceNew } });
-      setQr(r.qr); setOrderId(r.orderId); setBakongMd5(r.bakongMd5); setCoins(r.balance); setExpiresAt(new Date(r.expiresAt).getTime());
+      setQr(r.qr); setOrderId(r.orderId); setBakongMd5(r.bakongMd5); setCoins(r.balance); setTtlWindow(new Date(r.expiresAt).getTime());
       const dataUrl = await QRCode.toDataURL(r.qr, { width: 320, margin: 1 });
       setQrDataUrl(dataUrl);
       setStage("qr");
@@ -463,7 +463,7 @@ function TopupModal({ onClose, onToast }: { onClose: () => void; onToast: (m: st
           } else if (c.status === "regenerated" && c.qr && c.orderId) {
             activeOrderId = c.orderId;
             setOrderId(c.orderId); setBakongMd5(c.bakongMd5 ?? ""); setQr(c.qr);
-            if (c.expiresAt) setExpiresAt(new Date(c.expiresAt).getTime());
+            if (c.expiresAt) setTtlWindow(new Date(c.expiresAt).getTime());
             const dataUrl = await QRCode.toDataURL(c.qr, { width: 320, margin: 1 });
             setQrDataUrl(dataUrl);
             setFlash("regenerated");
@@ -520,7 +520,7 @@ function TopupModal({ onClose, onToast }: { onClose: () => void; onToast: (m: st
       else if (c.status === "regenerated") {
         // Auto-refresh QR after expiry
         setQr(c.qr); setOrderId(c.orderId); setBakongMd5(c.bakongMd5);
-        setCoins(c.coins); setExpiresAt(new Date(c.expiresAt).getTime());
+        setCoins(c.coins); setTtlWindow(new Date(c.expiresAt).getTime());
         try { const QR = (await import("qrcode")).default; setQrDataUrl(await QR.toDataURL(c.qr, { margin: 1, scale: 8 })); } catch {}
         setStage("qr");
         onToast("QR ថ្មីបានបង្កើត — សូមស្កេនបន្ត");
