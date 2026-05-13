@@ -139,11 +139,22 @@ export function TopupModal({ onClose, onToast }: Props) {
               )}
               <div className="mt-3 text-center text-[10px] font-semibold tracking-wider text-black">DYNASTORE • KHQR</div>
             </div>
+            <div className="flex w-full items-center gap-2">
+              <input
+                value={qrName}
+                onChange={(e) => setQrName(e.target.value)}
+                placeholder="filename"
+                disabled={exporting}
+                className="flex-1 rounded-full bg-input px-3 py-2 text-xs ring-1 ring-border focus:ring-primary outline-none disabled:opacity-50"
+              />
+              <span className="text-[10px] text-muted-foreground">.png</span>
+            </div>
             <button
               onClick={downloadQrPng}
-              disabled={!qr}
-              className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-4 py-2 text-xs font-semibold hover:bg-accent disabled:opacity-50">
-              <Download className="h-3.5 w-3.5" /> ទាញយក KHQR (PNG)
+              disabled={!qr || exporting}
+              className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-4 py-2 text-xs font-semibold hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed">
+              {exporting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
+              {exporting ? "កំពុង Export…" : "ទាញយក KHQR (PNG)"}
             </button>
           </div>
 
