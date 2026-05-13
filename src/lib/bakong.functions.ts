@@ -70,27 +70,38 @@ export const createTopup = createServerFn({ method: "POST" })
     if (!merchantName) throw new Error("BAKONG_MERCHANT_NAME is not configured");
     if (!merchantCity) throw new Error("BAKONG_MERCHANT_CITY is not configured");
 
-    const billNumber = `T${Date.now().toString(36).toUpperCase()}`;
-    const { payload, md5 } = buildKhqr({
-      bakongAccountId: accountId,
-      merchantName,
-      merchantCity,
-      amount: pack.price,
-      currency: "USD",
-      billNumber,
-      storeLabel: pack.name.slice(0, 25),
-      mobileNumber: merchantPhone?.replace(/\s+/g, "") || undefined,
-      terminalLabel: undefined,
-      acquiringBank: acquiringBank || undefined,
-      merchantId: merchantId || undefined,
-    });
     const totalCoins = pack.coins + (pack.bonus ?? 0);
-
-    const { error } = await supabaseAdmin.from("transactions").insert({
-      user_id: userId, md5, qr_payload: payload,
-      amount_usd: pack.price, coins: totalCoins, status: "pending",
-    });
-    if (error) throw new Error(error.message);
+    let lastErr: string | null = null;
+    let md5 = "";
+    let payload = "";
+    for (let attempt = 0; attempt < 4; attempt++) {
+      const rand = Math.random().toString(36).slice(2, 8).toUpperCase();
+      const billNumber = `T${Date.now().toString(36).toUpperCase()}${rand}`;
+      const built = buildKhqr({
+        bakongAccountId: accountId,
+        merchantName,
+        merchantCity,
+        amount: pack.price,
+        currency: "USD",
+        billNumber,
+        storeLabel: pack.name.slice(0, 25),
+        mobileNumber: merchantPhone?.replace(/\s+/g, "") || undefined,
+        terminalLabel: undefined,
+        acquiringBank: acquiringBank || undefined,
+        merchantId: merchantId || undefined,
+      });
+      md5 = built.md5;
+      payload = built.payload;
+      const { error } = await supabaseAdmin.from("transactions").insert({
+        user_id: userId, md5, qr_payload: payload,
+        amount_usd: pack.price, coins: totalCoins, status: "pending",
+      });
+      if (!error) { lastErr = null; break; }
+      lastErr = error.message;
+      // Only retry on unique-violation; otherwise abort.
+      if (!/duplicate key|unique constraint/i.test(error.message)) break;
+    }
+    if (lastErr) throw new Error(lastErr);
 
     return { md5, qrPayload: payload, amountUsd: pack.price, coins: totalCoins, packName: pack.name };
   });
