@@ -32,18 +32,38 @@ export const createTopup = createServerFn({ method: "POST" })
     const coins = Math.round(data.amountUsd * coinsPerUsd);
     const expires = new Date(Date.now() + ttlMin * 60_000).toISOString();
 
+    const { data: existingPending } = await supabaseAdmin
+      .from("transactions")
+      .select("md5, qr_string, amount_usd, coins, expires_at")
+      .eq("user_id", userId)
+      .eq("status", "pending")
+      .eq("amount_usd", data.amountUsd)
+      .gte("expires_at", new Date().toISOString())
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (existingPending?.qr_string) {
+      return {
+        md5: existingPending.md5,
+        qr: existingPending.qr_string,
+        balance: existingPending.coins,
+        amountUsd: Number(existingPending.amount_usd),
+        expiresAt: existingPending.expires_at,
+      };
+    }
+
     // Retry up to 3 times to avoid md5 unique-collision (same params produce same md5)
     let qr: string | undefined;
     let md5: string | undefined;
-    let lastErr: string | null = null;
     for (let attempt = 0; attempt < 3; attempt++) {
-      const nonce = `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}${attempt}`;
+      const nonce = `${userId.slice(0, 6)}-${Date.now().toString(36)}-${attempt}${Math.random().toString(36).slice(2, 6)}`;
       const info = new IndividualInfo(accountId, merchantName, merchantCity, {
         currency: khqrData.currency.usd,
         amount: Number(data.amountUsd.toFixed(2)),
         mobileNumber: phone,
         storeLabel: "Dyna Store",
-        terminalLabel: "topup",
+        terminalLabel: `tp-${userId.slice(0, 8)}`,
         billNumber: nonce,
         expirationTimestamp: Date.now() + ttlMin * 60_000,
       });
@@ -63,13 +83,33 @@ export const createTopup = createServerFn({ method: "POST" })
       if (!error) {
         return { md5, qr, balance: coins, amountUsd: data.amountUsd, expiresAt: expires };
       }
-      lastErr = error.message;
       // Only retry on unique-violation; otherwise bail immediately
       if (!/duplicate key|unique constraint|transactions_md5/i.test(error.message)) {
         throw new Error(error.message);
       }
+
+      const { data: existingByMd5 } = await supabaseAdmin
+        .from("transactions")
+        .select("user_id, md5, qr_string, amount_usd, coins, status, expires_at")
+        .eq("md5", md5)
+        .maybeSingle();
+
+      if (
+        existingByMd5?.qr_string &&
+        existingByMd5.user_id === userId &&
+        existingByMd5.status === "pending" &&
+        new Date(existingByMd5.expires_at).getTime() > Date.now()
+      ) {
+        return {
+          md5: existingByMd5.md5,
+          qr: existingByMd5.qr_string,
+          balance: existingByMd5.coins,
+          amountUsd: Number(existingByMd5.amount_usd),
+          expiresAt: existingByMd5.expires_at,
+        };
+      }
     }
-    throw new Error("បរាជ័យបង្កើត KHQR (ID ស្ទួន) — សូមសាកម្តងទៀត។ " + (lastErr ?? ""));
+    throw new Error("បរាជ័យបង្កើត KHQR — សូមសាកម្តងទៀត។");
   });
 
 
