@@ -92,6 +92,42 @@ export type Database = {
         }
         Relationships: []
       }
+      download_logs: {
+        Row: {
+          created_at: string
+          file_path: string | null
+          game_id: string
+          id: string
+          ip: string | null
+          url: string
+          user_agent: string | null
+          user_id: string
+          via: string
+        }
+        Insert: {
+          created_at?: string
+          file_path?: string | null
+          game_id: string
+          id?: string
+          ip?: string | null
+          url: string
+          user_agent?: string | null
+          user_id: string
+          via: string
+        }
+        Update: {
+          created_at?: string
+          file_path?: string | null
+          game_id?: string
+          id?: string
+          ip?: string | null
+          url?: string
+          user_agent?: string | null
+          user_id?: string
+          via?: string
+        }
+        Relationships: []
+      }
       games: {
         Row: {
           badge: string | null
