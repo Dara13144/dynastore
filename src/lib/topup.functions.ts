@@ -2,7 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
-import { notifyTelegram, formatUserById } from "@/lib/telegram.server";
+import { notifyTelegram, notifyTelegramPhotoFromStorage, formatUserById } from "@/lib/telegram.server";
 
 // Static KHQR payload for DynaStore (Bakong account: ben_sothida@bkr)
 export const KHQR_PAYLOAD =
@@ -49,10 +49,8 @@ export const createTopupRequest = createServerFn({ method: "POST" })
     }).select("id, created_at, status, amount_usd, coins").single();
     if (error) throw new Error(error.message);
     const who = await userLabel(context.userId);
-    await notifyTelegram(
-      `🆕 <b>New Topup Request</b>\n👤 ${who}\n💵 $${Number(data.amount_usd).toFixed(2)} → <b>${coins.toLocaleString()} coins</b>${data.note ? `\n📝 ${data.note}` : ""}\n🆔 <code>${row.id}</code>`,
-      "topup_submitted",
-    );
+    const caption = `🆕 <b>New Topup Request</b>\n👤 ${who}\n💵 $${Number(data.amount_usd).toFixed(2)} → <b>${coins.toLocaleString()} coins</b>${data.note ? `\n📝 ${data.note}` : ""}\n🆔 <code>${row.id}</code>`;
+    await notifyTelegramPhotoFromStorage("topup-slips", data.slip_path, caption, "topup_submitted");
     return row;
   });
 
@@ -113,7 +111,7 @@ export const adminApproveTopup = createServerFn({ method: "POST" })
       .from("topup_requests")
       .update({ status: "approved", reviewed_by: context.userId, reviewed_at: new Date().toISOString() })
       .eq("id", data.id).eq("status", "pending")
-      .select("id, user_id, coins, amount_usd").maybeSingle();
+      .select("id, user_id, coins, amount_usd, slip_path").maybeSingle();
     if (e0) throw new Error(e0.message);
     if (!claimed) {
       // Idempotent path: request was already processed. Do NOT credit again.
@@ -152,10 +150,12 @@ export const adminApproveTopup = createServerFn({ method: "POST" })
       reason: `Topup approved: $${claimed.amount_usd} (+${claimed.coins})`,
     });
     const who = await userLabel(claimed.user_id);
-    await notifyTelegram(
-      `✅ <b>Topup Approved</b>\n👤 ${who}\n💵 $${Number(claimed.amount_usd).toFixed(2)} → <b>+${Number(claimed.coins).toLocaleString()} coins</b>\n💼 New balance: ${bal.toLocaleString()}\n🆔 <code>${data.id}</code>`,
-      "topup_approved",
-    );
+    const caption = `✅ <b>Topup Approved</b>\n👤 ${who}\n💵 $${Number(claimed.amount_usd).toFixed(2)} → <b>+${Number(claimed.coins).toLocaleString()} coins</b>\n💼 New balance: ${bal.toLocaleString()}\n🆔 <code>${data.id}</code>`;
+    if (claimed.slip_path) {
+      await notifyTelegramPhotoFromStorage("topup-slips", claimed.slip_path, caption, "topup_approved");
+    } else {
+      await notifyTelegram(caption, "topup_approved");
+    }
     return {
       ok: true,
       status: "approved" as const,
@@ -180,14 +180,16 @@ export const adminRejectTopup = createServerFn({ method: "POST" })
     const { data: claimed, error } = await supabaseAdmin.from("topup_requests").update({
       status: "rejected", reviewed_by: context.userId, reviewed_at: new Date().toISOString(),
       reject_reason: data.reason,
-    }).eq("id", data.id).eq("status", "pending").select("id, user_id, amount_usd").maybeSingle();
+    }).eq("id", data.id).eq("status", "pending").select("id, user_id, amount_usd, slip_path").maybeSingle();
     if (error) throw new Error(error.message);
     if (!claimed) throw new Error("already_reviewed");
     const who = await userLabel(claimed.user_id);
-    await notifyTelegram(
-      `❌ <b>Topup Rejected</b>\n👤 ${who}\n💵 $${Number(claimed.amount_usd).toFixed(2)}\n📝 ${data.reason}\n🆔 <code>${data.id}</code>`,
-      "topup_rejected",
-    );
+    const caption = `❌ <b>Topup Rejected</b>\n👤 ${who}\n💵 $${Number(claimed.amount_usd).toFixed(2)}\n📝 ${data.reason}\n🆔 <code>${data.id}</code>`;
+    if (claimed.slip_path) {
+      await notifyTelegramPhotoFromStorage("topup-slips", claimed.slip_path, caption, "topup_rejected");
+    } else {
+      await notifyTelegram(caption, "topup_rejected");
+    }
     return { ok: true };
   });
 
