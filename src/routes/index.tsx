@@ -237,7 +237,7 @@ function DealsBanner() {
     <section id="deals" className="container mx-auto px-4 py-8">
       <div className="rounded-3xl p-8 md:p-10 text-center" style={{ background: "var(--gradient-hero)" }}>
         <h3 className="font-display text-2xl md:text-3xl text-primary-foreground">ប្រូម៉ូសិនពិសេសសប្តាហ៍នេះ</h3>
-        <p className="text-sm md:text-base text-primary-foreground/80 mt-2">បន្ថែម 10 USD នឹងទទួលបាន 1,000 Balance ភ្លាមៗ។</p>
+        <p className="text-sm md:text-base text-primary-foreground/80 mt-2">បន្ថែម 10 USD នឹងទទួលបាន 10 Balance ភ្លាមៗ។</p>
       </div>
     </section>
   );
