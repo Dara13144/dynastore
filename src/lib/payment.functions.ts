@@ -6,14 +6,19 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { BakongKHQR, IndividualInfo, khqrData } from "bakong-khqr";
 
 async function loadSettings() {
-  const { data } = await supabaseAdmin.from("app_settings").select("*").eq("id", 1).maybeSingle();
+  const { data, error } = await supabaseAdmin.from("app_settings").select("*").eq("id", 1).maybeSingle();
+  if (error) throw new Error("មិនអាចទាញ Settings: " + error.message);
+  if (!data) throw new Error("App Settings មិនទាន់កំណត់ — សូមកំណត់នៅ Admin Settings");
+  if (!data.bakong_account_id) throw new Error("Bakong Account ID មិនទាន់កំណត់ — សូមកំណត់នៅ Admin Settings");
+  if (!data.bakong_merchant_name) throw new Error("Merchant Name មិនទាន់កំណត់ — សូមកំណត់នៅ Admin Settings");
+  if (!data.bakong_merchant_city) throw new Error("Merchant City មិនទាន់កំណត់ — សូមកំណត់នៅ Admin Settings");
   return {
-    coinsPerUsd: data?.coins_per_usd ?? 1,
-    ttlMin: data?.tx_ttl_min ?? 5,
-    accountId: data?.bakong_account_id || process.env.BAKONG_ACCOUNT_ID || "",
-    merchantName: data?.bakong_merchant_name || process.env.BAKONG_MERCHANT_NAME || "Dyna Store",
-    merchantCity: data?.bakong_merchant_city || process.env.BAKONG_MERCHANT_CITY || "Phnom Penh",
-    phone: data?.bakong_merchant_phone || process.env.BAKONG_MERCHANT_PHONE || "",
+    coinsPerUsd: data.coins_per_usd,
+    ttlMin: data.tx_ttl_min,
+    accountId: data.bakong_account_id,
+    merchantName: data.bakong_merchant_name,
+    merchantCity: data.bakong_merchant_city,
+    phone: data.bakong_merchant_phone || "",
   };
 }
 
