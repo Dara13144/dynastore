@@ -149,6 +149,9 @@ export const createTopup = createServerFn({ method: "POST" })
           billNumber: nonce,
         });
         qr = res.qr;
+        if (typeof qr !== "string" || qr.length < 50 || !qr.startsWith("0002")) {
+          throw new Error(`KHQR encoder produced invalid output (len=${qr ? String(qr).length : 0})`);
+        }
         bakongMd5 = md5Hex(qr);
       } catch (e) {
         throw new Error("បរាជ័យបង្កើត KHQR: " + khqrErrorMessage(e));
