@@ -65,14 +65,16 @@ afterAll(() => {
 describe("DB integrity: transactions CHECK constraints block inconsistent payloads", () => {
   it("baseline — a fully consistent (qr, md5(qr)) pair INSERTs successfully", () => {
     const orderId = `${tag}_baseline_${randomUUID()}`;
-    const r = tryInsert(orderId, freshValidQr(), md5Hex(freshValidQr()));
+    const qr = freshValidQr();
+    const r = tryInsert(orderId, qr, md5Hex(qr));
     expect(r.ok).toBe(true);
   });
 
   it("rejects md5 that does NOT match md5(qr_string) (transactions_md5_matches_qr)", () => {
     const orderId = `${tag}_mismatch_${randomUUID()}`;
-    const wrongMd5 = md5Hex(freshValidQr() + "x"); // valid hex shape, wrong value
-    const r = tryInsert(orderId, freshValidQr(), wrongMd5);
+    const qr = freshValidQr();
+    const wrongMd5 = md5Hex(qr + "x"); // valid hex shape, wrong value
+    const r = tryInsert(orderId, qr, wrongMd5);
     expect(r.ok).toBe(false);
     expect(r.error).toMatch(/transactions_md5_matches_qr|check constraint/i);
   });
@@ -86,8 +88,9 @@ describe("DB integrity: transactions CHECK constraints block inconsistent payloa
 
   it("rejects bakong_md5 with uppercase hex (must be lowercase)", () => {
     const orderId = `${tag}_md5upper_${randomUUID()}`;
-    const upper = md5Hex(freshValidQr()).toUpperCase();
-    const r = tryInsert(orderId, freshValidQr(), upper);
+    const qr = freshValidQr();
+    const upper = md5Hex(qr).toUpperCase();
+    const r = tryInsert(orderId, qr, upper);
     expect(r.ok).toBe(false);
     expect(r.error).toMatch(/transactions_bakong_md5_shape|check constraint/i);
   });
