@@ -160,6 +160,7 @@ export const createTopup = createServerFn({ method: "POST" })
       }
       if (!qr || !bakongMd5) throw new Error("KHQR មិនត្រឹមត្រូវ — សូមពិនិត្យ Bakong account/credentials");
 
+      const issuedAt = new Date().toISOString();
       const { error } = await supabaseAdmin.from("transactions").upsert({
         order_id: orderId,
         user_id: userId,
@@ -171,7 +172,7 @@ export const createTopup = createServerFn({ method: "POST" })
         status: "pending", expires_at: expires,
       }, { onConflict: "order_id" });
       if (!error) {
-        return { orderId, bakongMd5, qr, balance: coins, amountUsd: data.amountUsd, expiresAt: expires };
+        return { orderId, bakongMd5, qr, balance: coins, amountUsd: data.amountUsd, expiresAt: expires, issuedAt };
       }
       if (!/duplicate key|unique constraint|transactions_order_id|transactions_bakong_md5/i.test(error.message)) {
         throw new Error(error.message);
@@ -179,7 +180,7 @@ export const createTopup = createServerFn({ method: "POST" })
 
       const { data: existingByBakongMd5 } = await supabaseAdmin
         .from("transactions")
-        .select("user_id, order_id, bakong_md5, qr_string, amount_usd, coins, status, expires_at")
+        .select("user_id, order_id, bakong_md5, qr_string, amount_usd, coins, status, expires_at, created_at")
         .eq("bakong_md5", bakongMd5)
         .maybeSingle();
 
@@ -196,6 +197,7 @@ export const createTopup = createServerFn({ method: "POST" })
           balance: existingByBakongMd5.coins,
           amountUsd: Number(existingByBakongMd5.amount_usd),
           expiresAt: existingByBakongMd5.expires_at,
+          issuedAt: existingByBakongMd5.created_at,
         };
       }
     }
