@@ -286,8 +286,23 @@ export const checkTopup = createServerFn({ method: "POST" })
       return { status: "expired" as const, balance: null as number | null, debug: mkDebug({ source: "db", txStatus: "expired", bakongMd5: tx.bakong_md5, providerMessage: "expired_before_payment" }) };
     }
 
-    if (!tx.bakong_md5) {
-      throw new Error("KHQR មិនត្រឹមត្រូវ — សូមបង្កើត QR ថ្មី");
+    const regenerate = async (reason: string) => {
+      await supabaseAdmin.from("transactions").update({
+        status: "cancelled", failure_reason: reason, updated_at: new Date().toISOString(),
+      }).eq("order_id", data.orderId).in("status", ["pending"]);
+      const settings = await loadSettings();
+      const fresh = await generateKhqrForUser({ userId, amountUsd: Number(tx.amount_usd), ...settings });
+      return {
+        status: "regenerated" as const,
+        balance: null as number | null,
+        orderId: fresh.orderId, qr: fresh.qr, bakongMd5: fresh.bakongMd5,
+        amountUsd: fresh.amountUsd, expiresAt: fresh.expiresAt, coins: fresh.coins,
+        debug: mkDebug({ source: "db", txStatus: "regenerated", bakongMd5: fresh.bakongMd5, providerMessage: `regenerated:${reason}` }),
+      };
+    };
+
+    if (!tx.bakong_md5 || !tx.qr_string) {
+      return await regenerate("missing_qr_or_md5");
     }
 
     // Verify with Bakong API. Network/CDN errors and Bakong's "Invalid data" / "Transaction could
@@ -334,7 +349,18 @@ export const checkTopup = createServerFn({ method: "POST" })
       _next_status: paid ? undefined : tx.status,
     });
 
+    // Auto-regenerate when Bakong rejects the MD5/hash as malformed (not just "not found yet").
+    const msg = String(providerMessage ?? "").toLowerCase();
+    const looksInvalidMd5 = !paid && !networkError && httpStatus >= 200 && httpStatus < 500 &&
+      json?.responseCode !== 0 &&
+      /(invalid|hash|md5|bad request|malformed)/.test(msg) &&
+      !/not\s*found/.test(msg);
+    if (looksInvalidMd5) {
+      return await regenerate(`bakong_invalid_md5:${msg.slice(0, 60)}`);
+    }
+
     if (!paid) return { status: "pending" as const, balance: null as number | null, debug };
+
 
     const { data: credit, error } = await supabaseAdmin.rpc("process_khqr_payment_atomic", {
       _order_id: tx.order_id,
