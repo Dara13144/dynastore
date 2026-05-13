@@ -182,21 +182,55 @@ function BakongConfigBanner() {
             <div className={`font-semibold text-sm ${hasError ? "text-destructive" : "text-yellow-600 dark:text-yellow-400"}`}>
               {hasError ? "Bakong KHQR is not ready — topups are disabled" : "Bakong configuration warnings"}
             </div>
-            <ul className="mt-2 space-y-1 text-xs">
-              {issues.map((i, idx) => (
-                <li key={idx} className="flex flex-wrap gap-x-2">
-                  <span className={`font-mono ${i.severity === "error" ? "text-destructive" : "text-yellow-600 dark:text-yellow-400"}`}>
-                    {i.key}
-                  </span>
-                  <span className="text-muted-foreground">{i.message}</span>
-                </li>
-              ))}
-            </ul>
-            {hasError && (
-              <p className="mt-2 text-xs text-muted-foreground">
-                Set the missing values in Backend → Secrets, then click Retry. Topup buttons stay disabled until all errors are resolved.
-              </p>
-            )}
+            {(() => {
+              const errors = issues.filter((i) => i.severity === "error");
+              const warnings = issues.filter((i) => i.severity === "warning");
+              return (
+                <>
+                  {errors.length > 0 && (
+                    <div className="mt-3">
+                      <div className="text-[11px] font-semibold uppercase tracking-wider text-destructive mb-1.5">
+                        Blocking errors ({errors.length})
+                      </div>
+                      <ul className="space-y-2">
+                        {errors.map((i, idx) => (
+                          <li key={`e-${idx}`} className="rounded-lg border border-destructive/30 bg-destructive/5 p-2.5 text-xs">
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="rounded bg-destructive/15 px-1.5 py-0.5 font-mono text-[10px] text-destructive">{i.key}</span>
+                              <span className="text-[10px] uppercase tracking-wider text-destructive/80">Required</span>
+                            </div>
+                            <div className="text-foreground/90">{i.message}</div>
+                            <div className="mt-1 text-[10px] text-muted-foreground">
+                              Fix: open Backend → Secrets and set <code className="font-mono">{i.key}</code>.
+                            </div>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {warnings.length > 0 && (
+                    <div className="mt-3">
+                      <div className="text-[11px] font-semibold uppercase tracking-wider text-yellow-600 dark:text-yellow-400 mb-1.5">
+                        Warnings ({warnings.length})
+                      </div>
+                      <ul className="space-y-1.5">
+                        {warnings.map((i, idx) => (
+                          <li key={`w-${idx}`} className="rounded-lg border border-yellow-500/30 bg-yellow-500/5 p-2 text-xs">
+                            <span className="font-mono text-[10px] text-yellow-600 dark:text-yellow-400 mr-2">{i.key}</span>
+                            <span className="text-foreground/90">{i.message}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {hasError && (
+                    <p className="mt-3 text-xs text-muted-foreground">
+                      Set the missing values in Backend → Secrets, then click Retry. Add Balance buttons stay disabled until all blocking errors are resolved.
+                    </p>
+                  )}
+                </>
+              );
+            })()}
           </div>
           <div className="flex flex-col gap-1">
             <button onClick={reload} className="text-xs rounded-full border px-3 py-1 hover:bg-accent">Retry</button>
