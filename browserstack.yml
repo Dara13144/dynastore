@@ -1,0 +1,45 @@
+# BrowserStack SDK config — runs the Playwright suite on real browsers/devices.
+# Auth: set BROWSERSTACK_USERNAME and BROWSERSTACK_ACCESS_KEY in your shell env
+# (get them at https://www.browserstack.com/accounts/profile/details).
+#
+# Run:  bunx browserstack-node-sdk playwright test
+userName: ${BROWSERSTACK_USERNAME}
+accessKey: ${BROWSERSTACK_ACCESS_KEY}
+
+projectName: DynaStore
+buildName: download-by-link
+buildIdentifier: "#${BUILD_NUMBER}"
+
+framework: playwright
+
+platforms:
+  # --- Desktop ---
+  - os: Windows
+    osVersion: 11
+    browserName: chrome
+    browserVersion: latest
+  - os: Windows
+    osVersion: 11
+    browserName: firefox
+    browserVersion: latest
+  - os: OS X
+    osVersion: Sonoma
+    browserName: safari
+    browserVersion: latest
+
+  # --- Mobile (real devices) ---
+  - deviceName: iPhone 15 Pro
+    osVersion: "17"
+    browserName: safari
+    realMobile: true
+  - deviceName: Google Pixel 8
+    osVersion: "14.0"
+    browserName: chrome
+    realMobile: true
+
+parallelsPerPlatform: 1
+browserstackLocal: false   # set true (and add a local-identifier) to test the Lovable preview URL
+debug: true
+networkLogs: true
+consoleLogs: errors
+video: true
