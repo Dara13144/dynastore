@@ -34,7 +34,7 @@ function AccountPage() {
   const [bio, setBio] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("");
   const [saving, setSaving] = useState(false);
-  const [topupOpen, setTopupOpen] = useState(false);
+  
   const [toast, setToast] = useState<string | null>(null);
   const showToast = (m: string) => { setToast(m); window.setTimeout(() => setToast(null), 2400); };
   const [msg, setMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
