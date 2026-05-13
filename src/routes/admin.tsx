@@ -223,6 +223,10 @@ function GamesTab() {
 
   const createGame = async () => {
     if (!draft.id.trim() || !draft.title.trim()) { showToast("ត្រូវការ id និង title"); return; }
+    if (draftFile) {
+      const preErr = validateFile(draftFile);
+      if (preErr) { setDraftFileError(preErr); showToast(preErr); return; }
+    }
     setBusy(true);
     let file_path: string | null = null;
     let file_size_bytes: number | null = null;
