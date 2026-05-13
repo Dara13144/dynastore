@@ -437,7 +437,7 @@ function TopupModal({ onClose, onToast }: { onClose: () => void; onToast: (m: st
 
         {stage === "choose" && (
           <div className="p-5 space-y-4">
-            <p className="text-xs text-muted-foreground">1 USD = 100 Balance។ បង់ប្រាក់ភ្លាមៗតាម Bakong KHQR។ QR មានសុពលភាព 5 នាទី។</p>
+            <p className="text-xs text-muted-foreground">1 USD = 1 Balance។ បង់ប្រាក់ភ្លាមៗតាម Bakong KHQR។ QR មានសុពលភាព 5 នាទី។</p>
             <div className="grid grid-cols-5 gap-2">
               {PRESETS.map((p) => (
                 <button key={p} onClick={() => setAmount(p)} className={`rounded-xl border px-2 py-2 text-sm font-semibold ${amount === p ? "border-primary bg-primary/10 text-primary" : "border-border hover:bg-accent"}`}>${p}</button>
