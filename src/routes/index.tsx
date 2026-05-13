@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect, useMemo, useState, useRef } from "react";
+import React, { useEffect, useMemo, useState, useRef } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import QRCode from "react-qr-code";
 import { Coins, ShoppingCart, Settings, LogIn, LogOut, X, Trash2, Check, Star, Zap, Clock, Heart, Send, Gamepad2, Sparkles, ImageIcon, AlertTriangle, RefreshCw, Download, Copy, Loader2, QrCode as QrCodeIcon } from "lucide-react";
@@ -96,24 +96,62 @@ function removePendingPayment(storageKey: string) {
   writePendingPayments(next);
 }
 
-function BakongConfigBanner() {
+type BakongConfigInfo = Awaited<ReturnType<typeof getMerchantInfoFn>>;
+type BakongConfigCtx = {
+  info: BakongConfigInfo | null;
+  fetchErr: string | null;
+  loading: boolean;
+  hasError: boolean;
+  hasWarning: boolean;
+  errorSummary: string | null;
+  reload: () => void;
+};
+const BakongConfigContext = React.createContext<BakongConfigCtx | null>(null);
+
+function BakongConfigProvider({ children }: { children: React.ReactNode }) {
   const { authed } = useStore();
   const getMerchantInfo = useServerFn(getMerchantInfoFn);
-  const [info, setInfo] = useState<Awaited<ReturnType<typeof getMerchantInfoFn>> | null>(null);
+  const [info, setInfo] = useState<BakongConfigInfo | null>(null);
   const [fetchErr, setFetchErr] = useState<string | null>(null);
-  const [dismissed, setDismissed] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const load = () => {
+  const reload = () => {
+    if (!authed) { setInfo(null); setFetchErr(null); return; }
+    setLoading(true);
     setFetchErr(null);
     getMerchantInfo()
       .then(setInfo)
-      .catch((e: any) => setFetchErr(e?.message || "Failed to load Bakong config"));
+      .catch((e: any) => setFetchErr(e?.message || "Failed to load Bakong config"))
+      .finally(() => setLoading(false));
   };
 
-  useEffect(() => {
-    if (!authed) { setInfo(null); return; }
-    load();
-  }, [authed]);
+  useEffect(() => { reload(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [authed]);
+
+  const issues = info?.configIssues ?? [];
+  const hasError = !!fetchErr || issues.some((i) => i.severity === "error");
+  const hasWarning = issues.some((i) => i.severity === "warning");
+  const errorSummary = fetchErr
+    ? fetchErr
+    : hasError
+      ? issues.filter((i) => i.severity === "error").map((i) => `${i.key}: ${i.message}`).join(" • ")
+      : null;
+
+  return (
+    <BakongConfigContext.Provider value={{ info, fetchErr, loading, hasError, hasWarning, errorSummary, reload }}>
+      {children}
+    </BakongConfigContext.Provider>
+  );
+}
+
+function useBakongConfig(): BakongConfigCtx {
+  const ctx = React.useContext(BakongConfigContext);
+  return ctx ?? { info: null, fetchErr: null, loading: false, hasError: false, hasWarning: false, errorSummary: null, reload: () => {} };
+}
+
+function BakongConfigBanner() {
+  const { authed } = useStore();
+  const { info, fetchErr, hasError, reload } = useBakongConfig();
+  const [dismissed, setDismissed] = useState(false);
 
   if (!authed || dismissed) return null;
 
@@ -126,7 +164,7 @@ function BakongConfigBanner() {
             <div className="font-semibold text-destructive">Bakong config check failed</div>
             <div className="text-muted-foreground mt-1 break-words">{fetchErr}</div>
           </div>
-          <button onClick={load} className="text-xs rounded-full border px-3 py-1 hover:bg-accent">Retry</button>
+          <button onClick={reload} className="text-xs rounded-full border px-3 py-1 hover:bg-accent">Retry</button>
         </div>
       </section>
     );
@@ -134,7 +172,6 @@ function BakongConfigBanner() {
 
   const issues = info?.configIssues ?? [];
   if (issues.length === 0) return null;
-  const hasError = issues.some((i) => i.severity === "error");
 
   return (
     <section className="container mx-auto px-4 pt-4">
@@ -143,7 +180,7 @@ function BakongConfigBanner() {
           <AlertTriangle className={`h-5 w-5 shrink-0 mt-0.5 ${hasError ? "text-destructive" : "text-yellow-500"}`} />
           <div className="flex-1 min-w-0">
             <div className={`font-semibold text-sm ${hasError ? "text-destructive" : "text-yellow-600 dark:text-yellow-400"}`}>
-              {hasError ? "Bakong KHQR is not ready" : "Bakong configuration warnings"}
+              {hasError ? "Bakong KHQR is not ready — topups are disabled" : "Bakong configuration warnings"}
             </div>
             <ul className="mt-2 space-y-1 text-xs">
               {issues.map((i, idx) => (
@@ -157,12 +194,12 @@ function BakongConfigBanner() {
             </ul>
             {hasError && (
               <p className="mt-2 text-xs text-muted-foreground">
-                Set the missing values in Backend → Secrets, then click Retry. Topup will fail until all errors are resolved.
+                Set the missing values in Backend → Secrets, then click Retry. Topup buttons stay disabled until all errors are resolved.
               </p>
             )}
           </div>
           <div className="flex flex-col gap-1">
-            <button onClick={load} className="text-xs rounded-full border px-3 py-1 hover:bg-accent">Retry</button>
+            <button onClick={reload} className="text-xs rounded-full border px-3 py-1 hover:bg-accent">Retry</button>
             {!hasError && (
               <button onClick={() => setDismissed(true)} className="text-xs rounded-full px-3 py-1 text-muted-foreground hover:bg-accent">Dismiss</button>
             )}
@@ -448,28 +485,30 @@ function Page() {
   };
 
   return (
-    <div className="min-h-screen">
-      <Header onCart={() => setCartOpen(true)} onSettings={() => setSettingsOpen(true)} />
-      <Hero />
-      <BakongConfigBanner />
-      <PendingTopupsPanel onResume={(p) => setPaymentPack(p)} />
-      <CoinShop onBuyPack={(p) => setPaymentPack(p)} />
-      <GamesSection onToast={showToast} onOpenCart={() => setCartOpen(true)} />
-      <DealsBanner />
-      <Recommendations onToast={showToast} />
-      <PlusSection />
-      <Footer />
+    <BakongConfigProvider>
+      <div className="min-h-screen">
+        <Header onCart={() => setCartOpen(true)} onSettings={() => setSettingsOpen(true)} />
+        <Hero />
+        <BakongConfigBanner />
+        <PendingTopupsPanel onResume={(p) => setPaymentPack(p)} />
+        <CoinShop onBuyPack={(p) => setPaymentPack(p)} />
+        <GamesSection onToast={showToast} onOpenCart={() => setCartOpen(true)} />
+        <DealsBanner />
+        <Recommendations onToast={showToast} />
+        <PlusSection />
+        <Footer />
 
-      {cartOpen && <CartModal onClose={() => setCartOpen(false)} onToast={showToast} />}
-      {settingsOpen && <SettingsModal onClose={() => setSettingsOpen(false)} onToast={showToast} />}
-      {paymentPack && <PaymentModal pack={paymentPack} onClose={() => setPaymentPack(null)} onToast={showToast} />}
+        {cartOpen && <CartModal onClose={() => setCartOpen(false)} onToast={showToast} />}
+        {settingsOpen && <SettingsModal onClose={() => setSettingsOpen(false)} onToast={showToast} />}
+        {paymentPack && <PaymentModal pack={paymentPack} onClose={() => setPaymentPack(null)} onToast={showToast} />}
 
-      {toast && (
-        <div className="fixed bottom-6 left-1/2 z-[100] -translate-x-1/2 rounded-full glass px-5 py-3 text-sm shadow-[var(--shadow-card)] animate-in fade-in slide-in-from-bottom-4">
-          {toast}
-        </div>
-      )}
-    </div>
+        {toast && (
+          <div className="fixed bottom-6 left-1/2 z-[100] -translate-x-1/2 rounded-full glass px-5 py-3 text-sm shadow-[var(--shadow-card)] animate-in fade-in slide-in-from-bottom-4">
+            {toast}
+          </div>
+        )}
+      </div>
+    </BakongConfigProvider>
   );
 }
 
@@ -956,6 +995,7 @@ function Stat({ label, v }: { label: string; v: number | string }) {
 
 
 function CoinShop({ onBuyPack }: { onBuyPack: (p: CoinPack) => void }) {
+  const { hasError, errorSummary } = useBakongConfig();
   return (
     <section id="coins" className="mx-auto max-w-7xl px-4 py-16 md:px-6 md:py-20">
       <div className="mx-auto max-w-2xl text-center">
@@ -965,6 +1005,15 @@ function CoinShop({ onBuyPack }: { onBuyPack: (p: CoinPack) => void }) {
         <h2 className="mt-4 font-display text-4xl md:text-5xl">Topup <span className="text-coin">Coins</span></h2>
         <p className="mt-3 text-muted-foreground">ជ្រើសរើសកញ្ចប់តម្លៃ ហើយបង់ប្រាក់តាម Bakong KHQR។ Coins នឹងចូល Wallet បន្ទាប់ពីការបង់ប្រាក់ត្រូវបានផ្ទៀងផ្ទាត់។</p>
       </div>
+      {hasError && (
+        <div className="mx-auto mt-6 max-w-3xl rounded-2xl border border-destructive/40 bg-destructive/10 p-4 text-sm flex items-start gap-3">
+          <AlertTriangle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
+          <div className="min-w-0">
+            <div className="font-semibold text-destructive">Topups disabled — Bakong configuration error</div>
+            <div className="text-xs text-muted-foreground mt-1 break-words">{errorSummary || "See banner above for details."}</div>
+          </div>
+        </div>
+      )}
       <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
         {COIN_PACKS.map((p, i) => (
           <div key={p.id} className="group relative overflow-hidden rounded-2xl ring-1 ring-border p-6 transition hover:ring-coin/60 hover:-translate-y-1" style={{ background: "var(--gradient-card)" }}>
@@ -979,8 +1028,14 @@ function CoinShop({ onBuyPack }: { onBuyPack: (p: CoinPack) => void }) {
               <p className="mt-3 text-sm text-muted-foreground">{p.tag}</p>
               <div className="mt-5 flex items-center justify-between">
                 <div className="font-display text-2xl">${p.price}</div>
-                <button onClick={() => onBuyPack(p)} className="inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-semibold text-coin-foreground transition hover:scale-105" style={{ background: "var(--gradient-coin)" }}>
-                  <Coins className="h-4 w-4" /> Topup ${p.price}
+                <button
+                  onClick={() => !hasError && onBuyPack(p)}
+                  disabled={hasError}
+                  title={hasError ? (errorSummary || "Bakong config error") : undefined}
+                  className="inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-semibold text-coin-foreground transition hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                  style={{ background: "var(--gradient-coin)" }}
+                >
+                  <Coins className="h-4 w-4" /> {hasError ? "Disabled" : `Topup $${p.price}`}
                 </button>
               </div>
               {i === 1 && <span className="absolute -top-3 right-0 rounded-full bg-accent px-2 py-0.5 text-[10px] font-bold text-accent-foreground">POPULAR</span>}
