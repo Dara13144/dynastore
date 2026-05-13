@@ -119,13 +119,21 @@ export function TopupModal({ onClose, onToast }: Props) {
           <p className="text-xs text-muted-foreground">ស្គេន KHQR ខាងក្រោម តាម Bakong, ApPay, ABA, ឬ Wing → បន្ទាប់មក upload រូបបង្កាន់ដៃ → admin នឹងបន្ថែម coins ឲ្យ។ អត្រា៖ <span className="text-foreground font-semibold">$1 = {rate.toLocaleString()} coins</span></p>
 
           {/* QR */}
-          <div className="rounded-2xl bg-white p-5 mx-auto w-full max-w-[320px] flex flex-col items-center">
-            {qr ? (
-              <QRCode value={qr} size={260} style={{ height: "auto", maxWidth: "100%", width: "100%" }} viewBox="0 0 256 256" />
-            ) : (
-              <div className="h-[260px] w-[260px] grid place-items-center text-muted-foreground"><Loader2 className="h-5 w-5 animate-spin" /></div>
-            )}
-            <div className="mt-3 text-center text-[10px] font-semibold tracking-wider text-black">DYNASTORE • KHQR</div>
+          <div className="mx-auto w-full max-w-[320px] flex flex-col items-center gap-3">
+            <div ref={qrBoxRef} className="rounded-2xl bg-white p-5 w-full flex flex-col items-center">
+              {qr ? (
+                <QRCode value={qr} size={260} style={{ height: "auto", maxWidth: "100%", width: "100%" }} viewBox="0 0 256 256" />
+              ) : (
+                <div className="h-[260px] w-[260px] grid place-items-center text-muted-foreground"><Loader2 className="h-5 w-5 animate-spin" /></div>
+              )}
+              <div className="mt-3 text-center text-[10px] font-semibold tracking-wider text-black">DYNASTORE • KHQR</div>
+            </div>
+            <button
+              onClick={downloadQrPng}
+              disabled={!qr}
+              className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-4 py-2 text-xs font-semibold hover:bg-accent disabled:opacity-50">
+              <Download className="h-3.5 w-3.5" /> ទាញយក KHQR (PNG)
+            </button>
           </div>
 
           <div className="space-y-3">
