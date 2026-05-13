@@ -531,7 +531,7 @@ function TopupModal({ onClose, onToast }: { onClose: () => void; onToast: (m: st
         {stage === "qr" && qrDataUrl && (
           <div className="p-5 space-y-3 text-center">
             <div className="text-xs text-muted-foreground inline-flex items-center gap-1.5"><ShieldCheck className="h-3.5 w-3.5 text-emerald-400" /> ស្កេនជាមួយ Bakong / ABA / ធនាគារផ្សេងៗ</div>
-            <div className="mx-auto inline-block rounded-xl bg-white p-3"><img src={qrDataUrl} alt="KHQR" className="h-64 w-64" /></div>
+            <div className="mx-auto inline-block rounded-xl bg-white p-3"><img src={qrDataUrl} alt={`KHQR Code សម្រាប់ការបង់ប្រាក់ ${amount} USD`} className="h-64 w-64" /></div>
             <div className="text-sm font-semibold">${amount} → {coins.toLocaleString()} Balance</div>
             <div className="rounded-xl bg-amber-500/10 border border-amber-500/30 px-3 py-2 text-xs text-amber-300 inline-flex items-center gap-2 mx-auto">
               <Loader2 className={`h-3.5 w-3.5 ${polling ? "animate-spin" : ""}`} />
