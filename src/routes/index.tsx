@@ -533,7 +533,7 @@ function TopupModal({ onClose, onToast }: { onClose: () => void; onToast: (m: st
     }
   };
 
-  const reset = () => { stopPoll(); setQr(null); setQrDataUrl(null); setOrderId(null); setBakongMd5(null); setCoins(0); setExpiresAt(null); setErrorMsg(null); setDebug(null); setAttempts([]); setPollCount(0); setStage("choose"); };
+  const reset = () => { stopPoll(); setQr(null); setQrDataUrl(null); setOrderId(null); setBakongMd5(null); setCoins(0); setExpiresAt(null); setIssuedAt(null); setErrorMsg(null); setDebug(null); setAttempts([]); setPollCount(0); setStage("choose"); };
 
   const copyQr = async () => {
     if (!qr) return;
