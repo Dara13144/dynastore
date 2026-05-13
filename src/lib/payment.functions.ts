@@ -31,7 +31,7 @@ export const createTopup = createServerFn({ method: "POST" })
       mobileNumber: phone,
       storeLabel: "Dyna Store",
       terminalLabel: "topup",
-      expirationTimestamp: Date.now() + TX_TTL_MIN * 60_000,
+      expirationTimestamp: Date.now() + ttlMin * 60_000,
     });
     let qr: string | undefined;
     let md5: string | undefined;
@@ -44,8 +44,8 @@ export const createTopup = createServerFn({ method: "POST" })
     }
     if (!qr || !md5) throw new Error("KHQR មិនត្រឹមត្រូវ — សូមពិនិត្យ Bakong account/credentials");
 
-    const coins = Math.round(data.amountUsd * COINS_PER_USD);
-    const expires = new Date(Date.now() + TX_TTL_MIN * 60_000).toISOString();
+    const coins = Math.round(data.amountUsd * coinsPerUsd);
+    const expires = new Date(Date.now() + ttlMin * 60_000).toISOString();
     const { error } = await supabaseAdmin.from("transactions").insert({
       user_id: userId, md5, qr_string: qr, amount_usd: data.amountUsd, coins,
       status: "pending", expires_at: expires,
