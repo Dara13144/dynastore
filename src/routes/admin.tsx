@@ -125,7 +125,7 @@ function GamesTab() {
       return { path, size: file.size };
     }
     // Resumable upload via TUS for large files
-    const { tus } = await import("tus-js-client");
+    const tus = await import("tus-js-client");
     const { data: sess } = await supabase.auth.getSession();
     const token = sess.session?.access_token;
     if (!token) { showToast("Upload: not authenticated"); return null; }
