@@ -35,33 +35,49 @@ export function TopupModal({
   const fileRef = useRef<HTMLInputElement | null>(null);
   const [uploading, setUploading] = useState(false);
   const [proofSent, setProofSent] = useState(false);
+  const [lastProof, setLastProof] = useState<{ b64: string; ct: "image/png" | "image/jpeg" | "image/webp" } | null>(null);
+  const [deliveryFailed, setDeliveryFailed] = useState(false);
 
-  const onPickProof = async (file: File) => {
+  const sendProof = async (b64: string, ct: "image/png" | "image/jpeg" | "image/webp") => {
     if (!tx) return;
-    if (file.size > 6_000_000) { onToast("File too large (max 6MB)"); return; }
     setUploading(true);
     try {
-      const buf = await file.arrayBuffer();
-      let bin = "";
-      const bytes = new Uint8Array(buf);
-      for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
-      const b64 = btoa(bin);
-      const ct = (file.type === "image/jpeg" || file.type === "image/webp") ? file.type : "image/png";
       const r = await proofFn({ data: { md5: tx.md5, imageBase64: b64, contentType: ct } });
       setProofSent(true);
       const t = r?.telegram;
-      if (t && t.sent > 0 && t.failed === 0) {
-        onToast(`✓ ផ្ញើទៅ Telegram ជោគជ័យ (${t.sent}/${t.total})`);
+      const allOk = !!t && t.sent > 0 && t.failed === 0;
+      setDeliveryFailed(!allOk);
+      if (allOk) {
+        onToast(`✓ ផ្ញើទៅ Telegram ជោគជ័យ (${t!.sent}/${t!.total})`);
       } else if (t && t.sent > 0) {
         onToast(`⚠ ផ្ញើបាន ${t.sent}/${t.total} — ${t.error ?? "មួយចំនួនបរាជ័យ"}`);
       } else {
         onToast(`✗ ផ្ញើទៅ Telegram បរាជ័យ — ${t?.error ?? "សូមទាក់ទង Admin"}`);
       }
     } catch (e) {
+      setDeliveryFailed(true);
       onToast(e instanceof Error ? e.message : "បរាជ័យ");
     } finally {
       setUploading(false);
     }
+  };
+
+  const onPickProof = async (file: File) => {
+    if (!tx) return;
+    if (file.size > 6_000_000) { onToast("File too large (max 6MB)"); return; }
+    const buf = await file.arrayBuffer();
+    let bin = "";
+    const bytes = new Uint8Array(buf);
+    for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+    const b64 = btoa(bin);
+    const ct: "image/png" | "image/jpeg" | "image/webp" =
+      file.type === "image/jpeg" || file.type === "image/webp" ? file.type : "image/png";
+    setLastProof({ b64, ct });
+    await sendProof(b64, ct);
+  };
+
+  const resendProof = async () => {
+    if (lastProof) await sendProof(lastProof.b64, lastProof.ct);
   };
 
   useEffect(() => {
@@ -187,14 +203,26 @@ export function TopupModal({
                 hidden
                 onChange={(e) => { const f = e.target.files?.[0]; if (f) onPickProof(f); e.currentTarget.value = ""; }}
               />
-              <button
-                onClick={() => fileRef.current?.click()}
-                disabled={uploading}
-                className="inline-flex items-center gap-1.5 rounded-full border border-primary/40 bg-primary/10 px-4 py-1.5 text-xs font-semibold text-primary hover:bg-primary/20 disabled:opacity-60"
-              >
-                {uploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
-                {proofSent ? "ផ្ញើរួច ✓ ផ្ញើម្តងទៀត" : "ផ្ទុករូប slip"}
-              </button>
+              <div className="flex items-center justify-center gap-2 flex-wrap">
+                <button
+                  onClick={() => fileRef.current?.click()}
+                  disabled={uploading}
+                  className="inline-flex items-center gap-1.5 rounded-full border border-primary/40 bg-primary/10 px-4 py-1.5 text-xs font-semibold text-primary hover:bg-primary/20 disabled:opacity-60"
+                >
+                  {uploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
+                  {proofSent ? "ផ្ញើរួច ✓ ផ្លាស់រូប" : "ផ្ទុករូប slip"}
+                </button>
+                {lastProof && deliveryFailed && (
+                  <button
+                    onClick={resendProof}
+                    disabled={uploading}
+                    className="inline-flex items-center gap-1.5 rounded-full border border-amber-500/50 bg-amber-500/15 px-4 py-1.5 text-xs font-semibold text-amber-300 hover:bg-amber-500/25 disabled:opacity-60"
+                    title="ផ្ញើរូបនិង caption ដដែលឡើងវិញទៅ Telegram"
+                  >
+                    {uploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "↻ Resend"}
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         )}
