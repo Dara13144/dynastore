@@ -73,7 +73,10 @@ async function generateKhqrForUser(opts: {
       if (res?.status && res.status.code !== 0) {
         throw new Error(`KHQR generation rejected: ${res.status.message ?? "unknown"}`);
       }
-      qr = res?.data?.qr; md5 = res?.data?.md5;
+      qr = res?.data?.qr;
+      // The bakong-khqr lib sometimes returns a stale/incorrect md5. Always recompute
+      // MD5(qr_string) ourselves — that is what Bakong's check_transaction_by_md5 expects.
+      md5 = qr ? md5Hex(qr) : undefined;
     } catch (e) { throw new Error("បរាជ័យបង្កើត KHQR: " + khqrErrorMessage(e)); }
     if (!qr || !md5) throw new Error("KHQR មិនត្រឹមត្រូវ — សូមពិនិត្យ Bakong credentials");
     const { error } = await supabaseAdmin.from("transactions").insert({
@@ -150,7 +153,8 @@ export const createTopup = createServerFn({ method: "POST" })
           throw new Error(`KHQR generation rejected: ${res.status.message ?? "unknown"}${res.status.errorCode ? ` (${res.status.errorCode})` : ""}`);
         }
         qr = res?.data?.qr;
-        bakongMd5 = res?.data?.md5;
+        // Always recompute MD5 from the QR string — bakong-khqr's md5 field is unreliable.
+        bakongMd5 = qr ? md5Hex(qr) : undefined;
       } catch (e) {
         throw new Error("បរាជ័យបង្កើត KHQR: " + khqrErrorMessage(e));
       }
@@ -319,7 +323,15 @@ export const checkTopup = createServerFn({ method: "POST" })
       try {
         const res = await fetch("https://api-bakong.nbc.gov.kh/v1/check_transaction_by_md5", {
           method: "POST",
-          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+          headers: {
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+            // CloudFront in front of Bakong returns HTTP 403 ("Request blocked")
+            // when User-Agent is missing or matches a default fetch UA. A normal
+            // browser-like UA is required.
+            "User-Agent": "Mozilla/5.0 (compatible; DynaStore/1.0; +https://dynastore.lovable.app)",
+            Authorization: `Bearer ${token}`,
+          },
           body: JSON.stringify({ md5: tx.bakong_md5 }),
           signal: ctrl.signal,
         });

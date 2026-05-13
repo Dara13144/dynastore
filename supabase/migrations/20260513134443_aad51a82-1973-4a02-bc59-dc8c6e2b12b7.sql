@@ -1,0 +1,1 @@
+UPDATE public.transactions SET status='cancelled', failure_reason='stale_md5_backfill', updated_at=now() WHERE status='pending' AND payment_method='khqr';
