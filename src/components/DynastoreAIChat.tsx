@@ -18,6 +18,23 @@ const QUICK = [
   "តើ Download ហ្គេមនៅណា?",
 ];
 
+const STORAGE_KEY = "dynastore_ai_chat_v1";
+
+function loadStored(): Msg[] {
+  if (typeof window === "undefined") return [WELCOME];
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEY);
+    if (!raw) return [WELCOME];
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed) || parsed.length === 0) return [WELCOME];
+    return parsed.filter(
+      (m) => m && (m.role === "user" || m.role === "assistant") && typeof m.content === "string"
+    );
+  } catch {
+    return [WELCOME];
+  }
+}
+
 export function DynastoreAIChat() {
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Msg[]>([WELCOME]);
@@ -26,9 +43,32 @@ export function DynastoreAIChat() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const chatFn = useServerFn(aiChat);
 
+  // Hydrate from localStorage on mount (client only) to avoid SSR mismatch
+  useEffect(() => {
+    setMessages(loadStored());
+  }, []);
+
+  // Persist on every change
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(messages.slice(-50)));
+    } catch {
+      /* quota or disabled — ignore */
+    }
+  }, [messages]);
+
   useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
   }, [messages, open]);
+
+  const clearHistory = () => {
+    setMessages([WELCOME]);
+    try {
+      window.localStorage.removeItem(STORAGE_KEY);
+    } catch {}
+  };
+
 
   const send = async (text: string) => {
     const t = text.trim();
@@ -39,7 +79,7 @@ export function DynastoreAIChat() {
     setInput("");
     setBusy(true);
     try {
-      const history = next.filter((m) => m !== WELCOME).slice(-12);
+      const history = next.filter((m) => !(m.role === "assistant" && m.content === WELCOME.content)).slice(-12);
       const r = await chatFn({ data: { messages: history } });
       if (r.ok) {
         setMessages((p) => [...p, { role: "assistant", content: r.reply || "…" }]);
@@ -80,9 +120,18 @@ export function DynastoreAIChat() {
                 <div className="text-[10px] text-muted-foreground">ជំនួយការ Dyna Store</div>
               </div>
             </div>
-            <button onClick={() => setOpen(false)} className="rounded-full p-1.5 hover:bg-accent" aria-label="Close">
-              <X className="h-4 w-4" />
-            </button>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={clearHistory}
+                className="text-[10px] rounded-full border border-border/60 px-2 py-1 hover:bg-accent"
+                title="សម្អាតប្រវត្តិ"
+              >
+                សម្អាត
+              </button>
+              <button onClick={() => setOpen(false)} className="rounded-full p-1.5 hover:bg-accent" aria-label="Close">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
           </div>
 
           <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-3 space-y-3 max-h-[55vh] min-h-[280px]">
