@@ -25,6 +25,7 @@ export const purchaseGame = createServerFn({ method: "POST" })
       ]);
       await notifyTelegram(
         `🎮 <b>Game Purchased</b>\n👤 ${who}\n🕹️ ${game?.title ?? data.gameId}\n💰 -${Number(game?.price_coins ?? 0).toLocaleString()} coins\n💼 Balance: ${Number(balance).toLocaleString()}`,
+        "purchase",
       );
     }
 
