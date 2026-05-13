@@ -803,3 +803,84 @@ function ManualTopupForm({ amount, onClose, onToast }: { amount: number; onClose
     </div>
   );
 }
+
+function KhqrDetails({ qr }: { qr: string | null }) {
+  const [open, setOpen] = useState(false);
+  const [uploaded, setUploaded] = useState<KhqrDecoded | null>(null);
+  const [uploadErr, setUploadErr] = useState<string | null>(null);
+  const decoded = qr ? decodeKhqr(qr) : null;
+
+  const onFile = async (file: File) => {
+    setUploadErr(null); setUploaded(null);
+    try {
+      const url = URL.createObjectURL(file);
+      const img = new Image();
+      img.src = url;
+      await new Promise((res, rej) => { img.onload = res; img.onerror = rej; });
+      const c = document.createElement("canvas");
+      c.width = img.naturalWidth; c.height = img.naturalHeight;
+      const ctx = c.getContext("2d");
+      if (!ctx) throw new Error("Canvas not supported");
+      ctx.drawImage(img, 0, 0);
+      const data = ctx.getImageData(0, 0, c.width, c.height);
+      const code = jsQR(data.data, data.width, data.height);
+      URL.revokeObjectURL(url);
+      if (!code?.data) throw new Error("មិនអាចស្កេន QR ពីរូបនេះបានទេ");
+      setUploaded(decodeKhqr(code.data));
+    } catch (e) {
+      setUploadErr(e instanceof Error ? e.message : String(e));
+    }
+  };
+
+  const Row = ({ k, v, mono = false }: { k: string; v?: string; mono?: boolean }) => (
+    <div className="flex justify-between gap-2 text-[11px]">
+      <span className="text-muted-foreground">{k}</span>
+      <span className={`${mono ? "font-mono" : ""} truncate max-w-[200px] text-right`} title={v ?? ""}>{v || "—"}</span>
+    </div>
+  );
+  const Card = ({ d, title }: { d: KhqrDecoded; title: string }) => (
+    <div className="rounded-xl border border-border/60 bg-muted/20 p-3 space-y-1 text-left">
+      <div className="text-xs font-semibold mb-1">{title}</div>
+      <Row k="Merchant" v={d.merchantName} />
+      <Row k="Account" v={d.merchantAccount} mono />
+      <Row k="City" v={d.merchantCity} />
+      <Row k="Amount" v={d.amount ? `${d.amount} ${d.currencyLabel ?? ""}` : undefined} mono />
+      <Row k="Order ID" v={d.billNumber} mono />
+      <Row k="Reference" v={d.reference} mono />
+      <Row k="Bakong MD5" v={d.md5} mono />
+      <Row k="Country" v={d.country} />
+      <div className="flex justify-between gap-2 text-[11px]">
+        <span className="text-muted-foreground">CRC</span>
+        <span className="font-mono">
+          {d.crc ?? "—"}{" "}
+          {d.crc && (
+            <span className={d.crcValid ? "text-emerald-400" : "text-destructive"}>
+              {d.crcValid ? "✓" : "✗"}
+            </span>
+          )}
+        </span>
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="space-y-2">
+      <button onClick={() => setOpen(v => !v)} className="text-[11px] text-primary hover:underline inline-flex items-center gap-1">
+        <ScanLine className="h-3 w-3" /> {open ? "បិទព័ត៌មាន KHQR" : "បង្ហាញព័ត៌មាន KHQR / អាប់ឡូត QR"}
+      </button>
+      {open && (
+        <div className="space-y-2">
+          {decoded && <Card d={decoded} title="QR បច្ចុប្បន្ន" />}
+          <label className="block text-left">
+            <span className="text-[11px] text-muted-foreground">ផ្ទៀងផ្ទាត់ — អាប់ឡូតរូប QR ដើម្បីឌិកូដ</span>
+            <input type="file" accept="image/*" onChange={(e) => { const f = e.target.files?.[0]; if (f) onFile(f); }}
+              className="mt-1 block w-full text-[11px] file:mr-2 file:rounded-lg file:border-0 file:bg-primary file:text-primary-foreground file:px-2 file:py-1 file:text-[11px]" />
+          </label>
+          {uploadErr && <div className="text-[11px] text-destructive">{uploadErr}</div>}
+          {uploaded && <Card d={uploaded} title="QR ដែលបានអាប់ឡូត" />}
+        </div>
+      )}
+    </div>
+  );
+}
+
