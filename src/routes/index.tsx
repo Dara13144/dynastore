@@ -13,6 +13,9 @@ import logoD from "@/assets/dyna-logo.jpeg";
 import iconTelegram from "@/assets/social-telegram.png";
 import iconTiktok from "@/assets/social-tiktok.png";
 import iconFacebook from "@/assets/social-facebook.png";
+import payAba from "@/assets/pay-aba.jpg";
+import payAcleda from "@/assets/pay-acleda.png";
+import payWing from "@/assets/pay-wing.png";
 
 export const Route = createFileRoute("/")({
   head: () => ({
