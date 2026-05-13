@@ -176,6 +176,7 @@ function BakongConfigBanner() {
 function PendingTopupsPanel({ onResume }: { onResume: (pack: CoinPack) => void }) {
   const [entries, setEntries] = useState<PendingPaymentEntry[]>([]);
   const [now, setNow] = useState(() => Date.now());
+  const [detailKey, setDetailKey] = useState<string | null>(null);
 
   const refresh = () => {
     const list = Object.values(prunePendingPayments())
@@ -203,6 +204,7 @@ function PendingTopupsPanel({ onResume }: { onResume: (pack: CoinPack) => void }
   if (entries.length === 0) return null;
   const latest = entries[0];
   const latestPack = COIN_PACKS.find((p) => p.id === latest.packId);
+  const detailEntry = detailKey ? entries.find((e) => e.storageKey === detailKey) ?? null : null;
 
   const fmtRemaining = (expiresAt: number) => {
     const ms = Math.max(0, expiresAt - now);
@@ -232,14 +234,18 @@ function PendingTopupsPanel({ onResume }: { onResume: (pack: CoinPack) => void }
           {entries.map((e) => {
             const pack = COIN_PACKS.find((p) => p.id === e.packId);
             return (
-              <li key={e.storageKey} className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-background/40 px-3 py-2 text-xs">
+              <li
+                key={e.storageKey}
+                onClick={() => setDetailKey(e.storageKey)}
+                className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-background/40 px-3 py-2 text-xs cursor-pointer hover:bg-background/70 transition"
+              >
                 <div className="flex items-center gap-2 min-w-0">
                   <Coins className="h-3.5 w-3.5 text-primary shrink-0" />
                   <span className="font-medium truncate">{pack?.name ?? e.packId}</span>
                   <span className="text-muted-foreground">· {e.coins} coins</span>
                   <span className="text-muted-foreground hidden sm:inline">· md5 {e.md5.slice(0, 8)}…</span>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2" onClick={(ev) => ev.stopPropagation()}>
                   <span className="text-muted-foreground tabular-nums">{fmtRemaining(e.expiresAt)}</span>
                   {pack ? (
                     <button
@@ -262,7 +268,162 @@ function PendingTopupsPanel({ onResume }: { onResume: (pack: CoinPack) => void }
           })}
         </ul>
       </div>
+
+      {detailEntry && (
+        <PendingTopupDetailModal
+          entry={detailEntry}
+          onClose={() => setDetailKey(null)}
+          onResume={(pack) => { setDetailKey(null); onResume(pack); }}
+          onDiscard={() => { removePendingPayment(detailEntry.storageKey); setDetailKey(null); refresh(); }}
+        />
+      )}
     </section>
+  );
+}
+
+function PendingTopupDetailModal({
+  entry,
+  onClose,
+  onResume,
+  onDiscard,
+}: {
+  entry: PendingPaymentEntry;
+  onClose: () => void;
+  onResume: (pack: CoinPack) => void;
+  onDiscard: () => void;
+}) {
+  const checkPayment = useServerFn(checkPaymentFn);
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState<any>(null);
+  const [err, setErr] = useState<string | null>(null);
+  const [copied, setCopied] = useState<string | null>(null);
+  const pack = COIN_PACKS.find((p) => p.id === entry.packId);
+
+  const refresh = async () => {
+    setLoading(true);
+    setErr(null);
+    try {
+      const r = await checkPayment({ data: { md5: entry.md5 } });
+      setResult(r);
+    } catch (e: any) {
+      setErr(e?.message || "Failed to fetch status");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { refresh(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [entry.md5]);
+
+  const copy = (label: string, value: string) => {
+    navigator.clipboard?.writeText(value).then(() => {
+      setCopied(label);
+      setTimeout(() => setCopied(null), 1200);
+    }).catch(() => {});
+  };
+
+  const status: string = result?.status ?? "loading";
+  const statusColor =
+    status === "paid" ? "text-emerald-500" :
+    status === "expired" ? "text-destructive" :
+    status === "pending" ? "text-yellow-500" :
+    "text-muted-foreground";
+
+  const fmt = (ms: number) => new Date(ms).toLocaleString();
+
+  return (
+    <div className="fixed inset-0 z-[120] flex items-center justify-center bg-background/80 backdrop-blur-sm p-4 animate-in fade-in" onClick={onClose}>
+      <div className="w-full max-w-lg rounded-2xl glass border border-border/60 shadow-[var(--shadow-card)] overflow-hidden" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between px-5 py-3 border-b border-border/60">
+          <div className="flex items-center gap-2 min-w-0">
+            <QrCodeIcon className="h-4 w-4 text-primary shrink-0" />
+            <h3 className="text-sm font-semibold truncate">{pack?.name ?? entry.packId} — Tx Details</h3>
+          </div>
+          <button onClick={onClose} className="rounded-full p-1.5 hover:bg-accent" aria-label="Close">
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
+        <div className="p-5 space-y-4 max-h-[70vh] overflow-y-auto">
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-muted-foreground">Current status</span>
+            <span className={`text-xs font-semibold uppercase ${statusColor}`}>
+              {loading ? "checking…" : status}
+            </span>
+          </div>
+
+          {err && (
+            <div className="rounded-lg border border-destructive/40 bg-destructive/10 p-3 text-xs text-destructive break-words">
+              {err}
+            </div>
+          )}
+
+          <DetailRow label="Pack" value={pack?.name ?? entry.packId ?? "—"} />
+          <DetailRow label="Coins" value={`${entry.coins}`} />
+          <DetailRow label="Amount (USD)" value={pack ? `$${pack.price.toFixed(2)}` : "—"} />
+          <DetailRow label="MD5" value={entry.md5} mono onCopy={() => copy("md5", entry.md5)} copied={copied === "md5"} />
+          <DetailRow label="Storage Key" value={entry.storageKey} mono />
+          {entry.sessionId && <DetailRow label="Session ID" value={entry.sessionId} mono />}
+          <DetailRow label="Created" value={fmt(entry.createdAt)} />
+          <DetailRow label="Expires" value={fmt(entry.expiresAt)} />
+          <DetailRow label="Updated" value={fmt(entry.updatedAt)} />
+
+          <div>
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-xs text-muted-foreground">QR Payload</span>
+              <button onClick={() => copy("qr", entry.qrPayload)} className="text-xs text-primary hover:underline inline-flex items-center gap-1">
+                {copied === "qr" ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />} Copy
+              </button>
+            </div>
+            <pre className="rounded-lg bg-background/60 border border-border/60 p-2 text-[10px] font-mono break-all whitespace-pre-wrap max-h-32 overflow-y-auto">
+              {entry.qrPayload}
+            </pre>
+          </div>
+
+          {result && (
+            <div>
+              <div className="text-xs text-muted-foreground mb-1">checkPayment response</div>
+              <pre className="rounded-lg bg-background/60 border border-border/60 p-2 text-[10px] font-mono whitespace-pre-wrap max-h-48 overflow-y-auto">
+                {JSON.stringify(result, null, 2)}
+              </pre>
+              {result.bakongRef && <DetailRow label="Bakong Ref" value={result.bakongRef} mono />}
+              {typeof result.newBalance === "number" && <DetailRow label="New Balance" value={`${result.newBalance} coins`} />}
+            </div>
+          )}
+        </div>
+
+        <div className="flex items-center justify-between gap-2 px-5 py-3 border-t border-border/60 bg-background/40">
+          <button onClick={onDiscard} className="text-xs text-destructive hover:underline inline-flex items-center gap-1">
+            <Trash2 className="h-3.5 w-3.5" /> Discard
+          </button>
+          <div className="flex items-center gap-2">
+            <button onClick={refresh} disabled={loading} className="inline-flex items-center gap-1 rounded-full border border-border/70 px-3 py-1.5 text-xs hover:bg-accent disabled:opacity-50">
+              {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />} Refresh
+            </button>
+            {pack && (
+              <button onClick={() => onResume(pack)} className="inline-flex items-center gap-1 rounded-full bg-primary px-4 py-1.5 text-xs font-semibold text-primary-foreground hover:opacity-90">
+                Resume
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function DetailRow({ label, value, mono, onCopy, copied }: { label: string; value: string; mono?: boolean; onCopy?: () => void; copied?: boolean }) {
+  return (
+    <div className="flex items-start justify-between gap-3 text-xs">
+      <span className="text-muted-foreground shrink-0">{label}</span>
+      <div className="flex items-center gap-1.5 min-w-0 max-w-[65%]">
+        <span className={`text-right break-all ${mono ? "font-mono" : ""}`}>{value}</span>
+        {onCopy && (
+          <button onClick={onCopy} className="text-primary hover:opacity-80 shrink-0" aria-label="Copy">
+            {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+          </button>
+        )}
+      </div>
+    </div>
   );
 }
 
