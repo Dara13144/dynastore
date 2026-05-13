@@ -133,14 +133,13 @@ function GamesTab() {
   useEffect(() => { loadGames(); }, [loadGames]);
 
   const [uploadPct, setUploadPct] = useState<number | null>(null);
-  // Game archive uploads must be between 100 MB and 500 MB.
-  const MIN_GAME_FILE_BYTES = 100 * 1024 * 1024;
-  const MAX_GAME_FILE_BYTES = 500 * 1024 * 1024;
+  // Game archive uploads: only archive types allowed; size effectively unlimited.
+  const ALLOWED_EXTS = [".zip", ".rar", ".7z", ".tar", ".gz", ".tgz"];
   const validateFile = (file: File): string | null => {
     if (file.size <= 0) return "ឯកសារទទេ";
-    const mb = (file.size / 1024 / 1024).toFixed(1);
-    if (file.size < MIN_GAME_FILE_BYTES) return `ឯកសារតូចពេក (${mb}MB) — តម្រូវយ៉ាងតិច 100MB`;
-    if (file.size > MAX_GAME_FILE_BYTES) return `ឯកសារធំពេក (${mb}MB) — អតិបរមា 500MB`;
+    const name = file.name.toLowerCase();
+    const ok = ALLOWED_EXTS.some((ext) => name.endsWith(ext));
+    if (!ok) return `ប្រភេទឯកសារមិនអនុញ្ញាត — តម្រូវ ${ALLOWED_EXTS.join(", ")}`;
     return null;
   };
   const uploadFile = async (gameId: string, file: File): Promise<{ path: string; size: number } | null> => {
@@ -343,7 +342,7 @@ function GamesTab() {
             </div>
             <label className="block">
               <span className="block text-[10px] uppercase tracking-wider text-muted-foreground mb-1">ឯកសារហ្គេម (zip/installer)</span>
-              <input type="file" accept=".zip,.rar,.7z,.exe,.msi,.apk,.iso,.dmg,.pkg,.tar,.gz" onChange={(e) => { const f = e.target.files?.[0] ?? null; if (f) { const err = validateFile(f); if (err) { showToast(err); e.target.value = ""; return; } } setDraftFile(f); }} className="w-full text-xs file:mr-2 file:rounded-full file:border-0 file:bg-primary file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-primary-foreground" />
+              <input type="file" accept=".zip,.rar,.7z,.tar,.gz,.tgz" onChange={(e) => { const f = e.target.files?.[0] ?? null; if (f) { const err = validateFile(f); if (err) { showToast(err); e.target.value = ""; return; } } setDraftFile(f); }} className="w-full text-xs file:mr-2 file:rounded-full file:border-0 file:bg-primary file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-primary-foreground" />
               {draftFile && <span className="text-[10px] text-muted-foreground mt-1 block">{draftFile.name} · {(draftFile.size / 1024 / 1024).toFixed(2)} MB</span>}
               {uploadPct !== null && (
                 <div className="mt-2 h-1.5 w-full rounded-full bg-muted overflow-hidden">
@@ -446,6 +445,7 @@ function GameRowEditor({ game, busy, onSave, onDelete, onReplaceFile, validateFi
             <span className="text-[10px] text-primary cursor-pointer hover:underline">{game.file_path ? "ប្តូរ" : "ផ្ទុកឡើង"}</span>
             <input
               type="file"
+              accept=".zip,.rar,.7z,.tar,.gz,.tgz"
               className="hidden"
               onChange={(e) => {
                 const f = e.target.files?.[0];
