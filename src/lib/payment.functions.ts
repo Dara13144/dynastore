@@ -277,8 +277,8 @@ export const checkTopup = createServerFn({ method: "POST" })
       return { status: "paid" as const, balance: w?.balance ?? 0, debug: mkDebug({ source: "db", txStatus: tx.status, bakongMd5: tx.bakong_md5, providerMessage: "already_credited" }) };
     }
     if (new Date(tx.expires_at).getTime() < Date.now()) {
-      await supabaseAdmin.from("transactions").update({ status: "expired", failure_reason: "expired_before_payment" }).eq("order_id", data.orderId).eq("status", "pending");
-      return { status: "expired" as const, balance: null as number | null, debug: mkDebug({ source: "db", txStatus: "expired", bakongMd5: tx.bakong_md5, providerMessage: "expired_before_payment" }) };
+      // Auto-regenerate fresh KHQR (TTL 5min) instead of dead-ending the user.
+      return await regenerate("auto_regen_after_expiry");
     }
 
     const regenerate = async (reason: string) => {
