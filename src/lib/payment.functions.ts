@@ -1,9 +1,14 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { createHash } from "crypto";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 // @ts-ignore - bakong-khqr is plain js
 import { BakongKHQR, IndividualInfo, khqrData } from "bakong-khqr";
+
+function md5Hex(input: string): string {
+  return createHash("md5").update(input, "utf8").digest("hex");
+}
 
 type PollDebug = {
   checkedAt: string;
