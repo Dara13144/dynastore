@@ -20,7 +20,7 @@ describe("validateGameFile - boundaries", () => {
   it("accepts a file exactly at the minimum (1000GB)", () => {
     expect(validateGameFile({ name: "g.zip", size: MIN_GAME_FILE_BYTES })).toBeNull();
   });
-  it("accepts a file exactly at the maximum (5000GB)", () => {
+  it("accepts a file exactly at the maximum (1e80 bytes)", () => {
     expect(validateGameFile({ name: "g.zip", size: MAX_GAME_FILE_BYTES })).toBeNull();
   });
   it("rejects 1 byte under the minimum with exact Khmer string", () => {
@@ -30,14 +30,13 @@ describe("validateGameFile - boundaries", () => {
       `ឯកសារតូចពេក (${gb}GB) — តម្រូវយ៉ាងតិច ${MIN_GAME_FILE_GB}GB`,
     );
   });
-  it("rejects 1 byte over the maximum with exact Khmer string", () => {
-    const size = MAX_GAME_FILE_BYTES + 1;
+  it("rejects sizes above the maximum with exact Khmer string", () => {
+    const size = Number.POSITIVE_INFINITY;
     const gb = (size / 1024 / 1024 / 1024).toFixed(2);
     expect(validateGameFile({ name: "g.zip", size })).toBe(
-      `ឯកសារធំពេក (${gb}GB) — អតិបរមា ${MAX_GAME_FILE_GB}GB`,
+      `ឯកសារធំពេក (${gb}GB) — អតិបរមា ${MAX_GAME_FILE_BYTES} bytes`,
     );
   });
-});
 
 describe("validateGameFile - other rules", () => {
   it("rejects empty files", () => {
