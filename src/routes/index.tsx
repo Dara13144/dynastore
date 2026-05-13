@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect, useMemo, useState, useRef } from "react";
+import React, { useEffect, useMemo, useState, useRef } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import QRCode from "react-qr-code";
 import { Coins, ShoppingCart, Settings, LogIn, LogOut, X, Trash2, Check, Star, Zap, Clock, Heart, Send, Gamepad2, Sparkles, ImageIcon, AlertTriangle, RefreshCw, Download, Copy, Loader2, QrCode as QrCodeIcon } from "lucide-react";
