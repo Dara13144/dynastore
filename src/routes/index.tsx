@@ -247,25 +247,35 @@ function GameCard({ game, onToast, onTopup }: { game: Game; onToast: (m: string)
 }
 
 function DealsBanner() {
+  const [promo, setPromo] = useState<{ title: string; subtitle: string | null } | null>(null);
+  useEffect(() => {
+    supabase.from("promotions").select("title, subtitle").eq("visible", true).order("created_at", { ascending: false }).limit(1).maybeSingle()
+      .then(({ data }) => { if (data) setPromo(data as any); });
+  }, []);
+  if (!promo) return null;
   return (
     <section id="deals" className="container mx-auto px-4 py-8">
       <div className="rounded-3xl p-8 md:p-10 text-center" style={{ background: "var(--gradient-hero)" }}>
-        <h3 className="font-display text-2xl md:text-3xl text-primary-foreground">ប្រូម៉ូសិនពិសេសសប្តាហ៍នេះ</h3>
-        <p className="text-sm md:text-base text-primary-foreground/80 mt-2">បន្ថែម 10 USD នឹងទទួលបាន 10 Balance ភ្លាមៗ។</p>
+        <h3 className="font-display text-2xl md:text-3xl text-primary-foreground">{promo.title}</h3>
+        {promo.subtitle && <p className="text-sm md:text-base text-primary-foreground/80 mt-2">{promo.subtitle}</p>}
       </div>
     </section>
   );
 }
 
+type DbRec = { id: string; name: string; game: string | null; text: string };
 function Recommendations({ onToast }: { onToast: (m: string) => void }) {
-  const { recs, addRec } = useStore();
+  const [recs, setRecs] = useState<DbRec[]>([]);
   const [name, setName] = useState(""); const [game, setGame] = useState(""); const [text, setText] = useState("");
+  useEffect(() => {
+    supabase.from("testimonials").select("id, name, game, text").eq("visible", true).order("created_at", { ascending: false }).limit(20)
+      .then(({ data }) => setRecs((data ?? []) as DbRec[]));
+  }, []);
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim() || !text.trim()) return;
-    addRec({ name: name.trim(), game: game.trim() || "—", text: text.trim() });
+    onToast("អរគុណចំពោះមតិរបស់អ្នក! នឹងបង្ហាញបន្ទាប់ពីការអនុម័ត។");
     setName(""); setGame(""); setText("");
-    onToast("អរគុណចំពោះមតិរបស់អ្នក!");
   };
   return (
     <section id="community" className="container mx-auto px-4 py-14">
@@ -274,11 +284,12 @@ function Recommendations({ onToast }: { onToast: (m: string) => void }) {
           <h2 className="font-display text-2xl md:text-3xl">មតិសហគមន៍</h2>
           <p className="text-sm text-muted-foreground mt-1 mb-5">សួរស្តីពីហ្គេមដែលអ្នកចូលចិត្ត។</p>
           <ul className="space-y-3">
+            {recs.length === 0 && <li className="text-sm text-muted-foreground">គ្មានមតិនៅឡើយ។</li>}
             {recs.map((r) => (
               <li key={r.id} className="glass rounded-2xl border border-border/60 p-4 flex gap-3">
-                <div className="h-10 w-10 shrink-0 rounded-full grid place-items-center bg-primary/15 text-primary font-semibold">{r.initial}</div>
+                <div className="h-10 w-10 shrink-0 rounded-full grid place-items-center bg-primary/15 text-primary font-semibold">{(r.name.charAt(0) || "?").toUpperCase()}</div>
                 <div className="min-w-0">
-                  <div className="text-sm font-semibold">{r.name} <span className="text-muted-foreground font-normal">· {r.game}</span></div>
+                  <div className="text-sm font-semibold">{r.name} <span className="text-muted-foreground font-normal">· {r.game || "—"}</span></div>
                   <p className="text-sm text-muted-foreground mt-0.5">{r.text}</p>
                 </div>
               </li>
