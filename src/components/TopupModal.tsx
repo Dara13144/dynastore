@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import QRCode from "qrcode";
-import { Loader2, X, Wallet, Check, Copy } from "lucide-react";
-import { createTopup, checkTopupStatus } from "@/lib/topup.functions";
+import { Loader2, X, Wallet, Check, Copy, Upload } from "lucide-react";
+import { createTopup, checkTopupStatus, submitTopupProof } from "@/lib/topup.functions";
 
 const PRESETS = [1, 2, 5, 10, 20, 50];
 
