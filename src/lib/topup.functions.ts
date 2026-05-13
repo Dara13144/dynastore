@@ -18,20 +18,27 @@ function crc16(s: string) {
 async function encodeKhqr(o: {
   accountId: string; merchantName: string; merchantCity: string;
   mobileNumber?: string; acquiringBank?: string;
-  amount: number; currency: "USD" | "KHR"; dynamic: boolean; terminalLabel?: string;
+  amount: number; currency: "USD" | "KHR"; dynamic: boolean;
+  terminalLabel?: string; storeLabel?: string; billNumber?: string;
 }) {
-  const merchantAccount =
-    tlv("00", "kh.gov.nbc.bakong") +
-    tlv("01", o.accountId) +
-    (o.acquiringBank ? tlv("02", o.acquiringBank) : "");
-  const additional = o.terminalLabel ? tlv("62", tlv("07", o.terminalLabel)) : "";
+  // Bakong account ID lives directly under tag 29, sub-tag 00 (no GUID prefix)
+  const merchantAccount = tlv("00", o.accountId);
+
+  // Tag 62 sub-tags (order matches Bakong reference QRs)
+  let extra = "";
+  if (o.billNumber)    extra += tlv("01", o.billNumber.slice(0, 25));
+  if (o.mobileNumber)  extra += tlv("02", o.mobileNumber.slice(0, 25));
+  if (o.storeLabel)    extra += tlv("03", o.storeLabel.slice(0, 25));
+  if (o.terminalLabel) extra += tlv("07", o.terminalLabel.slice(0, 25));
+  const additional = extra ? tlv("62", extra) : "";
+
   const payload =
     tlv("00", "01") +
     tlv("01", o.dynamic ? "12" : "11") +
     tlv("29", merchantAccount) +
     tlv("52", "5999") +
     tlv("53", o.currency === "USD" ? "840" : "116") +
-    tlv("54", o.amount.toFixed(2)) +
+    (o.dynamic ? tlv("54", o.amount.toFixed(2)) : "") +
     tlv("58", "KH") +
     tlv("59", o.merchantName.slice(0, 25)) +
     tlv("60", o.merchantCity.slice(0, 15)) +
@@ -96,18 +103,20 @@ export const createTopup = createServerFn({ method: "POST" })
     const coinsPerUsd = settings?.coins_per_usd ?? 1;
     const coins = Math.round(data.amountUSD * coinsPerUsd);
 
+    const billNumber = `TRX${Date.now().toString().slice(-8)}`;
+    const terminalLabel = `T-${userId.slice(0, 6)}${Math.random().toString(36).slice(2, 6)}`.slice(0, 25);
     const encoded = await encodeKhqr({
       accountId,
-      merchantName,
+      merchantName: merchantName.replace(/\s+/g, ""),  // 59 has no spaces in your sample (DynaStore)
       merchantCity,
       mobileNumber: merchantPhone,
       acquiringBank,
       amount: data.amountUSD,
       currency: "USD",
       dynamic: true,
-      // Per-tx unique label so each QR (and its MD5) is distinct.
-      // Max 25 chars; Bakong terminalLabel is free-form.
-      terminalLabel: `${userId.slice(0, 6)}${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`.slice(0, 25),
+      storeLabel: merchantName,
+      billNumber,
+      terminalLabel,
     });
     const qrString = encoded.qr;
     const md5 = createHash("md5").update(qrString).digest("hex");

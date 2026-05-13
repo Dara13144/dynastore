@@ -37,12 +37,15 @@ export function TopupModal({
   const [proofSent, setProofSent] = useState(false);
   const [lastProof, setLastProof] = useState<{ b64: string; ct: "image/png" | "image/jpeg" | "image/webp" } | null>(null);
   const [deliveryFailed, setDeliveryFailed] = useState(false);
+  const [note, setNote] = useState("");
 
-  const sendProof = async (b64: string, ct: "image/png" | "image/jpeg" | "image/webp") => {
+  const sendProof = async (b64: string, ct: "image/png" | "image/jpeg" | "image/webp", noteText?: string) => {
     if (!tx) return;
     setUploading(true);
     try {
-      const r = await proofFn({ data: { md5: tx.md5, imageBase64: b64, contentType: ct } });
+      const r = await proofFn({
+        data: { md5: tx.md5, imageBase64: b64, contentType: ct, note: noteText?.trim() || undefined },
+      });
       setProofSent(true);
       const t = r?.telegram;
       const allOk = !!t && t.sent > 0 && t.failed === 0;
@@ -73,11 +76,11 @@ export function TopupModal({
     const ct: "image/png" | "image/jpeg" | "image/webp" =
       file.type === "image/jpeg" || file.type === "image/webp" ? file.type : "image/png";
     setLastProof({ b64, ct });
-    await sendProof(b64, ct);
+    await sendProof(b64, ct, note);
   };
 
   const resendProof = async () => {
-    if (lastProof) await sendProof(lastProof.b64, lastProof.ct);
+    if (lastProof) await sendProof(lastProof.b64, lastProof.ct, note);
   };
 
   useEffect(() => {
@@ -203,6 +206,14 @@ export function TopupModal({
                 hidden
                 onChange={(e) => { const f = e.target.files?.[0]; if (f) onPickProof(f); e.currentTarget.value = ""; }}
               />
+              <textarea
+                value={note}
+                onChange={(e) => setNote(e.target.value.slice(0, 500))}
+                placeholder="Caption (កែបាន មុន Resend)…"
+                rows={2}
+                className="w-full mb-1 rounded-xl bg-input px-3 py-2 text-xs outline-none ring-1 ring-border focus:ring-primary resize-none"
+              />
+              <div className="text-right text-[10px] text-muted-foreground mb-2">{note.length}/500</div>
               <div className="flex items-center justify-center gap-2 flex-wrap">
                 <button
                   onClick={() => fileRef.current?.click()}
