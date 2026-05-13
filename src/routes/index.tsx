@@ -444,7 +444,7 @@ function TopupModal({ onClose, onToast }: { onClose: () => void; onToast: (m: st
     setStage("creating");
     try {
       const r = await createFn({ data: { amountUsd: amount, forceNew } });
-      setQr(r.qr); setOrderId(r.orderId); setBakongMd5(r.bakongMd5); setCoins(r.balance); setTtlWindow(new Date(r.expiresAt).getTime());
+      setQr(r.qr); setOrderId(r.orderId); setBakongMd5(r.bakongMd5); setCoins(r.balance); setTtlWindow(new Date(r.expiresAt).getTime(), r.issuedAt ? new Date(r.issuedAt).getTime() : undefined);
       const dataUrl = await QRCode.toDataURL(r.qr, { width: 320, margin: 1 });
       setQrDataUrl(dataUrl);
       setStage("qr");
