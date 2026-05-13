@@ -16,6 +16,7 @@ type GameRow = {
   id: string; title: string; category: string; description: string | null;
   badge: string | null; price_coins: number; visible: boolean;
   image_url: string | null; file_path: string | null; file_size_bytes: number | null;
+  created_at?: string;
 };
 
 type UserRow = {
@@ -99,6 +100,8 @@ function GamesTab() {
   const [query, setQuery] = useState("");
   const [catFilter, setCatFilter] = useState<string>("all");
   const [visFilter, setVisFilter] = useState<"all" | "visible" | "hidden">("all");
+  const [sortKey, setSortKey] = useState<"title" | "category" | "price_coins" | "created_at">("created_at");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
   const [draft, setDraft] = useState<GameRow>({
     id: "", title: "", category: "", description: "", badge: "",
     price_coins: 0, visible: true, image_url: "", file_path: null, file_size_bytes: null,
@@ -225,7 +228,18 @@ function GamesTab() {
       (g.description ?? "").toLowerCase().includes(q) ||
       (g.badge ?? "").toLowerCase().includes(q)
     );
+  }).slice().sort((a, b) => {
+    const dir = sortDir === "asc" ? 1 : -1;
+    if (sortKey === "price_coins") return (a.price_coins - b.price_coins) * dir;
+    if (sortKey === "created_at") return ((a.created_at ?? "").localeCompare(b.created_at ?? "")) * dir;
+    return String(a[sortKey] ?? "").localeCompare(String(b[sortKey] ?? "")) * dir;
   });
+
+  const toggleSort = (k: typeof sortKey) => {
+    if (sortKey === k) setSortDir((d) => d === "asc" ? "desc" : "asc");
+    else { setSortKey(k); setSortDir(k === "created_at" || k === "price_coins" ? "desc" : "asc"); }
+  };
+  const sortIcon = (k: typeof sortKey) => sortKey === k ? (sortDir === "asc" ? " ▲" : " ▼") : "";
 
   return (
     <div className="space-y-6">
@@ -263,6 +277,9 @@ function GamesTab() {
         {(query || catFilter !== "all" || visFilter !== "all") && (
           <button onClick={() => { setQuery(""); setCatFilter("all"); setVisFilter("all"); }} className="text-[11px] text-muted-foreground hover:text-foreground underline">សម្អាត</button>
         )}
+        <button onClick={() => toggleSort("created_at")} className={`text-[11px] px-3 py-1.5 rounded-full ring-1 ring-border ${sortKey === "created_at" ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}>
+          Recently added{sortIcon("created_at")}
+        </button>
       </div>
 
       {creating && (
@@ -305,9 +322,9 @@ function GamesTab() {
             <thead className="bg-muted/30 text-xs uppercase tracking-wider text-muted-foreground">
               <tr>
                 <th className="text-left px-4 py-3">ID</th>
-                <th className="text-left px-4 py-3">Title</th>
-                <th className="text-left px-4 py-3">Category</th>
-                <th className="text-right px-4 py-3">Price</th>
+                <th className="text-left px-4 py-3"><button onClick={() => toggleSort("title")} className="uppercase tracking-wider hover:text-foreground">Title{sortIcon("title")}</button></th>
+                <th className="text-left px-4 py-3"><button onClick={() => toggleSort("category")} className="uppercase tracking-wider hover:text-foreground">Category{sortIcon("category")}</button></th>
+                <th className="text-right px-4 py-3"><button onClick={() => toggleSort("price_coins")} className="uppercase tracking-wider hover:text-foreground">Price{sortIcon("price_coins")}</button></th>
                 <th className="text-center px-4 py-3">File</th>
                 <th className="text-center px-4 py-3">Visible</th>
                 <th className="text-right px-4 py-3">Action</th>
