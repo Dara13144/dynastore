@@ -186,6 +186,7 @@ export const adminRejectTopup = createServerFn({ method: "POST" })
     const who = await userLabel(claimed.user_id);
     await notifyTelegram(
       `❌ <b>Topup Rejected</b>\n👤 ${who}\n💵 $${Number(claimed.amount_usd).toFixed(2)}\n📝 ${data.reason}\n🆔 <code>${data.id}</code>`,
+      "topup_rejected",
     );
     return { ok: true };
   });
