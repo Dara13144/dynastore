@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from "react";
 import { useSession } from "@/hooks/use-session";
 import { supabase } from "@/integrations/supabase/client";
 import gtaImg from "@/assets/game-gta.jpg";
@@ -10,27 +10,19 @@ import spaceImg from "@/assets/game-space.jpg";
 
 export type Game = {
   id: string; title: string; category: string; description: string;
-  image: string; badge?: string;
+  image: string; badge?: string | null; price_coins: number;
 };
 export type Recommendation = { id: string; name: string; game: string; text: string; initial: string };
 export type Profile = {
-  id?: string;
-  user_id?: string;
-  display_name: string;
-  avatar_url: string | null;
-  bio: string | null;
-  created_at?: string;
-  updated_at?: string;
+  id?: string; user_id?: string; display_name: string;
+  avatar_url: string | null; bio: string | null;
+  created_at?: string; updated_at?: string;
 };
+export type LibraryItem = { id: string; game_id: string; kind: "wishlist" | "owned" };
 
-export const GAMES: Game[] = [
-  { id: "gta5", title: "GTA 5 MODE", category: "ប្រណាំង", description: "ហ្គេមប្រណាំងតាមផ្លូវបែប Arcade ជាមួយក្រុមអនឡាញ។", image: gtaImg, badge: "ពេញនិយម" },
-  { id: "neon", title: "Neon Drift Legends", category: "Racing", description: "ប្រណាំងក្នុងទីក្រុងសាយប័រ ជាមួយមិត្តភក្តិអនឡាញ។", image: neonImg, badge: "ពិសេស" },
-  { id: "realm", title: "Realmforge Odyssey", category: "RPG", description: "ដំណើរផ្សងព្រេងបែប Fantasy ដ៏ស្រស់ស្អាត។", image: rpgImg },
-  { id: "shadow", title: "Shadow Ops", category: "Action", description: "បេសកកម្មសម្ងាត់ពេលយប់ ជាមួយយុទ្ធសាស្ត្រ។", image: shadowImg },
-  { id: "neonity", title: "Neonity Tactics", category: "Strategy", description: "កសាងទីក្រុងនាពេលអនាគត។", image: strategyImg },
-  { id: "void", title: "Void Wanderer", category: "Adventure", description: "ដំណើរផ្សងព្រេងលើភពផ្សេង។", image: spaceImg },
-];
+const IMAGES: Record<string, string> = {
+  gta5: gtaImg, neon: neonImg, realm: rpgImg, shadow: shadowImg, neonity: strategyImg, void: spaceImg,
+};
 
 const INITIAL_RECS: Recommendation[] = [
   { id: "1", name: "Dara Player", game: "GTA 5 MODE", text: "ក្រាហ្វិកស្អាត លេងបានគ្រប់ពេល។", initial: "D" },
@@ -44,10 +36,17 @@ type StoreCtx = {
   authed: boolean;
   loading: boolean;
   profile: Profile;
+  games: Game[];
+  balance: number;
+  library: LibraryItem[];
   recs: Recommendation[];
   signOut: () => Promise<void>;
   updateProfile: (patch: Partial<Pick<Profile, "display_name" | "avatar_url" | "bio">>) => Promise<{ error: string | null }>;
   refreshProfile: () => Promise<void>;
+  refreshWallet: () => Promise<void>;
+  refreshLibrary: () => Promise<void>;
+  toggleWishlist: (gameId: string) => Promise<{ error: string | null; added: boolean }>;
+  removeFromLibrary: (id: string) => Promise<void>;
   addRec: (r: Omit<Recommendation, "id" | "initial">) => void;
 };
 
@@ -56,38 +55,71 @@ const Ctx = createContext<StoreCtx | null>(null);
 export function StoreProvider({ children }: { children: ReactNode }) {
   const { session, loading } = useSession();
   const [profile, setProfile] = useState<Profile>(GUEST_PROFILE);
+  const [games, setGames] = useState<Game[]>([]);
+  const [balance, setBalance] = useState(0);
+  const [library, setLibrary] = useState<LibraryItem[]>([]);
   const [recs, setRecs] = useState<Recommendation[]>(INITIAL_RECS);
 
   const userId = session?.user?.id ?? null;
 
-  const fetchProfile = async (uid: string) => {
+  // Load games catalog (public)
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase.from("games").select("*").order("title");
+      if (data) setGames(data.map((g) => ({
+        id: g.id, title: g.title, category: g.category, description: g.description ?? "",
+        image: IMAGES[g.id] ?? gtaImg, badge: g.badge, price_coins: g.price_coins,
+      })));
+    })();
+  }, []);
+
+  const fetchProfile = useCallback(async (uid: string) => {
     const { data } = await supabase.from("profiles").select("*").eq("user_id", uid).maybeSingle();
     if (data) setProfile(data as Profile);
-  };
+  }, []);
+  const fetchWallet = useCallback(async (uid: string) => {
+    const { data } = await supabase.from("wallets").select("balance").eq("user_id", uid).maybeSingle();
+    setBalance(data?.balance ?? 0);
+  }, []);
+  const fetchLibrary = useCallback(async (uid: string) => {
+    const { data } = await supabase.from("library").select("id, game_id, kind").eq("user_id", uid);
+    setLibrary((data ?? []) as LibraryItem[]);
+  }, []);
 
   useEffect(() => {
-    if (!userId) { setProfile(GUEST_PROFILE); return; }
-    fetchProfile(userId);
-  }, [userId]);
+    if (!userId) { setProfile(GUEST_PROFILE); setBalance(0); setLibrary([]); return; }
+    fetchProfile(userId); fetchWallet(userId); fetchLibrary(userId);
+  }, [userId, fetchProfile, fetchWallet, fetchLibrary]);
 
   const value: StoreCtx = {
-    authed: !!session,
-    loading,
-    profile,
-    recs,
+    authed: !!session, loading, profile, games, balance, library, recs,
     signOut: async () => { await supabase.auth.signOut(); },
     refreshProfile: async () => { if (userId) await fetchProfile(userId); },
+    refreshWallet: async () => { if (userId) await fetchWallet(userId); },
+    refreshLibrary: async () => { if (userId) await fetchLibrary(userId); },
     updateProfile: async (patch) => {
       if (!userId) return { error: "សូមចូលគណនីជាមុនសិន" };
-      const { data, error } = await supabase
-        .from("profiles")
-        .update({ ...patch })
-        .eq("user_id", userId)
-        .select()
-        .maybeSingle();
+      const { data, error } = await supabase.from("profiles").update({ ...patch }).eq("user_id", userId).select().maybeSingle();
       if (error) return { error: error.message };
       if (data) setProfile(data as Profile);
       return { error: null };
+    },
+    toggleWishlist: async (gameId) => {
+      if (!userId) return { error: "សូមចូលគណនីជាមុនសិន", added: false };
+      const existing = library.find((l) => l.game_id === gameId && l.kind === "wishlist");
+      if (existing) {
+        await supabase.from("library").delete().eq("id", existing.id);
+        setLibrary((ls) => ls.filter((l) => l.id !== existing.id));
+        return { error: null, added: false };
+      }
+      const { data, error } = await supabase.from("library").insert({ user_id: userId, game_id: gameId, kind: "wishlist" }).select().maybeSingle();
+      if (error) return { error: error.message, added: false };
+      if (data) setLibrary((ls) => [...ls, data as LibraryItem]);
+      return { error: null, added: true };
+    },
+    removeFromLibrary: async (id) => {
+      await supabase.from("library").delete().eq("id", id);
+      setLibrary((ls) => ls.filter((l) => l.id !== id));
     },
     addRec: (r) => setRecs((rs) => [{ id: crypto.randomUUID(), initial: r.name.charAt(0).toUpperCase() || "?", ...r }, ...rs]),
   };
