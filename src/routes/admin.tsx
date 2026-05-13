@@ -118,7 +118,18 @@ function GamesTab() {
   useEffect(() => { loadGames(); }, [loadGames]);
 
   const [uploadPct, setUploadPct] = useState<number | null>(null);
+  const ALLOWED_EXT = ["zip", "rar", "7z", "exe", "msi", "apk", "iso", "dmg", "pkg", "tar", "gz"];
+  const MAX_BYTES = 50 * 1024 ** 3; // 50 GB (bucket limit)
+  const validateFile = (file: File): string | null => {
+    const ext = file.name.split(".").pop()?.toLowerCase() ?? "";
+    if (!ALLOWED_EXT.includes(ext)) return `ប្រភេទឯកសារមិនអនុញ្ញាត (.${ext}). អនុញ្ញាត: ${ALLOWED_EXT.join(", ")}`;
+    if (file.size <= 0) return "ឯកសារទទេ";
+    if (file.size > MAX_BYTES) return `ឯកសារធំជាងកំណត់ ${(MAX_BYTES / 1024 ** 3).toFixed(0)}GB`;
+    return null;
+  };
   const uploadFile = async (gameId: string, file: File): Promise<{ path: string; size: number } | null> => {
+    const err = validateFile(file);
+    if (err) { showToast(err); return null; }
     const safe = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
     const path = `${gameId}/${Date.now()}_${safe}`;
     const RESUMABLE_THRESHOLD = 6 * 1024 * 1024; // 6MB
@@ -295,7 +306,7 @@ function GamesTab() {
             <Field label="Image URL (cover)" value={draft.image_url ?? ""} onChange={(v) => setDraft({ ...draft, image_url: v })} />
             <label className="block">
               <span className="block text-[10px] uppercase tracking-wider text-muted-foreground mb-1">Game File (zip/installer)</span>
-              <input type="file" onChange={(e) => setDraftFile(e.target.files?.[0] ?? null)} className="w-full text-xs file:mr-2 file:rounded-full file:border-0 file:bg-primary file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-primary-foreground" />
+              <input type="file" accept=".zip,.rar,.7z,.exe,.msi,.apk,.iso,.dmg,.pkg,.tar,.gz" onChange={(e) => { const f = e.target.files?.[0] ?? null; if (f) { const err = validateFile(f); if (err) { showToast(err); e.target.value = ""; return; } } setDraftFile(f); }} className="w-full text-xs file:mr-2 file:rounded-full file:border-0 file:bg-primary file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-primary-foreground" />
               {draftFile && <span className="text-[10px] text-muted-foreground mt-1 block">{draftFile.name} · {(draftFile.size / 1024 / 1024).toFixed(2)} MB</span>}
               {uploadPct !== null && (
                 <div className="mt-2 h-1.5 w-full rounded-full bg-muted overflow-hidden">
@@ -375,10 +386,23 @@ function GameRowEditor({ game, busy, onSave, onDelete, onReplaceFile }: {
             <FileArchive className="h-3 w-3" /> {game.file_size_bytes ? (game.file_size_bytes >= 1024 ** 3 ? `${(game.file_size_bytes / 1024 ** 3).toFixed(2)}GB` : `${(game.file_size_bytes / 1024 / 1024).toFixed(1)}MB`) : "ok"}
           </span>
         ) : <span className="text-[11px] text-muted-foreground">—</span>}
-        <label className="block mt-1">
-          <span className="text-[10px] text-primary cursor-pointer hover:underline">{game.file_path ? "ប្តូរ" : "ផ្ទុកឡើង"}</span>
-          <input type="file" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) onReplaceFile(f); }} />
-        </label>
+        <div className="flex items-center justify-center gap-2 mt-1">
+          {game.file_path && (
+            <button
+              type="button"
+              onClick={async () => {
+                const { data, error } = await supabase.storage.from("game-files").createSignedUrl(game.file_path!, 300, { download: true });
+                if (error || !data?.signedUrl) return;
+                window.open(data.signedUrl, "_blank");
+              }}
+              className="text-[10px] text-emerald-400 hover:underline"
+            >ទាញយក</button>
+          )}
+          <label>
+            <span className="text-[10px] text-primary cursor-pointer hover:underline">{game.file_path ? "ប្តូរ" : "ផ្ទុកឡើង"}</span>
+            <input type="file" accept=".zip,.rar,.7z,.exe,.msi,.apk,.iso,.dmg,.pkg,.tar,.gz" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) onReplaceFile(f); }} />
+          </label>
+        </div>
       </td>
       <td className="px-4 py-3 text-center">
         <button disabled={busy} onClick={() => onSave({ visible: !game.visible })} className="rounded-full p-1.5 hover:bg-accent" title={game.visible ? "Hide" : "Show"}>
