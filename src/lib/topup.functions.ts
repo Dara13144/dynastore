@@ -31,15 +31,18 @@ export const createTopup = createServerFn({ method: "POST" })
     const coinsPerUsd = settings?.coins_per_usd ?? 1;
     const coins = Math.round(data.amountUSD * coinsPerUsd);
 
-    const qrString = buildKHQR({
-      bakongAccountID: accountId,
+    const encoded = await encodeKhqr({
+      accountId,
       merchantName,
       merchantCity,
-      merchantPhone,
+      mobileNumber: merchantPhone,
       acquiringBank,
-      amountUSD: data.amountUSD,
+      amount: data.amountUSD,
+      currency: "USD",
+      dynamic: true,
       terminalLabel: userId.slice(0, 8),
     });
+    const qrString = encoded.qr;
     const md5 = createHash("md5").update(qrString).digest("hex");
     const expiresAt = new Date(Date.now() + TTL_MIN * 60 * 1000).toISOString();
 
