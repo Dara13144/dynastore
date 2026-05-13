@@ -103,6 +103,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     signOut: async () => { await supabase.auth.signOut(); },
     refreshProfile: async () => { if (userId) await fetchProfile(userId); },
     refreshWallet: async () => { if (userId) await fetchWallet(userId); },
+    setBalance,
     refreshLibrary: async () => { if (userId) await fetchLibrary(userId); },
     updateProfile: async (patch) => {
       if (!userId) return { error: "សូមចូលគណនីជាមុនសិន" };
