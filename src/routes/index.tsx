@@ -640,3 +640,48 @@ function TopupModal({ onClose, onToast }: { onClose: () => void; onToast: (m: st
     </div>
   );
 }
+
+function ManualTopupForm({ amount, onClose, onToast }: { amount: number; onClose: () => void; onToast: (m: string) => void }) {
+  const [file, setFile] = useState<File | null>(null);
+  const [note, setNote] = useState("");
+  const [busy, setBusy] = useState(false);
+  const submit = useServerFn(submitManualTopup);
+
+  const onSubmit = async () => {
+    if (!file) { onToast("សូមជ្រើសរើសរូបវិក័យបត្រ"); return; }
+    if (file.size > 8 * 1024 * 1024) { onToast("ទំហំធំជាង 8MB"); return; }
+    setBusy(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("សូមចូលគណនី");
+      const ext = file.name.split(".").pop() || "jpg";
+      const path = `${user.id}/${crypto.randomUUID()}.${ext}`;
+      const up = await supabase.storage.from("topup-receipts").upload(path, file, { contentType: file.type, upsert: false });
+      if (up.error) throw new Error(up.error.message);
+      await submit({ data: { amountUsd: amount, receiptPath: path, note } });
+      onToast("បានផ្ញើសំណើ — រង់ចាំ Admin អនុម័ត");
+      onClose();
+    } catch (e) { onToast(e instanceof Error ? e.message : "បរាជ័យ"); }
+    finally { setBusy(false); }
+  };
+
+  return (
+    <div className="space-y-3">
+      <label className="block">
+        <span className="text-xs text-muted-foreground">រូបវិក័យបត្រ (JPG/PNG/PDF, max 8MB)</span>
+        <input type="file" accept="image/*,application/pdf" onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+          className="mt-1 block w-full text-xs file:mr-3 file:rounded-lg file:border-0 file:bg-primary file:text-primary-foreground file:px-3 file:py-1.5 file:text-xs file:font-semibold" />
+        {file && <div className="mt-1 text-[11px] text-muted-foreground inline-flex items-center gap-1"><ReceiptIcon className="h-3 w-3" /> {file.name} ({(file.size / 1024).toFixed(0)} KB)</div>}
+      </label>
+      <label className="block">
+        <span className="text-xs text-muted-foreground">កំណត់ចំណាំ (ស្រេចចិត្ត)</span>
+        <textarea value={note} onChange={(e) => setNote(e.target.value)} maxLength={500} rows={2}
+          className="mt-1 w-full rounded-xl bg-input px-3 py-2 text-sm outline-none ring-1 ring-border focus:ring-primary" />
+      </label>
+      <button onClick={onSubmit} disabled={busy || !file} className="w-full rounded-xl bg-primary py-2.5 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-60 inline-flex items-center justify-center gap-2">
+        {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+        ផ្ញើសំណើ
+      </button>
+    </div>
+  );
+}
