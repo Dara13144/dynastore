@@ -1,9 +1,20 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { ArrowLeft, Save, LogOut, Copy, Check, User as UserIcon } from "lucide-react";
+import { ArrowLeft, Save, LogOut, Copy, Check, User as UserIcon, Wallet, Receipt, Clock, AlertTriangle, RefreshCw } from "lucide-react";
 import { StoreProvider, useStore } from "@/lib/store";
 import { useSession } from "@/hooks/use-session";
+import { supabase } from "@/integrations/supabase/client";
 import logoD from "@/assets/dyna-logo.jpeg";
+
+type TxRow = {
+  id: string;
+  amount_usd: number;
+  coins: number;
+  status: "pending" | "paid" | "failed" | "expired" | string;
+  created_at: string;
+  paid_at: string | null;
+  expires_at: string;
+};
 
 export const Route = createFileRoute("/account")({
   head: () => ({
