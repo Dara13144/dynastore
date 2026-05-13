@@ -369,8 +369,8 @@ function TopupModal({ onClose, onToast }: { onClose: () => void; onToast: (m: st
   const [expiresAt, setExpiresAt] = useState<number | null>(null);
   const [now, setNow] = useState(Date.now());
   const pollRef = useRef<number | null>(null);
-  const [debug, setDebug] = useState<{ at: string; status: string; httpStatus: number | null; latencyMs: number | null; payload: unknown } | null>(null);
-  const [attempts, setAttempts] = useState<Array<{ at: string; status: string; httpStatus: number | null; latencyMs: number | null; payload: unknown }>>([]);
+  const [debug, setDebug] = useState<{ at: string; status: string; httpStatus: number | null; latencyMs: number | null; payload: unknown; providerMessage?: string | null } | null>(null);
+  const [attempts, setAttempts] = useState<Array<{ at: string; status: string; httpStatus: number | null; latencyMs: number | null; payload: unknown; providerMessage?: string | null }>>([]);
   const [showDebug, setShowDebug] = useState(false);
   const [pollCount, setPollCount] = useState(0);
 
