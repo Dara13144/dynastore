@@ -1308,6 +1308,24 @@ function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () 
                 <span className="truncate font-mono text-[10px]">{tx.md5}</span>
               </div>
             )}
+            {paidInfo?.bakongRef && (
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-muted-foreground">Bakong Ref / Hash</span>
+                <span className="truncate font-mono text-[10px]" title={paidInfo.bakongRef}>{paidInfo.bakongRef}</span>
+              </div>
+            )}
+            {paidInfo?.newBalance != null && (
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-muted-foreground">Wallet ថ្មី</span>
+                <span className="font-display text-sm text-coin">{paidInfo.newBalance.toLocaleString()} Coins</span>
+              </div>
+            )}
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-muted-foreground">ស្ថានភាព</span>
+              <span className="font-semibold text-primary">
+                {paidInfo?.creditedNow ? "Credited ✓ (Bakong API)" : "Confirmed ✓ (Bakong API)"}
+              </span>
+            </div>
             <div className="flex items-center justify-between gap-2">
               <span className="text-muted-foreground">ពេលវេលា</span>
               <span className="font-mono text-[11px]">
