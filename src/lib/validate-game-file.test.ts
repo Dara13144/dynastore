@@ -1,6 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import {
   validateGameFile,
+  validateGameFileUrl,
+  GAME_FILE_URL_ERRORS,
   MIN_GAME_FILE_BYTES,
   MAX_GAME_FILE_BYTES,
   MIN_GAME_FILE_GB,
