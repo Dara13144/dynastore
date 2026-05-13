@@ -7,6 +7,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { submitManualTopup } from "@/lib/topup.functions";
 import { StoreProvider, useStore, type Game } from "@/lib/store";
 import { createTopup, checkTopup, cancelTopup, purchaseGame } from "@/lib/payment.functions";
+import { decodeKhqr, type KhqrDecoded } from "@/lib/khqr-decode";
+import jsQR from "jsqr";
+import { Smartphone, ScanLine } from "lucide-react";
 import heroImg from "@/assets/hero-arcade.jpg";
 import logoD from "@/assets/dyna-logo.jpeg";
 
@@ -622,21 +625,32 @@ function TopupModal({ onClose, onToast }: { onClose: () => void; onToast: (m: st
             <div className="text-xs text-muted-foreground inline-flex items-center gap-1.5"><ShieldCheck className="h-3.5 w-3.5 text-emerald-400" /> ស្កេនជាមួយ Bakong / ABA / ធនាគារផ្សេងៗ</div>
             <div className="mx-auto inline-block rounded-xl bg-white p-3"><img src={qrDataUrl} alt={`KHQR Code សម្រាប់ការបង់ប្រាក់ ${amount} USD`} className="h-64 w-64" /></div>
             <div className="text-sm font-semibold">${amount} → {coins.toLocaleString()} Balance</div>
+
+            <KhqrDetails qr={qr} />
+
             <div className="rounded-xl bg-amber-500/10 border border-amber-500/30 px-3 py-2 text-xs text-amber-300 inline-flex items-center gap-2 mx-auto">
               <Loader2 className={`h-3.5 w-3.5 ${polling ? "animate-spin" : ""}`} />
               <span>កំពុងរង់ចាំការបង់ប្រាក់ • ផុតក្នុង <span className="font-mono text-amber-200">{mm}:{ss}</span></span>
             </div>
             <div className="flex gap-2">
+              <a
+                href={qr ? `bakong://qr?data=${encodeURIComponent(qr)}` : "#"}
+                onClick={(e) => { if (!qr) e.preventDefault(); }}
+                className="flex-1 rounded-xl bg-emerald-500 py-2 text-xs font-semibold text-white hover:opacity-90 inline-flex items-center justify-center gap-1.5"
+              >
+                <Smartphone className="h-3.5 w-3.5" /> បើក Bakong
+              </a>
               <button onClick={verifyNow} className="flex-1 rounded-xl bg-primary py-2 text-xs font-semibold text-primary-foreground hover:opacity-90 inline-flex items-center justify-center gap-1.5">
-                <RefreshCw className="h-3.5 w-3.5" /> ផ្ទៀងផ្ទាត់ឥឡូវ
+                <RefreshCw className="h-3.5 w-3.5" /> ផ្ទៀងផ្ទាត់
               </button>
               <button onClick={copyQr} className="flex-1 rounded-xl border border-border py-2 text-xs hover:bg-accent inline-flex items-center justify-center gap-1.5">
-                <Copy className="h-3.5 w-3.5" /> ចម្លង QR
+                <Copy className="h-3.5 w-3.5" /> ចម្លង
               </button>
             </div>
             <button onClick={() => reset()} className="w-full text-xs text-muted-foreground hover:text-foreground py-1">បោះបង់ហើយចាប់ផ្តើមឡើងវិញ</button>
           </div>
         )}
+
 
         {stage === "checking" && (
           <div className="p-10 text-center space-y-3">
@@ -789,3 +803,84 @@ function ManualTopupForm({ amount, onClose, onToast }: { amount: number; onClose
     </div>
   );
 }
+
+function KhqrDetails({ qr }: { qr: string | null }) {
+  const [open, setOpen] = useState(false);
+  const [uploaded, setUploaded] = useState<KhqrDecoded | null>(null);
+  const [uploadErr, setUploadErr] = useState<string | null>(null);
+  const decoded = qr ? decodeKhqr(qr) : null;
+
+  const onFile = async (file: File) => {
+    setUploadErr(null); setUploaded(null);
+    try {
+      const url = URL.createObjectURL(file);
+      const img = new Image();
+      img.src = url;
+      await new Promise((res, rej) => { img.onload = res; img.onerror = rej; });
+      const c = document.createElement("canvas");
+      c.width = img.naturalWidth; c.height = img.naturalHeight;
+      const ctx = c.getContext("2d");
+      if (!ctx) throw new Error("Canvas not supported");
+      ctx.drawImage(img, 0, 0);
+      const data = ctx.getImageData(0, 0, c.width, c.height);
+      const code = jsQR(data.data, data.width, data.height);
+      URL.revokeObjectURL(url);
+      if (!code?.data) throw new Error("មិនអាចស្កេន QR ពីរូបនេះបានទេ");
+      setUploaded(decodeKhqr(code.data));
+    } catch (e) {
+      setUploadErr(e instanceof Error ? e.message : String(e));
+    }
+  };
+
+  const Row = ({ k, v, mono = false }: { k: string; v?: string; mono?: boolean }) => (
+    <div className="flex justify-between gap-2 text-[11px]">
+      <span className="text-muted-foreground">{k}</span>
+      <span className={`${mono ? "font-mono" : ""} truncate max-w-[200px] text-right`} title={v ?? ""}>{v || "—"}</span>
+    </div>
+  );
+  const Card = ({ d, title }: { d: KhqrDecoded; title: string }) => (
+    <div className="rounded-xl border border-border/60 bg-muted/20 p-3 space-y-1 text-left">
+      <div className="text-xs font-semibold mb-1">{title}</div>
+      <Row k="Merchant" v={d.merchantName} />
+      <Row k="Account" v={d.merchantAccount} mono />
+      <Row k="City" v={d.merchantCity} />
+      <Row k="Amount" v={d.amount ? `${d.amount} ${d.currencyLabel ?? ""}` : undefined} mono />
+      <Row k="Order ID" v={d.billNumber} mono />
+      <Row k="Reference" v={d.reference} mono />
+      <Row k="Bakong MD5" v={d.md5} mono />
+      <Row k="Country" v={d.country} />
+      <div className="flex justify-between gap-2 text-[11px]">
+        <span className="text-muted-foreground">CRC</span>
+        <span className="font-mono">
+          {d.crc ?? "—"}{" "}
+          {d.crc && (
+            <span className={d.crcValid ? "text-emerald-400" : "text-destructive"}>
+              {d.crcValid ? "✓" : "✗"}
+            </span>
+          )}
+        </span>
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="space-y-2">
+      <button onClick={() => setOpen(v => !v)} className="text-[11px] text-primary hover:underline inline-flex items-center gap-1">
+        <ScanLine className="h-3 w-3" /> {open ? "បិទព័ត៌មាន KHQR" : "បង្ហាញព័ត៌មាន KHQR / អាប់ឡូត QR"}
+      </button>
+      {open && (
+        <div className="space-y-2">
+          {decoded && <Card d={decoded} title="QR បច្ចុប្បន្ន" />}
+          <label className="block text-left">
+            <span className="text-[11px] text-muted-foreground">ផ្ទៀងផ្ទាត់ — អាប់ឡូតរូប QR ដើម្បីឌិកូដ</span>
+            <input type="file" accept="image/*" onChange={(e) => { const f = e.target.files?.[0]; if (f) onFile(f); }}
+              className="mt-1 block w-full text-[11px] file:mr-2 file:rounded-lg file:border-0 file:bg-primary file:text-primary-foreground file:px-2 file:py-1 file:text-[11px]" />
+          </label>
+          {uploadErr && <div className="text-[11px] text-destructive">{uploadErr}</div>}
+          {uploaded && <Card d={uploaded} title="QR ដែលបានអាប់ឡូត" />}
+        </div>
+      )}
+    </div>
+  );
+}
+
