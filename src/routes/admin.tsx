@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useStore } from "@/lib/store";
 import { ArrowLeft, Plus, Eye, EyeOff, Trash2, Save, Loader2, Users, Gamepad2, FileArchive, Settings as SettingsIcon, Pencil, History, ChevronDown, ChevronUp, Search, Check, Wallet, X } from "lucide-react";
 import { StoreProvider } from "@/lib/store";
-import { getAppSettings, updateAppSettings, adminSetUserBalance, listBalanceChanges, listSettingsAudit } from "@/lib/admin.functions";
+import { getAppSettings, updateAppSettings, adminSetUserBalance, listBalanceChanges, listSettingsAudit, adminSetUserRole } from "@/lib/admin.functions";
 import { adminListTopupRequests, adminApproveTopup, adminRejectTopup } from "@/lib/topup.functions";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
@@ -478,10 +478,13 @@ function GameRowEditor({ game, busy, onSave, onDelete, onReplaceFile, validateFi
 function UsersTab() {
   const [rows, setRows] = useState<UserRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [meId, setMeId] = useState<string | null>(null);
 
   useEffect(() => {
     (async () => {
       setLoading(true);
+      const { data: { user } } = await supabase.auth.getUser();
+      setMeId(user?.id ?? null);
       const [{ data: profiles }, { data: wallets }, { data: lib }, { data: roles }] = await Promise.all([
         supabase.from("profiles").select("user_id, display_name, created_at"),
         supabase.from("wallets").select("user_id, balance"),
@@ -522,7 +525,13 @@ function UsersTab() {
               {loading ? <tr><td colSpan={7} className="text-center py-8 text-xs text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin inline" /></td></tr>
                 : rows.length === 0 ? <tr><td colSpan={7} className="text-center py-8 text-xs text-muted-foreground">គ្មានអ្នកប្រើ។</td></tr>
                 : rows.map((u) => (
-                  <UserRowEditor key={u.user_id} user={u} onUpdate={(b) => setRows(rs => rs.map(x => x.user_id === u.user_id ? { ...x, balance: b } : x))} />
+                  <UserRowEditor
+                    key={u.user_id}
+                    user={u}
+                    isMe={meId === u.user_id}
+                    onUpdate={(b) => setRows(rs => rs.map(x => x.user_id === u.user_id ? { ...x, balance: b } : x))}
+                    onRoleChange={(isAdmin) => setRows(rs => rs.map(x => x.user_id === u.user_id ? { ...x, is_admin: isAdmin } : x))}
+                  />
                 ))}
             </tbody>
           </table>
@@ -532,7 +541,7 @@ function UsersTab() {
   );
 }
 
-function UserRowEditor({ user, onUpdate }: { user: UserRow; onUpdate: (b: number) => void }) {
+function UserRowEditor({ user, isMe, onUpdate, onRoleChange }: { user: UserRow; isMe: boolean; onUpdate: (b: number) => void; onRoleChange: (isAdmin: boolean) => void }) {
   const [editing, setEditing] = useState(false);
   const [val, setVal] = useState(String(user.balance));
   const [reason, setReason] = useState("");
@@ -541,8 +550,22 @@ function UserRowEditor({ user, onUpdate }: { user: UserRow; onUpdate: (b: number
   const [showHistory, setShowHistory] = useState(false);
   const [history, setHistory] = useState<Array<{ id: string; old_balance: number; new_balance: number; reason: string | null; created_at: string; changed_by_name: string }> | null>(null);
   const [loadingHist, setLoadingHist] = useState(false);
+  const [roleBusy, setRoleBusy] = useState(false);
   const setBalance = useServerFn(adminSetUserBalance);
   const fetchHistory = useServerFn(listBalanceChanges);
+  const setRole = useServerFn(adminSetUserRole);
+
+  const toggleAdmin = async () => {
+    const next = !user.is_admin;
+    if (!confirm(next ? `ផ្តល់សិទ្ធិ Admin ដល់ ${user.display_name}?` : `ដកសិទ្ធិ Admin ពី ${user.display_name}?`)) return;
+    setRoleBusy(true);
+    try {
+      const r = await setRole({ data: { user_id: user.user_id, is_admin: next } });
+      onRoleChange(r.is_admin);
+    } catch (e) { alert(e instanceof Error ? e.message : "បរាជ័យ"); }
+    finally { setRoleBusy(false); }
+  };
+
 
   const parsedNextBalance = Math.floor(Number(val));
   const isValidNextBalance = Number.isFinite(parsedNextBalance) && parsedNextBalance >= 0;
@@ -602,8 +625,15 @@ function UserRowEditor({ user, onUpdate }: { user: UserRow; onUpdate: (b: number
         </td>
         <td className="px-4 py-3 text-right">{user.owned}</td>
         <td className="px-4 py-3 text-center">
-          {user.is_admin ? <span className="inline-flex items-center rounded-full bg-primary/15 text-primary px-2 py-0.5 text-[10px] font-semibold">អ្នកគ្រប់គ្រង</span>
-            : <span className="text-[10px] text-muted-foreground">អ្នកប្រើ</span>}
+          <div className="inline-flex flex-col items-center gap-1">
+            {user.is_admin ? <span className="inline-flex items-center rounded-full bg-primary/15 text-primary px-2 py-0.5 text-[10px] font-semibold">អ្នកគ្រប់គ្រង</span>
+              : <span className="text-[10px] text-muted-foreground">អ្នកប្រើ</span>}
+            {!isMe && (
+              <button disabled={roleBusy} onClick={toggleAdmin} className={`rounded-full px-2 py-0.5 text-[10px] font-semibold disabled:opacity-50 ${user.is_admin ? "bg-destructive/10 text-destructive hover:bg-destructive/20" : "bg-primary/10 text-primary hover:bg-primary/20"}`}>
+                {roleBusy ? "..." : user.is_admin ? "ដក Admin" : "ផ្តល់ Admin"}
+              </button>
+            )}
+          </div>
         </td>
         <td className="px-4 py-3 text-xs text-muted-foreground">{new Date(user.created_at).toLocaleDateString()}</td>
         <td className="px-4 py-3 text-right">
