@@ -128,7 +128,7 @@ function Hero() {
   return (
     <section className="relative overflow-hidden">
       <div className="absolute inset-0">
-        <img src={heroImg} alt="" className="h-full w-full object-cover opacity-40" />
+        <img src={heroImg} alt="" width={1920} height={1080} fetchPriority="high" decoding="async" className="h-full w-full object-cover opacity-40" />
         <div className="absolute inset-0 bg-gradient-to-b from-background/40 via-background/70 to-background" />
       </div>
       <div className="relative container mx-auto px-4 py-20 md:py-28 max-w-4xl text-center">
