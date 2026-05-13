@@ -20,7 +20,10 @@ export type Database = {
           category: string
           created_at: string
           description: string | null
+          file_path: string | null
+          file_size_bytes: number | null
           id: string
+          image_url: string | null
           price_coins: number
           title: string
           visible: boolean
@@ -30,7 +33,10 @@ export type Database = {
           category: string
           created_at?: string
           description?: string | null
+          file_path?: string | null
+          file_size_bytes?: number | null
           id: string
+          image_url?: string | null
           price_coins?: number
           title: string
           visible?: boolean
@@ -40,7 +46,10 @@ export type Database = {
           category?: string
           created_at?: string
           description?: string | null
+          file_path?: string | null
+          file_size_bytes?: number | null
           id?: string
+          image_url?: string | null
           price_coins?: number
           title?: string
           visible?: boolean
