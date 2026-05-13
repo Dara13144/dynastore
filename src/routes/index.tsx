@@ -37,7 +37,7 @@ function Page() {
   const [toast, setToast] = useState<string | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [topupOpen, setTopupOpen] = useState(false);
-  const { refreshWallet } = useStore();
+  const { refreshWallet, setBalance } = useStore();
   const showToast = (m: string) => { setToast(m); window.setTimeout(() => setToast(null), 2400); };
 
   return (
