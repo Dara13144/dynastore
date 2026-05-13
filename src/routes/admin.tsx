@@ -96,6 +96,9 @@ function GamesTab() {
   const [busy, setBusy] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
+  const [query, setQuery] = useState("");
+  const [catFilter, setCatFilter] = useState<string>("all");
+  const [visFilter, setVisFilter] = useState<"all" | "visible" | "hidden">("all");
   const [draft, setDraft] = useState<GameRow>({
     id: "", title: "", category: "", description: "", badge: "",
     price_coins: 0, visible: true, image_url: "", file_path: null, file_size_bytes: null,
