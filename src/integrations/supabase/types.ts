@@ -253,6 +253,48 @@ export type Database = {
         }
         Relationships: []
       }
+      topup_requests: {
+        Row: {
+          amount_usd: number
+          coins: number
+          created_at: string
+          id: string
+          note: string | null
+          reject_reason: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          slip_path: string
+          status: Database["public"]["Enums"]["topup_status"]
+          user_id: string
+        }
+        Insert: {
+          amount_usd: number
+          coins: number
+          created_at?: string
+          id?: string
+          note?: string | null
+          reject_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          slip_path: string
+          status?: Database["public"]["Enums"]["topup_status"]
+          user_id: string
+        }
+        Update: {
+          amount_usd?: number
+          coins?: number
+          created_at?: string
+          id?: string
+          note?: string | null
+          reject_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          slip_path?: string
+          status?: Database["public"]["Enums"]["topup_status"]
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -324,6 +366,7 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "user"
+      topup_status: "pending" | "approved" | "rejected"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -452,6 +495,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "user"],
+      topup_status: ["pending", "approved", "rejected"],
     },
   },
 } as const
