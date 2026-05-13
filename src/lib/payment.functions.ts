@@ -52,6 +52,40 @@ async function loadSettings() {
   };
 }
 
+async function generateKhqrForUser(opts: {
+  userId: string; amountUsd: number; coinsPerUsd: number; ttlMin: number;
+  accountId: string; merchantName: string; merchantCity: string; phone: string;
+}) {
+  const { userId, amountUsd, coinsPerUsd, ttlMin, accountId, merchantName, merchantCity, phone } = opts;
+  const coins = Math.round(amountUsd * coinsPerUsd);
+  const expires = new Date(Date.now() + ttlMin * 60_000).toISOString();
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const orderId = `khqr_${crypto.randomUUID()}`;
+    const nonce = `${userId.slice(0, 6)}-${Date.now().toString(36)}-${attempt}${Math.random().toString(36).slice(2, 6)}`;
+    const info = new IndividualInfo(accountId, merchantName, merchantCity, {
+      currency: khqrData.currency.usd, amount: Number(amountUsd.toFixed(2)),
+      mobileNumber: phone, storeLabel: "Dyna Store", terminalLabel: `tp-${userId.slice(0, 8)}`,
+      billNumber: nonce, expirationTimestamp: Date.now() + ttlMin * 60_000,
+    });
+    let qr: string | undefined; let md5: string | undefined;
+    try {
+      const res = new BakongKHQR().generateIndividual(info);
+      if (res?.status && res.status.code !== 0) {
+        throw new Error(`KHQR generation rejected: ${res.status.message ?? "unknown"}`);
+      }
+      qr = res?.data?.qr; md5 = res?.data?.md5;
+    } catch (e) { throw new Error("បរាជ័យបង្កើត KHQR: " + khqrErrorMessage(e)); }
+    if (!qr || !md5) throw new Error("KHQR មិនត្រឹមត្រូវ — សូមពិនិត្យ Bakong credentials");
+    const { error } = await supabaseAdmin.from("transactions").insert({
+      order_id: orderId, user_id: userId, bakong_md5: md5, qr_string: qr,
+      amount_usd: amountUsd, coins, payment_method: "khqr", status: "pending", expires_at: expires,
+    });
+    if (!error) return { orderId, bakongMd5: md5, qr, coins, amountUsd, expiresAt: expires };
+    if (!/duplicate key|unique constraint/i.test(error.message)) throw new Error(error.message);
+  }
+  throw new Error("បរាជ័យបង្កើត KHQR — សូមសាកម្តងទៀត។");
+}
+
 export const createTopup = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) => z.object({ amountUsd: z.number().min(1).max(1000), forceNew: z.boolean().optional() }).parse(i))
