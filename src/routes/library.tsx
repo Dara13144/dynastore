@@ -4,6 +4,7 @@ import { ArrowLeft, Trash2, Star, Check, Wallet, Library as LibraryIcon, Downloa
 import { StoreProvider, useStore } from "@/lib/store";
 import { useSession } from "@/hooks/use-session";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import logoD from "@/assets/dyna-logo.jpeg";
 
 export const Route = createFileRoute("/library")({
@@ -25,7 +26,12 @@ function DownloadBtn({ filePath }: { filePath: string | null }) {
     setBusy(true);
     const { data, error } = await supabase.storage.from("game-files").createSignedUrl(filePath, 300);
     setBusy(false);
-    if (error || !data?.signedUrl) { alert(error?.message ?? "មិនអាច download បាន"); return; }
+    if (error || !data?.signedUrl) {
+      toast.error("មិនអាចបង្កើតតំណទាញយកបាន", {
+        description: error?.message ?? "សូមសាកល្បងម្ដងទៀតបន្តិចក្រោយ។",
+      });
+      return;
+    }
     window.open(data.signedUrl, "_blank");
   };
   return (
