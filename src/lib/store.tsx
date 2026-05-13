@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { useSession } from "@/hooks/use-session";
 import { supabase } from "@/integrations/supabase/client";
 import gtaImg from "@/assets/game-gta.jpg";
@@ -13,7 +13,15 @@ export type Game = {
   image: string; badge?: string;
 };
 export type Recommendation = { id: string; name: string; game: string; text: string; initial: string };
-export type Profile = { name: string; avatar: string | null };
+export type Profile = {
+  id?: string;
+  user_id?: string;
+  display_name: string;
+  avatar_url: string | null;
+  bio: string | null;
+  created_at?: string;
+  updated_at?: string;
+};
 
 export const GAMES: Game[] = [
   { id: "gta5", title: "GTA 5 MODE", category: "ប្រណាំង", description: "ហ្គេមប្រណាំងតាមផ្លូវបែប Arcade ជាមួយក្រុមអនឡាញ។", image: gtaImg, badge: "ពេញនិយម" },
@@ -30,13 +38,16 @@ const INITIAL_RECS: Recommendation[] = [
   { id: "3", name: "Vireak Pro", game: "Shadow Ops", text: "ហ្គេមមានជម្រើសច្រើន គួរសាកល្បង។", initial: "V" },
 ];
 
+const GUEST_PROFILE: Profile = { display_name: "Player", avatar_url: null, bio: null };
+
 type StoreCtx = {
   authed: boolean;
   loading: boolean;
   profile: Profile;
   recs: Recommendation[];
   signOut: () => Promise<void>;
-  setProfile: (p: Profile) => void;
+  updateProfile: (patch: Partial<Pick<Profile, "display_name" | "avatar_url" | "bio">>) => Promise<{ error: string | null }>;
+  refreshProfile: () => Promise<void>;
   addRec: (r: Omit<Recommendation, "id" | "initial">) => void;
 };
 
@@ -44,8 +55,20 @@ const Ctx = createContext<StoreCtx | null>(null);
 
 export function StoreProvider({ children }: { children: ReactNode }) {
   const { session, loading } = useSession();
-  const [profile, setProfile] = useState<Profile>({ name: "Player", avatar: null });
+  const [profile, setProfile] = useState<Profile>(GUEST_PROFILE);
   const [recs, setRecs] = useState<Recommendation[]>(INITIAL_RECS);
+
+  const userId = session?.user?.id ?? null;
+
+  const fetchProfile = async (uid: string) => {
+    const { data } = await supabase.from("profiles").select("*").eq("user_id", uid).maybeSingle();
+    if (data) setProfile(data as Profile);
+  };
+
+  useEffect(() => {
+    if (!userId) { setProfile(GUEST_PROFILE); return; }
+    fetchProfile(userId);
+  }, [userId]);
 
   const value: StoreCtx = {
     authed: !!session,
@@ -53,7 +76,19 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     profile,
     recs,
     signOut: async () => { await supabase.auth.signOut(); },
-    setProfile,
+    refreshProfile: async () => { if (userId) await fetchProfile(userId); },
+    updateProfile: async (patch) => {
+      if (!userId) return { error: "សូមចូលគណនីជាមុនសិន" };
+      const { data, error } = await supabase
+        .from("profiles")
+        .update({ ...patch })
+        .eq("user_id", userId)
+        .select()
+        .maybeSingle();
+      if (error) return { error: error.message };
+      if (data) setProfile(data as Profile);
+      return { error: null };
+    },
     addRec: (r) => setRecs((rs) => [{ id: crypto.randomUUID(), initial: r.name.charAt(0).toUpperCase() || "?", ...r }, ...rs]),
   };
 
