@@ -277,6 +277,9 @@ function GamesTab() {
         {(query || catFilter !== "all" || visFilter !== "all") && (
           <button onClick={() => { setQuery(""); setCatFilter("all"); setVisFilter("all"); }} className="text-[11px] text-muted-foreground hover:text-foreground underline">សម្អាត</button>
         )}
+        <button onClick={() => toggleSort("created_at")} className={`text-[11px] px-3 py-1.5 rounded-full ring-1 ring-border ${sortKey === "created_at" ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}>
+          Recently added{sortIcon("created_at")}
+        </button>
       </div>
 
       {creating && (
