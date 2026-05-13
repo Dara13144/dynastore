@@ -292,7 +292,7 @@ export const checkTopup = createServerFn({ method: "POST" })
         status: "regenerated" as const,
         balance: null as number | null,
         orderId: fresh.orderId, qr: fresh.qr, bakongMd5: fresh.bakongMd5,
-        amountUsd: fresh.amountUsd, expiresAt: fresh.expiresAt, coins: fresh.coins,
+        amountUsd: fresh.amountUsd, expiresAt: fresh.expiresAt, issuedAt: fresh.issuedAt, coins: fresh.coins,
         debug: mkDebug({ source: "db", txStatus: "regenerated", bakongMd5: fresh.bakongMd5, providerMessage: `regenerated:${reason}` }),
       };
     };
