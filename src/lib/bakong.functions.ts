@@ -70,27 +70,38 @@ export const createTopup = createServerFn({ method: "POST" })
     if (!merchantName) throw new Error("BAKONG_MERCHANT_NAME is not configured");
     if (!merchantCity) throw new Error("BAKONG_MERCHANT_CITY is not configured");
 
-    const billNumber = `T${Date.now().toString(36).toUpperCase()}`;
-    const { payload, md5 } = buildKhqr({
-      bakongAccountId: accountId,
-      merchantName,
-      merchantCity,
-      amount: pack.price,
-      currency: "USD",
-      billNumber,
-      storeLabel: pack.name.slice(0, 25),
-      mobileNumber: merchantPhone?.replace(/\s+/g, "") || undefined,
-      terminalLabel: undefined,
-      acquiringBank: acquiringBank || undefined,
-      merchantId: merchantId || undefined,
-    });
     const totalCoins = pack.coins + (pack.bonus ?? 0);
-
-    const { error } = await supabaseAdmin.from("transactions").insert({
-      user_id: userId, md5, qr_payload: payload,
-      amount_usd: pack.price, coins: totalCoins, status: "pending",
-    });
-    if (error) throw new Error(error.message);
+    let lastErr: string | null = null;
+    let md5 = "";
+    let payload = "";
+    for (let attempt = 0; attempt < 4; attempt++) {
+      const rand = Math.random().toString(36).slice(2, 8).toUpperCase();
+      const billNumber = `T${Date.now().toString(36).toUpperCase()}${rand}`;
+      const built = buildKhqr({
+        bakongAccountId: accountId,
+        merchantName,
+        merchantCity,
+        amount: pack.price,
+        currency: "USD",
+        billNumber,
+        storeLabel: pack.name.slice(0, 25),
+        mobileNumber: merchantPhone?.replace(/\s+/g, "") || undefined,
+        terminalLabel: undefined,
+        acquiringBank: acquiringBank || undefined,
+        merchantId: merchantId || undefined,
+      });
+      md5 = built.md5;
+      payload = built.payload;
+      const { error } = await supabaseAdmin.from("transactions").insert({
+        user_id: userId, md5, qr_payload: payload,
+        amount_usd: pack.price, coins: totalCoins, status: "pending",
+      });
+      if (!error) { lastErr = null; break; }
+      lastErr = error.message;
+      // Only retry on unique-violation; otherwise abort.
+      if (!/duplicate key|unique constraint/i.test(error.message)) break;
+    }
+    if (lastErr) throw new Error(lastErr);
 
     return { md5, qrPayload: payload, amountUsd: pack.price, coins: totalCoins, packName: pack.name };
   });
@@ -127,15 +138,15 @@ export const checkPayment = createServerFn({ method: "POST" })
     }
 
     const result = await checkBakongMd5(data.md5, token);
+    const responseCode = result.raw?.responseCode ?? null;
+    const responseMessage = result.raw?.responseMessage ?? result.raw?.errorCode ?? null;
     if (result.status === "SUCCESS") {
-      // Atomic + idempotent: flips pending->paid and credits wallet exactly once per md5.
       const { data: rpc, error: rpcErr } = await supabaseAdmin.rpc("credit_topup_atomic", {
         _md5: data.md5,
         _bakong_ref: result.raw?.data?.hash ?? null,
       });
       if (rpcErr) throw new Error(rpcErr.message);
       const row = Array.isArray(rpc) ? rpc[0] : rpc;
-      // Whether this call credited or a previous one did, the user-facing status is "paid".
       const hash = result.raw?.data?.hash ?? null;
       return {
         status: "paid" as const,
@@ -145,9 +156,12 @@ export const checkPayment = createServerFn({ method: "POST" })
         bakongHash: hash,
         newBalance: row?.new_balance ?? null,
         paidAt: new Date().toISOString(),
+        responseCode,
+        responseMessage,
+        creditResult: row ?? null,
       };
     }
-    return { status: "pending" as const };
+    return { status: "pending" as const, responseCode, responseMessage, raw: result.raw ?? null };
   });
 
 export const buyGame = createServerFn({ method: "POST" })
