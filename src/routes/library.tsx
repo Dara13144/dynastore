@@ -58,7 +58,9 @@ function LibraryPage() {
           ) : (
             <Grid>
               {owned.map(({ l, g }) => g && (
-                <Card key={l.id} title={g.title} category={g.category} image={g.image} badge={<span className="rounded-full bg-emerald-500/20 px-2 py-0.5 text-[10px] font-semibold text-emerald-300 inline-flex items-center gap-1"><Check className="h-3 w-3" /> ជាកម្មសិទ្ធ</span>} />
+                <Card key={l.id} title={g.title} category={g.category} image={g.image}
+                  badge={<span className="rounded-full bg-emerald-500/20 px-2 py-0.5 text-[10px] font-semibold text-emerald-300 inline-flex items-center gap-1"><Check className="h-3 w-3" /> ជាកម្មសិទ្ធ</span>}
+                  action={<DownloadBtn filePath={g.file_path ?? null} />} />
               ))}
             </Grid>
           )}
