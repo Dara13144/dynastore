@@ -178,6 +178,51 @@ export type Database = {
           },
         ]
       }
+      manual_topups: {
+        Row: {
+          amount_usd: number
+          coins: number
+          created_at: string
+          id: string
+          note: string | null
+          receipt_path: string
+          reject_reason: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: Database["public"]["Enums"]["manual_topup_status"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount_usd: number
+          coins: number
+          created_at?: string
+          id?: string
+          note?: string | null
+          receipt_path: string
+          reject_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: Database["public"]["Enums"]["manual_topup_status"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount_usd?: number
+          coins?: number
+          created_at?: string
+          id?: string
+          note?: string | null
+          receipt_path?: string
+          reject_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: Database["public"]["Enums"]["manual_topup_status"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -333,6 +378,14 @@ export type Database = {
             Args: { _new_balance: number; _reason?: string; _user_id: string }
             Returns: number
           }
+      approve_manual_topup: {
+        Args: { _admin: string; _id: string }
+        Returns: {
+          message: string
+          new_balance: number
+          ok: boolean
+        }[]
+      }
       credit_topup_atomic: {
         Args: { _md5: string }
         Returns: {
@@ -411,9 +464,14 @@ export type Database = {
           ok: boolean
         }[]
       }
+      reject_manual_topup: {
+        Args: { _admin: string; _id: string; _reason: string }
+        Returns: boolean
+      }
     }
     Enums: {
       app_role: "admin" | "user"
+      manual_topup_status: "pending" | "approved" | "rejected"
       tx_status:
         | "pending"
         | "paid"
@@ -549,6 +607,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "user"],
+      manual_topup_status: ["pending", "approved", "rejected"],
       tx_status: [
         "pending",
         "paid",
