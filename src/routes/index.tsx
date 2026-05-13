@@ -1,10 +1,11 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { Settings, LogIn, LogOut, Star, Send, Gamepad2, Sparkles, X, Library, Check, Loader2, Wallet } from "lucide-react";
+import { Settings, LogIn, LogOut, Star, Send, Gamepad2, Sparkles, X, Library, Check, Loader2, Wallet, Plus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { StoreProvider, useStore, type Game } from "@/lib/store";
 import { purchaseGame } from "@/lib/payment.functions";
+import { TopupModal } from "@/components/TopupModal";
 
 import heroImg from "@/assets/hero-arcade.jpg";
 import logoD from "@/assets/dyna-logo.jpeg";
