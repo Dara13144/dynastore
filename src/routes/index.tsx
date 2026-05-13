@@ -718,11 +718,19 @@ function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () 
           if (r.status === "paid") {
             setStatus("paid");
             setPaidAt(Date.now());
-            setPaidInfo({ bakongRef: (r as any).bakongRef ?? null, newBalance: (r as any).newBalance ?? null, creditedNow: !!(r as any).creditedNow });
+            const ref = (r as any).bakongRef ?? null;
+            const nb = (r as any).newBalance ?? null;
+            const cn = !!(r as any).creditedNow;
+            setPaidInfo({ bakongRef: ref, newBalance: nb, creditedNow: cn });
+            pushEvent({ kind: "bakong", label: "Bakong check: SUCCESS", detail: `responseCode=${(r as any).responseCode ?? 0}${ref ? ` · ref ${String(ref).slice(0, 14)}…` : ""}` });
+            pushEvent({ kind: "credited", label: cn ? `Wallet credited (+${cur.coins})` : "Already credited (idempotent)", detail: nb != null ? `new balance ${nb} Coins` : undefined });
             onToast(`បានបន្ថែម ${cur.coins.toLocaleString()} Coins ✓`);
             refresh();
           } else if (r.status === "expired") {
             setStatus("expired");
+            pushEvent({ kind: "expired", label: "MD5 expired (server)" });
+          } else {
+            pushEvent({ kind: "bakong", label: `Bakong poll #${pollTick + 1}: pending`, detail: `responseCode=${(r as any).responseCode ?? "—"}` });
           }
           return cur;
         });
