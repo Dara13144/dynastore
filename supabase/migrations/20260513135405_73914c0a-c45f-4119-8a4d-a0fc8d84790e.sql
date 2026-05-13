@@ -1,0 +1,1 @@
+UPDATE public.transactions SET status='cancelled', failure_reason='broken_qr_lib_backfill', updated_at=now() WHERE status='pending' AND payment_method='khqr' AND (qr_string='{}' OR length(qr_string) < 50);
