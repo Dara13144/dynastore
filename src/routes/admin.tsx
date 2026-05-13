@@ -775,46 +775,83 @@ function SettingsAuditLog({ refreshKey }: { refreshKey: number }) {
 }
 
 /* ============ PAYMENTS TAB ============ */
-type TxRow = { id: string; user_id: string; bakong_md5: string; amount_usd: number; coins: number; status: string; created_at: string; expires_at: string; paid_at: string | null };
+type TxRow = { id: string; user_id: string; user_name: string; user_balance: number; bakong_md5: string; amount_usd: number; coins: number; status: string; created_at: string; expires_at: string; paid_at: string | null };
 function PaymentsTab() {
   const [rows, setRows] = useState<TxRow[]>([]);
   const [loading, setLoading] = useState(true);
   const list = useServerFn(listAllTransactions);
-  useEffect(() => { (async () => {
+  const refresh = useCallback(async () => {
+    setLoading(true);
     try { const r = await list({}); setRows(r as TxRow[]); }
     finally { setLoading(false); }
-  })(); }, [list]);
+  }, [list]);
+  useEffect(() => { refresh(); }, [refresh]);
+
+  const setBalance = useServerFn(adminSetUserBalance);
+  const [editFor, setEditFor] = useState<TxRow | null>(null);
+  const [newBal, setNewBal] = useState("");
+  const [reason, setReason] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  const openEdit = (t: TxRow) => { setEditFor(t); setNewBal(String(t.user_balance)); setReason(`topup_adjust:${t.bakong_md5.slice(0, 8)}`); };
+  const saveBal = async () => {
+    if (!editFor) return;
+    const n = Math.floor(Number(newBal));
+    if (!Number.isFinite(n) || n < 0) return;
+    setBusy(true);
+    try {
+      await setBalance({ data: { user_id: editFor.user_id, new_balance: n, reason: reason.trim() || undefined } });
+      toast.success("បានកែសមតុល្យ");
+      setEditFor(null);
+      await refresh();
+    } catch (e) { toast.error(e instanceof Error ? e.message : "បរាជ័យ"); }
+    finally { setBusy(false); }
+  };
 
   return (
     <div className="space-y-4">
-      <h2 className="font-display text-xl">ប្រវត្តិការទូទាត់ ({rows.length})</h2>
+      <div className="flex items-center justify-between">
+        <h2 className="font-display text-xl">ប្រវត្តិការទូទាត់ ({rows.length})</h2>
+        <button onClick={refresh} className="rounded-full bg-muted/30 hover:bg-muted/50 px-3 py-1.5 text-[11px] font-semibold text-muted-foreground">ផ្ទុកឡើងវិញ</button>
+      </div>
       <div className="rounded-2xl glass overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-muted/30 text-xs uppercase tracking-wider text-muted-foreground">
               <tr>
                 <th className="text-left px-4 py-3">ពេលវេលា</th>
-                <th className="text-left px-4 py-3">អ្នកប្រើ</th>
+                <th className="text-left px-4 py-3">គណនីអ្នកប្រើ</th>
+                <th className="text-right px-4 py-3">សមតុល្យបច្ចុប្បន្ន</th>
                 <th className="text-left px-4 py-3">MD5</th>
                 <th className="text-right px-4 py-3">ដុល្លារ</th>
-                <th className="text-right px-4 py-3">សមតុល្យ</th>
+                <th className="text-right px-4 py-3">កាក់</th>
                 <th className="text-center px-4 py-3">ស្ថានភាព</th>
                 <th className="text-left px-4 py-3">ផុត / បង់</th>
+                <th className="text-right px-4 py-3">សកម្មភាព</th>
               </tr>
             </thead>
             <tbody>
-              {loading ? <tr><td colSpan={7} className="text-center py-8 text-xs text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin inline" /></td></tr>
-                : rows.length === 0 ? <tr><td colSpan={7} className="text-center py-8 text-xs text-muted-foreground">គ្មានទិន្នន័យ។</td></tr>
+              {loading ? <tr><td colSpan={9} className="text-center py-8 text-xs text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin inline" /></td></tr>
+                : rows.length === 0 ? <tr><td colSpan={9} className="text-center py-8 text-xs text-muted-foreground">គ្មានទិន្នន័យ។</td></tr>
                 : rows.map(t => (
                   <tr key={t.id} className="border-t border-border/60 hover:bg-muted/10">
-                    <td className="px-4 py-3 text-xs">{new Date(t.created_at).toLocaleString()}</td>
-                    <td className="px-4 py-3 font-mono text-[10px] text-muted-foreground truncate max-w-[160px]">{t.user_id}</td>
-                    <td className="px-4 py-3 font-mono text-[10px] text-muted-foreground truncate max-w-[160px]" title={t.bakong_md5}>{t.bakong_md5}</td>
+                    <td className="px-4 py-3 text-xs whitespace-nowrap">{new Date(t.created_at).toLocaleString()}</td>
+                    <td className="px-4 py-3">
+                      <div className="font-medium">{t.user_name}</div>
+                      <div className="font-mono text-[10px] text-muted-foreground truncate max-w-[180px]" title={t.user_id}>{t.user_id}</div>
+                    </td>
+                    <td className="px-4 py-3 text-right font-semibold text-primary">{t.user_balance.toLocaleString()}</td>
+                    <td className="px-4 py-3 font-mono text-[10px] text-muted-foreground truncate max-w-[140px]" title={t.bakong_md5}>{t.bakong_md5}</td>
                     <td className="px-4 py-3 text-right">${Number(t.amount_usd).toFixed(2)}</td>
-                    <td className="px-4 py-3 text-right font-semibold text-primary">{t.coins.toLocaleString()}</td>
+                    <td className="px-4 py-3 text-right font-semibold">{t.coins.toLocaleString()}</td>
                     <td className="px-4 py-3 text-center"><StatusPill s={t.status} /></td>
-                    <td className="px-4 py-3 text-[11px] text-muted-foreground">
+                    <td className="px-4 py-3 text-[11px] text-muted-foreground whitespace-nowrap">
                       {t.paid_at ? `Paid ${new Date(t.paid_at).toLocaleString()}` : `Exp ${new Date(t.expires_at).toLocaleString()}`}
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <button onClick={() => openEdit(t)} className="inline-flex items-center gap-1 rounded-full bg-primary/10 hover:bg-primary/20 text-primary px-3 py-1 text-[11px] font-semibold">
+                        <Pencil className="h-3 w-3" /> កែសមតុល្យ
+                      </button>
                     </td>
                   </tr>
                 ))}
@@ -822,6 +859,29 @@ function PaymentsTab() {
           </table>
         </div>
       </div>
+
+      <AlertDialog open={!!editFor} onOpenChange={(o) => !o && setEditFor(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>កែសមតុល្យអ្នកប្រើ</AlertDialogTitle>
+            <AlertDialogDescription>
+              {editFor && <>គណនី: <span className="font-medium">{editFor.user_name}</span> — បច្ចុប្បន្ន: <span className="font-semibold text-primary">{editFor.user_balance.toLocaleString()}</span></>}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="grid gap-3">
+            <label className="text-xs text-muted-foreground">សមតុល្យថ្មី
+              <input type="number" min={0} value={newBal} onChange={(e) => setNewBal(e.target.value)} className="mt-1 w-full rounded bg-input px-3 py-2 text-sm ring-1 ring-border focus:ring-primary outline-none" />
+            </label>
+            <label className="text-xs text-muted-foreground">មូលហេតុ (សេចក្តីពន្យល់)
+              <input type="text" maxLength={200} value={reason} onChange={(e) => setReason(e.target.value)} className="mt-1 w-full rounded bg-input px-3 py-2 text-sm ring-1 ring-border focus:ring-primary outline-none" />
+            </label>
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={busy}>បោះបង់</AlertDialogCancel>
+            <AlertDialogAction disabled={busy} onClick={(e) => { e.preventDefault(); void saveBal(); }}>{busy ? "កំពុងអនុវត្ត..." : "បញ្ជាក់"}</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
