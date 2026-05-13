@@ -33,9 +33,44 @@ export const updateAppSettings = createServerFn({ method: "POST" })
   }).parse(i))
   .handler(async ({ data, context }) => {
     await assertAdmin(context.userId);
+    const { data: prev } = await supabaseAdmin.from("app_settings").select("*").eq("id", 1).maybeSingle();
+    const fields: Array<keyof typeof data> = [
+      "coins_per_usd", "tx_ttl_min",
+      "bakong_account_id", "bakong_merchant_name", "bakong_merchant_city", "bakong_merchant_phone",
+    ];
+    const auditRows = fields
+      .map((f) => {
+        const oldVal = prev ? (prev as Record<string, unknown>)[f] : null;
+        const newVal = (data as Record<string, unknown>)[f] ?? null;
+        const oldStr = oldVal == null ? null : String(oldVal);
+        const newStr = newVal == null ? null : String(newVal);
+        return { field: String(f), old_value: oldStr, new_value: newStr, changed_by: context.userId };
+      })
+      .filter((r) => r.old_value !== r.new_value);
     const { error } = await supabaseAdmin.from("app_settings").upsert({ id: 1, ...data, updated_at: new Date().toISOString() });
     if (error) throw new Error(error.message);
-    return { ok: true };
+    if (auditRows.length) {
+      await supabaseAdmin.from("app_settings_audit").insert(auditRows);
+    }
+    return { ok: true, changes: auditRows.length };
+  });
+
+export const listSettingsAudit = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await assertAdmin(context.userId);
+    const { data: rows, error } = await supabaseAdmin
+      .from("app_settings_audit")
+      .select("id, changed_by, field, old_value, new_value, created_at")
+      .order("created_at", { ascending: false })
+      .limit(200);
+    if (error) throw new Error(error.message);
+    const ids = Array.from(new Set((rows ?? []).map((r) => r.changed_by)));
+    const { data: profs } = ids.length
+      ? await supabaseAdmin.from("profiles").select("user_id, display_name").in("user_id", ids)
+      : { data: [] as { user_id: string; display_name: string }[] };
+    const map = new Map((profs ?? []).map((p) => [p.user_id, p.display_name]));
+    return (rows ?? []).map((r) => ({ ...r, changed_by_name: map.get(r.changed_by) ?? "Admin" }));
   });
 
 export const adminSetUserBalance = createServerFn({ method: "POST" })
