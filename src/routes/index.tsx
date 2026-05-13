@@ -1026,7 +1026,7 @@ function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () 
             </div>
             <div className="text-xs text-black/60">ពិនិត្យព័ត៌មានខាងលើសិន មុនបង្កើត KHQR សម្រាប់ការទូទាត់នេះ។</div>
             <div className="grid grid-cols-2 gap-2">
-              <button onClick={onClose} className="inline-flex items-center justify-center rounded-full bg-black/5 px-4 py-3 text-sm font-semibold text-black transition hover:bg-black/10">
+              <button onClick={closeAndClear} className="inline-flex items-center justify-center rounded-full bg-black/5 px-4 py-3 text-sm font-semibold text-black transition hover:bg-black/10">
                 បោះបង់
               </button>
               <button onClick={startPayment} className="inline-flex items-center justify-center rounded-full px-4 py-3 text-sm font-semibold text-white transition hover:opacity-90" style={{ background: "var(--gradient-hero)" }}>
