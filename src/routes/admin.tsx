@@ -114,12 +114,49 @@ function GamesTab() {
   }, []);
   useEffect(() => { loadGames(); }, [loadGames]);
 
+  const [uploadPct, setUploadPct] = useState<number | null>(null);
   const uploadFile = async (gameId: string, file: File): Promise<{ path: string; size: number } | null> => {
     const safe = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
     const path = `${gameId}/${Date.now()}_${safe}`;
-    const { error } = await supabase.storage.from("game-files").upload(path, file, { upsert: true });
-    if (error) { showToast(`Upload: ${error.message}`); return null; }
-    return { path, size: file.size };
+    const RESUMABLE_THRESHOLD = 6 * 1024 * 1024; // 6MB
+    if (file.size <= RESUMABLE_THRESHOLD) {
+      const { error } = await supabase.storage.from("game-files").upload(path, file, { upsert: true, contentType: file.type || "application/octet-stream" });
+      if (error) { showToast(`Upload: ${error.message}`); return null; }
+      return { path, size: file.size };
+    }
+    // Resumable upload via TUS for large files
+    const tus = await import("tus-js-client");
+    const { data: sess } = await supabase.auth.getSession();
+    const token = sess.session?.access_token;
+    if (!token) { showToast("Upload: not authenticated"); return null; }
+    const projectUrl = (import.meta as any).env.VITE_SUPABASE_URL as string;
+    return await new Promise((resolve) => {
+      setUploadPct(0);
+      const upload = new tus.Upload(file, {
+        endpoint: `${projectUrl}/storage/v1/upload/resumable`,
+        retryDelays: [0, 1000, 3000, 5000, 10000],
+        headers: {
+          authorization: `Bearer ${token}`,
+          "x-upsert": "true",
+        },
+        uploadDataDuringCreation: true,
+        removeFingerprintOnSuccess: true,
+        metadata: {
+          bucketName: "game-files",
+          objectName: path,
+          contentType: file.type || "application/octet-stream",
+          cacheControl: "3600",
+        },
+        chunkSize: 6 * 1024 * 1024,
+        onError: (err: Error) => { setUploadPct(null); showToast(`Upload: ${err.message}`); resolve(null); },
+        onProgress: (sent: number, total: number) => { setUploadPct(Math.round((sent / total) * 100)); },
+        onSuccess: () => { setUploadPct(null); resolve({ path, size: file.size }); },
+      });
+      upload.findPreviousUploads().then((prev: any[]) => {
+        if (prev.length) upload.resumeFromPreviousUpload(prev[0]);
+        upload.start();
+      });
+    });
   };
 
   const updateGame = async (id: string, patch: Partial<GameRow>) => {
@@ -243,6 +280,11 @@ function GamesTab() {
               <span className="block text-[10px] uppercase tracking-wider text-muted-foreground mb-1">Game File (zip/installer)</span>
               <input type="file" onChange={(e) => setDraftFile(e.target.files?.[0] ?? null)} className="w-full text-xs file:mr-2 file:rounded-full file:border-0 file:bg-primary file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-primary-foreground" />
               {draftFile && <span className="text-[10px] text-muted-foreground mt-1 block">{draftFile.name} · {(draftFile.size / 1024 / 1024).toFixed(2)} MB</span>}
+              {uploadPct !== null && (
+                <div className="mt-2 h-1.5 w-full rounded-full bg-muted overflow-hidden">
+                  <div className="h-full bg-primary transition-all" style={{ width: `${uploadPct}%` }} />
+                </div>
+              )}
             </label>
           </div>
           <label className="inline-flex items-center gap-2 text-xs">
@@ -313,7 +355,7 @@ function GameRowEditor({ game, busy, onSave, onDelete, onReplaceFile }: {
       <td className="px-4 py-3 text-center">
         {game.file_path ? (
           <span className="inline-flex items-center gap-1 text-[11px] text-emerald-400" title={game.file_path}>
-            <FileArchive className="h-3 w-3" /> {game.file_size_bytes ? `${(game.file_size_bytes / 1024 / 1024).toFixed(1)}MB` : "ok"}
+            <FileArchive className="h-3 w-3" /> {game.file_size_bytes ? (game.file_size_bytes >= 1024 ** 3 ? `${(game.file_size_bytes / 1024 ** 3).toFixed(2)}GB` : `${(game.file_size_bytes / 1024 / 1024).toFixed(1)}MB`) : "ok"}
           </span>
         ) : <span className="text-[11px] text-muted-foreground">—</span>}
         <label className="block mt-1">
