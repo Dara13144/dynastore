@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { StoreProvider, useStore, type Game } from "@/lib/store";
 import { purchaseGame } from "@/lib/payment.functions";
 import { TopupModal } from "@/components/TopupModal";
+import { DynastoreAIChat } from "@/components/DynastoreAIChat";
 
 import heroImg from "@/assets/hero-arcade.jpg";
 import logoD from "@/assets/dyna-logo.jpeg";
@@ -56,6 +57,8 @@ function Page() {
 
       {settingsOpen && <SettingsModal onClose={() => setSettingsOpen(false)} onToast={showToast} />}
       {topupOpen && <TopupModal onClose={() => setTopupOpen(false)} onToast={showToast} />}
+
+      <DynastoreAIChat />
 
       {toast && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[200] rounded-full bg-foreground text-background px-5 py-2 text-sm shadow-lg animate-in fade-in slide-in-from-bottom-2">
