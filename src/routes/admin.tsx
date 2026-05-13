@@ -228,7 +228,18 @@ function GamesTab() {
       (g.description ?? "").toLowerCase().includes(q) ||
       (g.badge ?? "").toLowerCase().includes(q)
     );
+  }).slice().sort((a, b) => {
+    const dir = sortDir === "asc" ? 1 : -1;
+    if (sortKey === "price_coins") return (a.price_coins - b.price_coins) * dir;
+    if (sortKey === "created_at") return ((a.created_at ?? "").localeCompare(b.created_at ?? "")) * dir;
+    return String(a[sortKey] ?? "").localeCompare(String(b[sortKey] ?? "")) * dir;
   });
+
+  const toggleSort = (k: typeof sortKey) => {
+    if (sortKey === k) setSortDir((d) => d === "asc" ? "desc" : "asc");
+    else { setSortKey(k); setSortDir(k === "created_at" || k === "price_coins" ? "desc" : "asc"); }
+  };
+  const sortIcon = (k: typeof sortKey) => sortKey === k ? (sortDir === "asc" ? " ▲" : " ▼") : "";
 
   return (
     <div className="space-y-6">
