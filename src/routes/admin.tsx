@@ -335,17 +335,7 @@ function UsersTab() {
               {loading ? <tr><td colSpan={6} className="text-center py-8 text-xs text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin inline" /></td></tr>
                 : rows.length === 0 ? <tr><td colSpan={6} className="text-center py-8 text-xs text-muted-foreground">គ្មានអ្នកប្រើ។</td></tr>
                 : rows.map((u) => (
-                  <tr key={u.user_id} className="border-t border-border/60 hover:bg-muted/10">
-                    <td className="px-4 py-3 font-medium">{u.display_name}</td>
-                    <td className="px-4 py-3 font-mono text-[11px] text-muted-foreground truncate max-w-[200px]">{u.user_id}</td>
-                    <td className="px-4 py-3 text-right font-semibold text-primary">{u.balance.toLocaleString()}</td>
-                    <td className="px-4 py-3 text-right">{u.owned}</td>
-                    <td className="px-4 py-3 text-center">
-                      {u.is_admin ? <span className="inline-flex items-center rounded-full bg-primary/15 text-primary px-2 py-0.5 text-[10px] font-semibold">Admin</span>
-                        : <span className="text-[10px] text-muted-foreground">User</span>}
-                    </td>
-                    <td className="px-4 py-3 text-xs text-muted-foreground">{new Date(u.created_at).toLocaleDateString()}</td>
-                  </tr>
+                  <UserRowEditor key={u.user_id} user={u} onUpdate={(b) => setRows(rs => rs.map(x => x.user_id === u.user_id ? { ...x, balance: b } : x))} />
                 ))}
             </tbody>
           </table>
