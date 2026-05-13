@@ -38,7 +38,7 @@ export const createTopup = createServerFn({ method: "POST" })
       status: "pending", expires_at: expires,
     });
     if (error) throw new Error(error.message);
-    return { md5, qr, coins, amountUsd: data.amountUsd, expiresAt: expires };
+    return { md5, qr, balance: coins, amountUsd: data.amountUsd, expiresAt: expires };
   });
 
 export const checkTopup = createServerFn({ method: "POST" })

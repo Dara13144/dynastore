@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import QRCode from "qrcode";
-import { Settings, LogIn, LogOut, Star, Send, Gamepad2, Sparkles, X, Coins, Plus, Library, Check, Loader2, AlertTriangle, RefreshCw, Wallet, Copy, ShieldCheck } from "lucide-react";
+import { Settings, LogIn, LogOut, Star, Send, Gamepad2, Sparkles, X, Plus, Library, Check, Loader2, AlertTriangle, RefreshCw, Wallet, Copy, ShieldCheck } from "lucide-react";
 import { StoreProvider, useStore, type Game } from "@/lib/store";
 import { createTopup, checkTopup, purchaseGame } from "@/lib/payment.functions";
 import heroImg from "@/assets/hero-arcade.jpg";
@@ -371,7 +371,7 @@ function TopupModal({ onClose, onToast }: { onClose: () => void; onToast: (m: st
     setStage("creating");
     try {
       const r = await createFn({ data: { amountUsd: amount } });
-      setQr(r.qr); setMd5(r.md5); setCoins(r.coins); setExpiresAt(new Date(r.expiresAt).getTime());
+      setQr(r.qr); setMd5(r.md5); setCoins(r.balance); setExpiresAt(new Date(r.expiresAt).getTime());
       const dataUrl = await QRCode.toDataURL(r.qr, { width: 320, margin: 1 });
       setQrDataUrl(dataUrl);
       setStage("qr");
@@ -381,7 +381,7 @@ function TopupModal({ onClose, onToast }: { onClose: () => void; onToast: (m: st
           const c = await checkFn({ data: { md5: r.md5 } });
           if (c.status === "paid") {
             stopPoll(); setStage("paid"); await refreshWallet();
-            onToast(`បានបន្ថែម ${r.coins.toLocaleString()} Balance!`);
+            onToast(`បានបន្ថែម ${r.balance.toLocaleString()} Balance!`);
           } else if (c.status === "expired") {
             stopPoll(); setStage("expired");
           }
