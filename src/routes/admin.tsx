@@ -735,10 +735,10 @@ function PaymentsTab() {
             <thead className="bg-muted/30 text-xs uppercase tracking-wider text-muted-foreground">
               <tr>
                 <th className="text-left px-4 py-3">ពេលវេលា</th>
-                <th className="text-left px-4 py-3">User</th>
+                <th className="text-left px-4 py-3">អ្នកប្រើ</th>
                 <th className="text-left px-4 py-3">MD5</th>
-                <th className="text-right px-4 py-3">USD</th>
-                <th className="text-right px-4 py-3">Balance</th>
+                <th className="text-right px-4 py-3">ដុល្លារ</th>
+                <th className="text-right px-4 py-3">សមតុល្យ</th>
                 <th className="text-center px-4 py-3">ស្ថានភាព</th>
                 <th className="text-left px-4 py-3">ផុត / បង់</th>
               </tr>
