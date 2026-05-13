@@ -55,7 +55,7 @@ function Page() {
       {topupOpen && (
         <TopupModal
           onClose={() => setTopupOpen(false)}
-          onCredited={() => { refreshWallet(); }}
+          onCredited={(newBalance) => { setBalance(newBalance); refreshWallet(); }}
           onToast={showToast}
         />
       )}
