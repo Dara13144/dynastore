@@ -46,6 +46,7 @@ type StoreCtx = {
   updateProfile: (patch: Partial<Pick<Profile, "display_name" | "avatar_url" | "bio">>) => Promise<{ error: string | null }>;
   refreshProfile: () => Promise<void>;
   refreshWallet: () => Promise<void>;
+  setBalance: (n: number) => void;
   refreshLibrary: () => Promise<void>;
   toggleWishlist: (gameId: string) => Promise<{ error: string | null; added: boolean }>;
   removeFromLibrary: (id: string) => Promise<void>;
