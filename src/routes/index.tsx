@@ -695,23 +695,22 @@ function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () 
   // 5-minute MD5 validity window — countdown + status polling
   useEffect(() => {
     if (!tx || (status !== "qr" && status !== "verifying")) return;
-    const WINDOW_MS = POLL_WINDOW_S * 1000;
+    let cancelled = false;
     const tick = setInterval(() => {
       const left = Math.max(0, Math.ceil((tx.expiresAt - Date.now()) / 1000));
       setSecondsLeft(left);
       if (left === 0) setStatus("expired");
     }, 1000);
-    const poll = setInterval(async () => {
-      // Stop polling stale MD5 — server will reject anyway after 5 min
-      if (Date.now() >= tx.expiresAt) { clearInterval(poll); setStatus("expired"); return; }
-      // Snapshot MD5 at request time so a late response from a previous QR
-      // can never flip the now-active QR to "paid".
+
+    const runPoll = async () => {
+      if (cancelled) return;
+      if (Date.now() >= tx.expiresAt) { setStatus("expired"); return; }
       const checkingMd5 = tx.md5;
       try {
         const r = await checkPayment({ data: { md5: checkingMd5 } });
+        if (cancelled) return;
         setLastChecked(Date.now());
         setPollTick((n) => n + 1);
-        // Validate: must still be the active QR AND not expired
         setTx((cur) => {
           if (!cur || cur.md5 !== checkingMd5) return cur;
           if (Date.now() >= cur.expiresAt) { setStatus("expired"); return cur; }
@@ -735,9 +734,22 @@ function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () 
           return cur;
         });
       } catch {}
-    }, 4000);
-    return () => { clearInterval(poll); clearInterval(tick); };
-  }, [tx, status, checkPayment, onClose, onToast, refresh]);
+    };
+
+    // Immediate poll, then every 2s for fast PAID flip.
+    runPoll();
+    const poll = setInterval(runPoll, 2000);
+    const onVis = () => { if (document.visibilityState === "visible") runPoll(); };
+    document.addEventListener("visibilitychange", onVis);
+
+    return () => {
+      cancelled = true;
+      clearInterval(poll);
+      clearInterval(tick);
+      document.removeEventListener("visibilitychange", onVis);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tx, status]);
 
   // When MD5 becomes stale/expired, ask the user to confirm regen with a 5s cancellable countdown
   const REGEN_CONFIRM_S = 5;
