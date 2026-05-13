@@ -1,42 +1,40 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import {
   validateGameFile,
   MIN_GAME_FILE_BYTES,
   MAX_GAME_FILE_BYTES,
-  MIN_GAME_FILE_MB,
-  MAX_GAME_FILE_MB,
+  MIN_GAME_FILE_GB,
+  MAX_GAME_FILE_GB,
 } from "./validate-game-file";
 
 describe("validateGameFile - byte conversion", () => {
-  it("MIN_GAME_FILE_BYTES == 1000 * 1024 * 1024", () => {
-    expect(MIN_GAME_FILE_BYTES).toBe(1000 * 1024 * 1024);
-    expect(MIN_GAME_FILE_BYTES).toBe(1_048_576_000);
+  it("MIN_GAME_FILE_BYTES == 1000 * 1024 * 1024 * 1024", () => {
+    expect(MIN_GAME_FILE_BYTES).toBe(1000 * 1024 * 1024 * 1024);
   });
-  it("MAX_GAME_FILE_BYTES == 5000 * 1024 * 1024", () => {
-    expect(MAX_GAME_FILE_BYTES).toBe(5000 * 1024 * 1024);
-    expect(MAX_GAME_FILE_BYTES).toBe(5_242_880_000);
+  it("MAX_GAME_FILE_BYTES == 5000 * 1024 * 1024 * 1024", () => {
+    expect(MAX_GAME_FILE_BYTES).toBe(5000 * 1024 * 1024 * 1024);
   });
 });
 
 describe("validateGameFile - boundaries", () => {
-  it("accepts a file exactly at the minimum (1000MB)", () => {
+  it("accepts a file exactly at the minimum (1000GB)", () => {
     expect(validateGameFile({ name: "g.zip", size: MIN_GAME_FILE_BYTES })).toBeNull();
   });
-  it("accepts a file exactly at the maximum (5000MB)", () => {
+  it("accepts a file exactly at the maximum (5000GB)", () => {
     expect(validateGameFile({ name: "g.zip", size: MAX_GAME_FILE_BYTES })).toBeNull();
   });
   it("rejects 1 byte under the minimum with exact Khmer string", () => {
     const size = MIN_GAME_FILE_BYTES - 1;
-    const mb = (size / 1024 / 1024).toFixed(1);
+    const gb = (size / 1024 / 1024 / 1024).toFixed(2);
     expect(validateGameFile({ name: "g.zip", size })).toBe(
-      `ឯកសារតូចពេក (${mb}MB) — តម្រូវយ៉ាងតិច ${MIN_GAME_FILE_MB}MB`,
+      `ឯកសារតូចពេក (${gb}GB) — តម្រូវយ៉ាងតិច ${MIN_GAME_FILE_GB}GB`,
     );
   });
   it("rejects 1 byte over the maximum with exact Khmer string", () => {
     const size = MAX_GAME_FILE_BYTES + 1;
-    const mb = (size / 1024 / 1024).toFixed(1);
+    const gb = (size / 1024 / 1024 / 1024).toFixed(2);
     expect(validateGameFile({ name: "g.zip", size })).toBe(
-      `ឯកសារធំពេក (${mb}MB) — អតិបរមា ${MAX_GAME_FILE_MB}MB`,
+      `ឯកសារធំពេក (${gb}GB) — អតិបរមា ${MAX_GAME_FILE_GB}GB`,
     );
   });
 });
@@ -95,5 +93,89 @@ describe("validateGameFile - tricky filenames", () => {
     expect(validateGameFile({ name: "g.zipx", size })).toBe(TYPE_ERR);
     expect(validateGameFile({ name: "g.rared", size })).toBe(TYPE_ERR);
     expect(validateGameFile({ name: "g.7zx", size })).toBe(TYPE_ERR);
+  });
+});
+
+/* ============================================================
+ * Integration: simulate the createGame submit path
+ * ============================================================
+ * createGame must run validateGameFile BEFORE any storage upload
+ * or DB insert. We model that contract with a tiny fake that mirrors
+ * the production sequence (validate → upload → insert) and assert
+ * that invalid files short-circuit with no upload and no insert.
+ */
+function makeCreateGame() {
+  const upload = vi.fn(async (_path: string, file: { name: string; size: number }) => ({
+    path: `games/${file.name}`,
+    size: file.size,
+  }));
+  const insert = vi.fn(async (_row: Record<string, unknown>) => ({ error: null }));
+
+  async function createGame(opts: { id: string; title: string; file: { name: string; size: number } | null }) {
+    if (!opts.id.trim() || !opts.title.trim()) return { ok: false, error: "missing id/title" };
+    if (opts.file) {
+      const err = validateGameFile(opts.file);
+      if (err) return { ok: false, error: err };
+    }
+    let file_path: string | null = null;
+    let file_size_bytes: number | null = null;
+    if (opts.file) {
+      const up = await upload(opts.id, opts.file);
+      file_path = up.path; file_size_bytes = up.size;
+    }
+    await insert({ id: opts.id, title: opts.title, file_path, file_size_bytes });
+    return { ok: true, error: null };
+  }
+
+  return { createGame, upload, insert };
+}
+
+describe("createGame integration - boundary file sizes", () => {
+  let h: ReturnType<typeof makeCreateGame>;
+  beforeEach(() => { h = makeCreateGame(); });
+
+  it("accepts a file at exactly 1000GB (uploads + inserts)", async () => {
+    const r = await h.createGame({ id: "g1", title: "G1", file: { name: "g.zip", size: MIN_GAME_FILE_BYTES } });
+    expect(r).toEqual({ ok: true, error: null });
+    expect(h.upload).toHaveBeenCalledTimes(1);
+    expect(h.insert).toHaveBeenCalledTimes(1);
+  });
+
+  it("accepts a file at exactly 5000GB (uploads + inserts)", async () => {
+    const r = await h.createGame({ id: "g2", title: "G2", file: { name: "g.zip", size: MAX_GAME_FILE_BYTES } });
+    expect(r).toEqual({ ok: true, error: null });
+    expect(h.upload).toHaveBeenCalledTimes(1);
+    expect(h.insert).toHaveBeenCalledTimes(1);
+  });
+
+  it("rejects 1 byte under 1000GB BEFORE uploading or inserting", async () => {
+    const r = await h.createGame({ id: "g3", title: "G3", file: { name: "g.zip", size: MIN_GAME_FILE_BYTES - 1 } });
+    expect(r.ok).toBe(false);
+    expect(r.error).toContain("តូចពេក");
+    expect(h.upload).not.toHaveBeenCalled();
+    expect(h.insert).not.toHaveBeenCalled();
+  });
+
+  it("rejects 1 byte over 5000GB BEFORE uploading or inserting", async () => {
+    const r = await h.createGame({ id: "g4", title: "G4", file: { name: "g.zip", size: MAX_GAME_FILE_BYTES + 1 } });
+    expect(r.ok).toBe(false);
+    expect(r.error).toContain("ធំពេក");
+    expect(h.upload).not.toHaveBeenCalled();
+    expect(h.insert).not.toHaveBeenCalled();
+  });
+
+  it("rejects disallowed extensions BEFORE uploading or inserting", async () => {
+    const r = await h.createGame({ id: "g5", title: "G5", file: { name: "g.exe", size: MIN_GAME_FILE_BYTES } });
+    expect(r.ok).toBe(false);
+    expect(r.error).toContain("មិនអនុញ្ញាត");
+    expect(h.upload).not.toHaveBeenCalled();
+    expect(h.insert).not.toHaveBeenCalled();
+  });
+
+  it("allows submission without a file (no upload, only insert)", async () => {
+    const r = await h.createGame({ id: "g6", title: "G6", file: null });
+    expect(r).toEqual({ ok: true, error: null });
+    expect(h.upload).not.toHaveBeenCalled();
+    expect(h.insert).toHaveBeenCalledTimes(1);
   });
 });
