@@ -132,6 +132,6 @@ function LoginPage() {
           {mode === "login" ? "មិនទាន់មានគណនី? បង្កើតថ្មី" : "មានគណនីរួច? ចូលប្រើ"}
         </button>
       </div>
-    </div>
+    </main>
   );
 }
