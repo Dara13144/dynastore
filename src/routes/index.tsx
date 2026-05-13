@@ -1017,6 +1017,62 @@ function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () 
             </span>
           </div>
 
+          {/* Bakong API status: end-to-end pipeline indicator */}
+          {(() => {
+            const genOk = !!(tx.qrPayload && tx.md5);
+            const clientOk = genOk && md5Hex(tx.qrPayload) === tx.md5;
+            const verifyState: "paid" | "checking" | "polling" | "expired" | "idle" =
+              status === "paid" ? "paid"
+              : status === "verifying" ? "checking"
+              : status === "expired" ? "expired"
+              : (lastChecked ? "polling" : "idle");
+            const Pill = ({ tone, label }: { tone: "ok" | "warn" | "bad" | "muted"; label: string }) => {
+              const map = {
+                ok: "bg-emerald-500/15 text-emerald-500 ring-emerald-500/40",
+                warn: "bg-amber-500/15 text-amber-500 ring-amber-500/40",
+                bad: "bg-rose-500/15 text-rose-500 ring-rose-500/40",
+                muted: "bg-muted text-muted-foreground ring-border",
+              } as const;
+              return <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ring-1 ${map[tone]}`}>{label}</span>;
+            };
+            const verifyPill =
+              verifyState === "paid" ? <Pill tone="ok" label="PAID ✓" />
+              : verifyState === "checking" ? <Pill tone="warn" label="CHECKING…" />
+              : verifyState === "polling" ? <Pill tone="warn" label={`POLLING · ${pollTick}`} />
+              : verifyState === "expired" ? <Pill tone="bad" label="EXPIRED" />
+              : <Pill tone="muted" label="IDLE" />;
+            return (
+              <div className="mt-2 rounded-lg bg-background/40 p-2.5 ring-1 ring-border/70 text-xs">
+                <div className="mb-2 flex items-center gap-2">
+                  <span className="rounded-full bg-cyan-500/15 px-2 py-0.5 text-[10px] font-bold text-cyan-400 ring-1 ring-cyan-500/30">BAKONG API</span>
+                  <span className="font-mono text-muted-foreground">end-to-end status</span>
+                  <span className="ml-auto font-mono text-[10px] text-muted-foreground">
+                    {lastChecked ? `last check ${new Date(lastChecked).toLocaleTimeString()}` : "no checks yet"}
+                  </span>
+                </div>
+                <div className="grid gap-1.5">
+                  <div className="flex items-center justify-between gap-3 rounded bg-background/40 px-2 py-1.5">
+                    <span className="text-[11px] font-semibold">1 · KHQR Generation</span>
+                    {genOk ? <Pill tone="ok" label="SUCCESS ✓" /> : <Pill tone="bad" label="FAILED" />}
+                  </div>
+                  <div className="flex items-center justify-between gap-3 rounded bg-background/40 px-2 py-1.5">
+                    <span className="text-[11px] font-semibold">2 · Client MD5 Match</span>
+                    {clientOk ? <Pill tone="ok" label="MATCH ✓" /> : <Pill tone="bad" label="MISMATCH ✗" />}
+                  </div>
+                  <div className="flex items-center justify-between gap-3 rounded bg-background/40 px-2 py-1.5">
+                    <span className="text-[11px] font-semibold">3 · Bakong MD5 Verify</span>
+                    {verifyPill}
+                  </div>
+                </div>
+                {errMsg && (
+                  <div className="mt-2 rounded bg-rose-500/10 px-2 py-1 text-[11px] text-rose-400 ring-1 ring-rose-500/30">
+                    {errMsg}
+                  </div>
+                )}
+              </div>
+            );
+          })()}
+
           {/* Debug panel: merchant config + final MD5 used to verify with Bakong */}
           <details
             open={debugOpen}
