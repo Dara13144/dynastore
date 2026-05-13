@@ -4,6 +4,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { buildKhqr, checkBakongMd5 } from "./khqr.server";
 import { COIN_PACK_PRICES, GAME_PRICES, finalGamePrice } from "./catalog";
+import { tryInsertOrReuseTopup } from "./topup-reuse";
 
 const maskAccount = (id: string) => {
   if (!id) return "";
