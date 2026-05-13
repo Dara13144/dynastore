@@ -132,5 +132,21 @@ export const listAllTransactions = createServerFn({ method: "GET" })
       .order("created_at", { ascending: false })
       .limit(200);
     if (error) throw new Error(error.message);
-    return data ?? [];
+    const rows = data ?? [];
+    const ids = Array.from(new Set(rows.map((r) => r.user_id).filter(Boolean)));
+    let nameMap = new Map<string, string>();
+    let walletMap = new Map<string, number>();
+    if (ids.length) {
+      const [{ data: profs }, { data: wals }] = await Promise.all([
+        supabaseAdmin.from("profiles").select("user_id, display_name").in("user_id", ids),
+        supabaseAdmin.from("wallets").select("user_id, balance").in("user_id", ids),
+      ]);
+      nameMap = new Map((profs ?? []).map((p: any) => [p.user_id, p.display_name as string]));
+      walletMap = new Map((wals ?? []).map((w: any) => [w.user_id, w.balance as number]));
+    }
+    return rows.map((r) => ({
+      ...r,
+      user_name: nameMap.get(r.user_id) ?? "—",
+      user_balance: walletMap.get(r.user_id) ?? 0,
+    }));
   });
