@@ -30,6 +30,72 @@ export const Route = createFileRoute("/")({
   ),
 });
 
+type PendingPaymentEntry = {
+  storageKey: string;
+  kind: "topup" | "checkout";
+  md5: string;
+  qrPayload: string;
+  coins: number;
+  createdAt: number;
+  expiresAt: number;
+  updatedAt: number;
+  packId?: string;
+  sessionId?: string;
+};
+
+const PENDING_PAYMENTS_STORAGE_KEY = "bakong:pendingTopups";
+
+function readPendingPayments(): Record<string, PendingPaymentEntry> {
+  if (typeof window === "undefined") return {};
+  try {
+    const raw = localStorage.getItem(PENDING_PAYMENTS_STORAGE_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === "object" ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+function writePendingPayments(entries: Record<string, PendingPaymentEntry>) {
+  if (typeof window === "undefined") return;
+  try {
+    if (Object.keys(entries).length === 0) localStorage.removeItem(PENDING_PAYMENTS_STORAGE_KEY);
+    else localStorage.setItem(PENDING_PAYMENTS_STORAGE_KEY, JSON.stringify(entries));
+  } catch {}
+}
+
+function prunePendingPayments(entries = readPendingPayments()) {
+  const now = Date.now();
+  const next = Object.fromEntries(
+    Object.entries(entries).filter(([, entry]) => entry && entry.md5 && entry.qrPayload && entry.expiresAt > now),
+  ) as Record<string, PendingPaymentEntry>;
+  if (Object.keys(next).length !== Object.keys(entries).length) writePendingPayments(next);
+  return next;
+}
+
+function getPendingPayment(storageKey: string) {
+  return prunePendingPayments()[storageKey] ?? null;
+}
+
+function getLatestPendingPayment(kind?: PendingPaymentEntry["kind"]) {
+  const entries = Object.values(prunePendingPayments());
+  const filtered = kind ? entries.filter((entry) => entry.kind === kind) : entries;
+  return filtered.sort((a, b) => (b.updatedAt || b.createdAt) - (a.updatedAt || a.createdAt))[0] ?? null;
+}
+
+function upsertPendingPayment(entry: PendingPaymentEntry) {
+  const next = prunePendingPayments();
+  next[entry.storageKey] = entry;
+  writePendingPayments(next);
+}
+
+function removePendingPayment(storageKey: string) {
+  const next = prunePendingPayments();
+  delete next[storageKey];
+  writePendingPayments(next);
+}
+
 function Page() {
   const [cartOpen, setCartOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
