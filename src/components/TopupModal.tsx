@@ -78,34 +78,43 @@ export function TopupModal({ onClose, onToast }: Props) {
   function downloadQrPng() {
     const svg = qrBoxRef.current?.querySelector("svg");
     if (!svg) { onToast("QR មិនទាន់រួចរាល់"); return; }
+    setExporting(true);
+    const safeName = (qrName.trim() || "dynastore-khqr").replace(/[^a-zA-Z0-9_\-]+/g, "-").slice(0, 80);
     const xml = new XMLSerializer().serializeToString(svg);
     const svgBlob = new Blob([xml], { type: "image/svg+xml;charset=utf-8" });
     const url = URL.createObjectURL(svgBlob);
     const img = new Image();
     img.onload = () => {
-      const SIZE = 1024;
-      const PAD = 64;
-      const canvas = document.createElement("canvas");
-      canvas.width = SIZE; canvas.height = SIZE + 80;
-      const ctx = canvas.getContext("2d")!;
-      ctx.fillStyle = "#ffffff";
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      ctx.drawImage(img, PAD, PAD, SIZE - PAD * 2, SIZE - PAD * 2);
-      ctx.fillStyle = "#000";
-      ctx.font = "bold 28px system-ui, sans-serif";
-      ctx.textAlign = "center";
-      ctx.fillText("DYNASTORE • KHQR", SIZE / 2, SIZE + 40);
-      URL.revokeObjectURL(url);
-      canvas.toBlob((blob) => {
-        if (!blob) { onToast("Export បរាជ័យ"); return; }
-        const a = document.createElement("a");
-        a.href = URL.createObjectURL(blob);
-        a.download = "dynastore-khqr.png";
-        a.click();
-        setTimeout(() => URL.revokeObjectURL(a.href), 1000);
-      }, "image/png");
+      try {
+        const SIZE = 1024;
+        const PAD = 64;
+        const canvas = document.createElement("canvas");
+        canvas.width = SIZE; canvas.height = SIZE + 80;
+        const ctx = canvas.getContext("2d")!;
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, PAD, PAD, SIZE - PAD * 2, SIZE - PAD * 2);
+        ctx.fillStyle = "#000";
+        ctx.font = "bold 28px system-ui, sans-serif";
+        ctx.textAlign = "center";
+        ctx.fillText("DYNASTORE • KHQR", SIZE / 2, SIZE + 40);
+        URL.revokeObjectURL(url);
+        canvas.toBlob((blob) => {
+          if (!blob) { onToast("Export បរាជ័យ"); setExporting(false); return; }
+          const a = document.createElement("a");
+          a.href = URL.createObjectURL(blob);
+          a.download = `${safeName}.png`;
+          a.click();
+          setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+          setExporting(false);
+        }, "image/png");
+      } catch {
+        URL.revokeObjectURL(url);
+        onToast("Export បរាជ័យ");
+        setExporting(false);
+      }
     };
-    img.onerror = () => { URL.revokeObjectURL(url); onToast("Export បរាជ័យ"); };
+    img.onerror = () => { URL.revokeObjectURL(url); onToast("Export បរាជ័យ"); setExporting(false); };
     img.src = url;
   }
 
