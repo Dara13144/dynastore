@@ -11,6 +11,7 @@ import spaceImg from "@/assets/game-space.jpg";
 export type Game = {
   id: string; title: string; category: string; description: string;
   image: string; badge?: string | null; price_coins: number;
+  file_path?: string | null;
 };
 export type Recommendation = { id: string; name: string; game: string; text: string; initial: string };
 export type Profile = {
@@ -68,9 +69,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     (async () => {
       const { data } = await supabase.from("games").select("*").order("title");
-      if (data) setGames(data.map((g) => ({
+      if (data) setGames(data.map((g: any) => ({
         id: g.id, title: g.title, category: g.category, description: g.description ?? "",
-        image: IMAGES[g.id] ?? gtaImg, badge: g.badge, price_coins: g.price_coins,
+        image: g.image_url || IMAGES[g.id] || gtaImg, badge: g.badge, price_coins: g.price_coins,
+        file_path: g.file_path ?? null,
       })));
     })();
   }, []);

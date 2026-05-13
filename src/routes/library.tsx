@@ -1,8 +1,9 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect } from "react";
-import { ArrowLeft, Trash2, Star, Check, Wallet, Library as LibraryIcon } from "lucide-react";
+import { useEffect, useState } from "react";
+import { ArrowLeft, Trash2, Star, Check, Wallet, Library as LibraryIcon, Download, Loader2 } from "lucide-react";
 import { StoreProvider, useStore } from "@/lib/store";
 import { useSession } from "@/hooks/use-session";
+import { supabase } from "@/integrations/supabase/client";
 import logoD from "@/assets/dyna-logo.jpeg";
 
 export const Route = createFileRoute("/library")({
@@ -57,7 +58,9 @@ function LibraryPage() {
           ) : (
             <Grid>
               {owned.map(({ l, g }) => g && (
-                <Card key={l.id} title={g.title} category={g.category} image={g.image} badge={<span className="rounded-full bg-emerald-500/20 px-2 py-0.5 text-[10px] font-semibold text-emerald-300 inline-flex items-center gap-1"><Check className="h-3 w-3" /> ជាកម្មសិទ្ធ</span>} />
+                <Card key={l.id} title={g.title} category={g.category} image={g.image}
+                  badge={<span className="rounded-full bg-emerald-500/20 px-2 py-0.5 text-[10px] font-semibold text-emerald-300 inline-flex items-center gap-1"><Check className="h-3 w-3" /> ជាកម្មសិទ្ធ</span>}
+                  action={<DownloadBtn filePath={g.file_path ?? null} />} />
               ))}
             </Grid>
           )}
@@ -126,5 +129,24 @@ function Empty({ text, cta, to }: { text: string; cta: string; to: string }) {
       <p className="text-sm text-muted-foreground">{text}</p>
       <Link to={to} className="mt-4 inline-block rounded-full bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground hover:opacity-90">{cta}</Link>
     </div>
+  );
+}
+
+function DownloadBtn({ filePath }: { filePath: string | null }) {
+  const [busy, setBusy] = useState(false);
+  if (!filePath) {
+    return <span className="text-[11px] text-muted-foreground">មិនទាន់មានឯកសារ</span>;
+  }
+  const onClick = async () => {
+    setBusy(true);
+    const { data, error } = await supabase.storage.from("game-files").createSignedUrl(filePath, 300);
+    setBusy(false);
+    if (error || !data?.signedUrl) { alert(error?.message ?? "មិនអាច download បាន"); return; }
+    window.open(data.signedUrl, "_blank");
+  };
+  return (
+    <button onClick={onClick} disabled={busy} className="inline-flex items-center gap-1 rounded-full bg-primary px-3 py-1 text-[11px] font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50">
+      {busy ? <Loader2 className="h-3 w-3 animate-spin" /> : <Download className="h-3 w-3" />} Download
+    </button>
   );
 }
