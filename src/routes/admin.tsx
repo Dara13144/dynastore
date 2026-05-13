@@ -451,6 +451,10 @@ function GameRowEditor({ game, busy, onSave, onDelete, onReplaceFile, validateFi
             <button
               type="button"
               onClick={async () => {
+                if (/^https?:\/\//i.test(game.file_path!)) {
+                  window.open(game.file_path!, "_blank");
+                  return;
+                }
                 const { data, error } = await supabase.storage.from("game-files").createSignedUrl(game.file_path!, 300, { download: true });
                 if (error || !data?.signedUrl) return;
                 window.open(data.signedUrl, "_blank");
