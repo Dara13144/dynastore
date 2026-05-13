@@ -223,7 +223,7 @@ function GameCard({ game, onToast, onTopup }: { game: Game; onToast: (m: string)
             </div>
           )}
           <div className="flex items-center justify-end gap-1.5">
-            <button onClick={wish} className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1.5 text-xs hover:bg-accent ${wished ? "border-primary text-primary" : "border-border"}`}>
+            <button onClick={wish} aria-label={wished ? `ដកចេញពីបញ្ជីចង់លេង — ${game.title}` : `បន្ថែមទៅបញ្ជីចង់លេង — ${game.title}`} aria-pressed={wished} className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1.5 text-xs hover:bg-accent ${wished ? "border-primary text-primary" : "border-border"}`}>
               <Star className={`h-3.5 w-3.5 ${wished ? "fill-primary" : ""}`} />
             </button>
             {owned ? (
@@ -531,7 +531,7 @@ function TopupModal({ onClose, onToast }: { onClose: () => void; onToast: (m: st
         {stage === "qr" && qrDataUrl && (
           <div className="p-5 space-y-3 text-center">
             <div className="text-xs text-muted-foreground inline-flex items-center gap-1.5"><ShieldCheck className="h-3.5 w-3.5 text-emerald-400" /> ស្កេនជាមួយ Bakong / ABA / ធនាគារផ្សេងៗ</div>
-            <div className="mx-auto inline-block rounded-xl bg-white p-3"><img src={qrDataUrl} alt="KHQR" className="h-64 w-64" /></div>
+            <div className="mx-auto inline-block rounded-xl bg-white p-3"><img src={qrDataUrl} alt={`KHQR Code សម្រាប់ការបង់ប្រាក់ ${amount} USD`} className="h-64 w-64" /></div>
             <div className="text-sm font-semibold">${amount} → {coins.toLocaleString()} Balance</div>
             <div className="rounded-xl bg-amber-500/10 border border-amber-500/30 px-3 py-2 text-xs text-amber-300 inline-flex items-center gap-2 mx-auto">
               <Loader2 className={`h-3.5 w-3.5 ${polling ? "animate-spin" : ""}`} />

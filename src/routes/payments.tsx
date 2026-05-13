@@ -45,7 +45,7 @@ function PaymentsPage() {
     <div className="min-h-screen bg-background">
       <header className="sticky top-0 z-30 backdrop-blur-md bg-background/80 border-b border-border/60">
         <div className="container mx-auto px-4 h-14 flex items-center gap-3">
-          <Link to="/" className="text-muted-foreground hover:text-foreground"><ArrowLeft className="h-4 w-4" /></Link>
+          <Link to="/" aria-label="ត្រឡប់ទៅទំព័រដើម" className="text-muted-foreground hover:text-foreground"><ArrowLeft className="h-4 w-4" /></Link>
           <h1 className="font-display text-lg gradient-text inline-flex items-center gap-2"><Receipt className="h-4 w-4" /> ប្រវត្តិការទូទាត់</h1>
         </div>
       </header>
