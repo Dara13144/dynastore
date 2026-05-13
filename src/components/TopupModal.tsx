@@ -114,7 +114,6 @@ export function TopupModal({ onClose, onToast }: Props) {
               <textarea value={note} onChange={(e) => setNote(e.target.value.slice(0, 300))}
                 placeholder="សារបន្ថែម (ស្រេចចិត្ត)…" rows={2}
                 className="w-full rounded-xl bg-input px-3 py-2 text-xs ring-1 ring-border focus:ring-primary outline-none resize-none" />
-            </div>
           </div>
 
           {/* Slip upload */}
