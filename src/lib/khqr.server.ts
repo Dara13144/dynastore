@@ -13,6 +13,7 @@ export type KhqrInput = {
   mobileNumber?: string;
   terminalLabel?: string;
   acquiringBank?: string;      // when present + merchantId, generates Merchant KHQR
+  accountInformation?: string;
   merchantId?: string;
 };
 
@@ -30,6 +31,8 @@ export function buildKhqr(input: KhqrInput): { payload: string; md5: string } {
   if (input.mobileNumber) optionalData.mobileNumber = input.mobileNumber.slice(0, 25);
   if (input.storeLabel) optionalData.storeLabel = input.storeLabel.slice(0, 25);
   if (input.terminalLabel) optionalData.terminalLabel = input.terminalLabel.slice(0, 25);
+  if (input.acquiringBank) optionalData.acquiringBank = input.acquiringBank.slice(0, 25);
+  if (input.accountInformation) optionalData.accountInformation = input.accountInformation.slice(0, 25);
 
   const khqr = new BakongKHQR();
   let response: any;
