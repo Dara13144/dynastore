@@ -99,6 +99,8 @@ function GamesTab() {
   const [query, setQuery] = useState("");
   const [catFilter, setCatFilter] = useState<string>("all");
   const [visFilter, setVisFilter] = useState<"all" | "visible" | "hidden">("all");
+  const [sortKey, setSortKey] = useState<"title" | "category" | "price_coins" | "created_at">("created_at");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
   const [draft, setDraft] = useState<GameRow>({
     id: "", title: "", category: "", description: "", badge: "",
     price_coins: 0, visible: true, image_url: "", file_path: null, file_size_bytes: null,
