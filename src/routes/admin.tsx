@@ -445,6 +445,7 @@ function GameRowEditor({ game, busy, onSave, onDelete, onReplaceFile, validateFi
             <span className="text-[10px] text-primary cursor-pointer hover:underline">{game.file_path ? "ប្តូរ" : "ផ្ទុកឡើង"}</span>
             <input
               type="file"
+              accept=".zip,.rar,.7z,.tar,.gz,.tgz"
               className="hidden"
               onChange={(e) => {
                 const f = e.target.files?.[0];
