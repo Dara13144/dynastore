@@ -74,6 +74,9 @@ async function generateKhqrForUser(opts: {
         billNumber: nonce,
       });
       qr = res.qr;
+      if (typeof qr !== "string" || qr.length < 50 || !qr.startsWith("0002")) {
+        throw new Error(`KHQR encoder produced invalid output (len=${qr ? String(qr).length : 0})`);
+      }
       md5 = md5Hex(qr);
     } catch (e) { throw new Error("បរាជ័យបង្កើត KHQR: " + khqrErrorMessage(e)); }
     if (!qr || !md5) throw new Error("KHQR មិនត្រឹមត្រូវ — សូមពិនិត្យ Bakong credentials");
