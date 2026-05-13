@@ -958,10 +958,13 @@ function TopupsTab() {
     try {
       const r = await approveFn({ data: { id } });
       if (r.status === "rejected") {
+        setOutcome((o) => ({ ...o, [id]: "rejected" }));
         toast.error(`Already rejected${r.reject_reason ? ` · ${r.reject_reason}` : ""}`);
       } else if (r.already_reviewed) {
+        setOutcome((o) => ({ ...o, [id]: "already" }));
         toast(`Already approved · balance ${r.new_balance.toLocaleString()}`);
       } else {
+        setOutcome((o) => ({ ...o, [id]: "approved" }));
         toast.success(`✓ Approved · +${r.credited.toLocaleString()} coins · balance ${r.new_balance.toLocaleString()}`);
       }
       await load();
@@ -974,6 +977,7 @@ function TopupsTab() {
     setActing(id);
     try {
       await rejectFn({ data: { id, reason } });
+      setOutcome((o) => ({ ...o, [id]: "rejected" }));
       toast("Rejected");
       await load();
     } catch (e) { toast.error(e instanceof Error ? e.message : "Failed"); }
