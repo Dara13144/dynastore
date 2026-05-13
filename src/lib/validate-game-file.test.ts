@@ -37,6 +37,7 @@ describe("validateGameFile - boundaries", () => {
       `ឯកសារធំពេក (${gb}GB) — អតិបរមា ${MAX_GAME_FILE_BYTES} bytes`,
     );
   });
+});
 
 describe("validateGameFile - other rules", () => {
   it("rejects empty files", () => {
