@@ -541,7 +541,7 @@ function UsersTab() {
   );
 }
 
-function UserRowEditor({ user, onUpdate }: { user: UserRow; onUpdate: (b: number) => void }) {
+function UserRowEditor({ user, isMe, onUpdate, onRoleChange }: { user: UserRow; isMe: boolean; onUpdate: (b: number) => void; onRoleChange: (isAdmin: boolean) => void }) {
   const [editing, setEditing] = useState(false);
   const [val, setVal] = useState(String(user.balance));
   const [reason, setReason] = useState("");
@@ -550,8 +550,22 @@ function UserRowEditor({ user, onUpdate }: { user: UserRow; onUpdate: (b: number
   const [showHistory, setShowHistory] = useState(false);
   const [history, setHistory] = useState<Array<{ id: string; old_balance: number; new_balance: number; reason: string | null; created_at: string; changed_by_name: string }> | null>(null);
   const [loadingHist, setLoadingHist] = useState(false);
+  const [roleBusy, setRoleBusy] = useState(false);
   const setBalance = useServerFn(adminSetUserBalance);
   const fetchHistory = useServerFn(listBalanceChanges);
+  const setRole = useServerFn(adminSetUserRole);
+
+  const toggleAdmin = async () => {
+    const next = !user.is_admin;
+    if (!confirm(next ? `ផ្តល់សិទ្ធិ Admin ដល់ ${user.display_name}?` : `ដកសិទ្ធិ Admin ពី ${user.display_name}?`)) return;
+    setRoleBusy(true);
+    try {
+      const r = await setRole({ data: { user_id: user.user_id, is_admin: next } });
+      onRoleChange(r.is_admin);
+    } catch (e) { alert(e instanceof Error ? e.message : "បរាជ័យ"); }
+    finally { setRoleBusy(false); }
+  };
+
 
   const parsedNextBalance = Math.floor(Number(val));
   const isValidNextBalance = Number.isFinite(parsedNextBalance) && parsedNextBalance >= 0;
