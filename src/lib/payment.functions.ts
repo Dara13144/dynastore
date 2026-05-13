@@ -73,7 +73,10 @@ async function generateKhqrForUser(opts: {
       if (res?.status && res.status.code !== 0) {
         throw new Error(`KHQR generation rejected: ${res.status.message ?? "unknown"}`);
       }
-      qr = res?.data?.qr; md5 = res?.data?.md5;
+      qr = res?.data?.qr;
+      // The bakong-khqr lib sometimes returns a stale/incorrect md5. Always recompute
+      // MD5(qr_string) ourselves — that is what Bakong's check_transaction_by_md5 expects.
+      md5 = qr ? md5Hex(qr) : undefined;
     } catch (e) { throw new Error("បរាជ័យបង្កើត KHQR: " + khqrErrorMessage(e)); }
     if (!qr || !md5) throw new Error("KHQR មិនត្រឹមត្រូវ — សូមពិនិត្យ Bakong credentials");
     const { error } = await supabaseAdmin.from("transactions").insert({
