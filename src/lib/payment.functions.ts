@@ -5,6 +5,17 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
 // @ts-ignore - bakong-khqr is plain js
 import { BakongKHQR, IndividualInfo, khqrData } from "bakong-khqr";
 
+type PollDebug = {
+  checkedAt: string;
+  source: "db" | "bakong";
+  txStatus: string;
+  httpStatus: number | null;
+  latencyMs: number | null;
+  orderId: string | null;
+  bakongMd5: string | null;
+  response: string | null;
+};
+
 async function loadSettings() {
   const { data, error } = await supabaseAdmin.from("app_settings").select("*").eq("id", 1).maybeSingle();
   if (error) throw new Error("មិនអាចទាញ Settings: " + error.message);
@@ -34,7 +45,7 @@ export const createTopup = createServerFn({ method: "POST" })
 
     const { data: existingPending } = await supabaseAdmin
       .from("transactions")
-      .select("md5, qr_string, amount_usd, coins, expires_at")
+      .select("order_id, bakong_md5, qr_string, amount_usd, coins, expires_at")
       .eq("user_id", userId)
       .eq("status", "pending")
       .eq("amount_usd", data.amountUsd)
@@ -45,7 +56,8 @@ export const createTopup = createServerFn({ method: "POST" })
 
     if (existingPending?.qr_string) {
       return {
-        md5: existingPending.md5,
+        orderId: existingPending.order_id,
+        bakongMd5: existingPending.bakong_md5,
         qr: existingPending.qr_string,
         balance: existingPending.coins,
         amountUsd: Number(existingPending.amount_usd),
@@ -53,10 +65,10 @@ export const createTopup = createServerFn({ method: "POST" })
       };
     }
 
-    // Retry up to 3 times to avoid md5 unique-collision (same params produce same md5)
     let qr: string | undefined;
-    let md5: string | undefined;
+    let bakongMd5: string | undefined;
     for (let attempt = 0; attempt < 3; attempt++) {
+      const orderId = `khqr_${crypto.randomUUID()}`;
       const nonce = `${userId.slice(0, 6)}-${Date.now().toString(36)}-${attempt}${Math.random().toString(36).slice(2, 6)}`;
       const info = new IndividualInfo(accountId, merchantName, merchantCity, {
         currency: khqrData.currency.usd,
@@ -70,42 +82,48 @@ export const createTopup = createServerFn({ method: "POST" })
       try {
         const res = new BakongKHQR().generateIndividual(info);
         qr = res?.data?.qr;
-        md5 = res?.data?.md5;
+        bakongMd5 = res?.data?.md5;
       } catch (e) {
         throw new Error("បរាជ័យបង្កើត KHQR: " + (e instanceof Error ? e.message : String(e)));
       }
-      if (!qr || !md5) throw new Error("KHQR មិនត្រឹមត្រូវ — សូមពិនិត្យ Bakong account/credentials");
+      if (!qr || !bakongMd5) throw new Error("KHQR មិនត្រឹមត្រូវ — សូមពិនិត្យ Bakong account/credentials");
 
-      const { error } = await supabaseAdmin.from("transactions").insert({
-        user_id: userId, md5, qr_string: qr, amount_usd: data.amountUsd, coins,
+      const { error } = await supabaseAdmin.from("transactions").upsert({
+        order_id: orderId,
+        user_id: userId,
+        bakong_md5: bakongMd5,
+        qr_string: qr,
+        amount_usd: data.amountUsd,
+        coins,
+        payment_method: "khqr",
         status: "pending", expires_at: expires,
-      });
+      }, { onConflict: "order_id" });
       if (!error) {
-        return { md5, qr, balance: coins, amountUsd: data.amountUsd, expiresAt: expires };
+        return { orderId, bakongMd5, qr, balance: coins, amountUsd: data.amountUsd, expiresAt: expires };
       }
-      // Only retry on unique-violation; otherwise bail immediately
-      if (!/duplicate key|unique constraint|transactions_md5/i.test(error.message)) {
+      if (!/duplicate key|unique constraint|transactions_order_id|transactions_bakong_md5/i.test(error.message)) {
         throw new Error(error.message);
       }
 
-      const { data: existingByMd5 } = await supabaseAdmin
+      const { data: existingByBakongMd5 } = await supabaseAdmin
         .from("transactions")
-        .select("user_id, md5, qr_string, amount_usd, coins, status, expires_at")
-        .eq("md5", md5)
+        .select("user_id, order_id, bakong_md5, qr_string, amount_usd, coins, status, expires_at")
+        .eq("bakong_md5", bakongMd5)
         .maybeSingle();
 
       if (
-        existingByMd5?.qr_string &&
-        existingByMd5.user_id === userId &&
-        existingByMd5.status === "pending" &&
-        new Date(existingByMd5.expires_at).getTime() > Date.now()
+        existingByBakongMd5?.qr_string &&
+        existingByBakongMd5.user_id === userId &&
+        existingByBakongMd5.status === "pending" &&
+        new Date(existingByBakongMd5.expires_at).getTime() > Date.now()
       ) {
         return {
-          md5: existingByMd5.md5,
-          qr: existingByMd5.qr_string,
-          balance: existingByMd5.coins,
-          amountUsd: Number(existingByMd5.amount_usd),
-          expiresAt: existingByMd5.expires_at,
+          orderId: existingByBakongMd5.order_id,
+          bakongMd5: existingByBakongMd5.bakong_md5,
+          qr: existingByBakongMd5.qr_string,
+          balance: existingByBakongMd5.coins,
+          amountUsd: Number(existingByBakongMd5.amount_usd),
+          expiresAt: existingByBakongMd5.expires_at,
         };
       }
     }
@@ -115,32 +133,24 @@ export const createTopup = createServerFn({ method: "POST" })
 
 export const checkTopup = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((i) => z.object({ md5: z.string().min(8).max(64) }).parse(i))
+  .inputValidator((i) => z.object({ orderId: z.string().min(8).max(80) }).parse(i))
   .handler(async ({ data, context }) => {
     const { userId } = context;
     const checkedAt = new Date().toISOString();
-    type Debug = {
-      checkedAt: string;
-      source: "db" | "bakong";
-      txStatus: string;
-      httpStatus: number | null;
-      latencyMs: number | null;
-      response: string | null;
-    };
-    const mkDebug = (p: Partial<Debug>): Debug => ({
-      checkedAt, source: "db", txStatus: "unknown", httpStatus: null, latencyMs: null, response: null, ...p,
+    const mkDebug = (p: Partial<PollDebug>): PollDebug => ({
+      checkedAt, source: "db", txStatus: "unknown", httpStatus: null, latencyMs: null, response: null, orderId: data.orderId, bakongMd5: null, ...p,
     });
 
     const { data: tx } = await supabaseAdmin
-      .from("transactions").select("*").eq("md5", data.md5).maybeSingle();
+      .from("transactions").select("*").eq("order_id", data.orderId).maybeSingle();
     if (!tx || tx.user_id !== userId) throw new Error("transaction_not_found");
-    if (tx.status === "paid") {
+    if (tx.status === "paid" || tx.status === "completed") {
       const { data: w } = await supabaseAdmin.from("wallets").select("balance").eq("user_id", userId).maybeSingle();
-      return { status: "paid" as const, balance: w?.balance ?? 0, debug: mkDebug({ source: "db", txStatus: "paid" }) };
+      return { status: "paid" as const, balance: w?.balance ?? 0, debug: mkDebug({ source: "db", txStatus: tx.status, bakongMd5: tx.bakong_md5 }) };
     }
     if (new Date(tx.expires_at).getTime() < Date.now()) {
-      await supabaseAdmin.from("transactions").update({ status: "expired" }).eq("md5", data.md5).eq("status", "pending");
-      return { status: "expired" as const, balance: null as number | null, debug: mkDebug({ source: "db", txStatus: "expired" }) };
+      await supabaseAdmin.from("transactions").update({ status: "expired", failure_reason: "expired_before_payment" }).eq("order_id", data.orderId).eq("status", "pending");
+      return { status: "expired" as const, balance: null as number | null, debug: mkDebug({ source: "db", txStatus: "expired", bakongMd5: tx.bakong_md5 }) };
     }
 
     // Verify with Bakong API
@@ -150,16 +160,33 @@ export const checkTopup = createServerFn({ method: "POST" })
     const res = await fetch("https://api-bakong.nbc.gov.kh/v1/check_transaction_by_md5", {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ md5: data.md5 }),
+      body: JSON.stringify({ md5: tx.bakong_md5 }),
     });
     const httpStatus = res.status;
     const json = await res.json().catch(() => ({}));
     const latencyMs = Date.now() - startedAt;
+    const payload = JSON.stringify(json).slice(0, 2000);
+    const gatewayEventId = json?.data?.hash || json?.data?.id || json?.data?.transactionId || null;
+    const bakongTxRef = json?.data?.transactionReference || json?.data?.bakongTxRef || json?.data?.txRef || null;
     const paid = json?.responseCode === 0 && json?.data;
-    const debug = mkDebug({ source: "bakong", httpStatus, latencyMs, response: JSON.stringify(json).slice(0, 2000), txStatus: tx.status });
+    const debug = mkDebug({ source: "bakong", httpStatus, latencyMs, response: payload, txStatus: tx.status, bakongMd5: tx.bakong_md5 });
+
+    await supabaseAdmin.rpc("mark_transaction_poll_result", {
+      _order_id: tx.order_id,
+      _http_status: httpStatus,
+      _latency_ms: latencyMs,
+      _provider_payload: json,
+      _next_status: paid ? undefined : tx.status,
+    });
+
     if (!paid) return { status: "pending" as const, balance: null as number | null, debug };
 
-    const { data: credit, error } = await supabaseAdmin.rpc("credit_topup_atomic", { _md5: data.md5 });
+    const { data: credit, error } = await supabaseAdmin.rpc("process_khqr_payment_atomic", {
+      _order_id: tx.order_id,
+      _gateway_event_id: gatewayEventId,
+      _bakong_tx_ref: bakongTxRef,
+      _provider_payload: json,
+    });
     if (error) throw new Error(error.message);
     const row = Array.isArray(credit) ? credit[0] : credit;
     return { status: "paid" as const, balance: (row?.new_balance ?? 0) as number | null, debug };
