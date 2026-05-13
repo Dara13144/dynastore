@@ -108,7 +108,18 @@ export const checkPayment = createServerFn({ method: "POST" })
     if (txErr) throw new Error(txErr.message);
     if (!tx) throw new Error("Transaction not found");
     if (tx.user_id !== userId) throw new Error("Forbidden");
-    if (tx.status === "paid") return { status: "paid" as const, coinsCredited: tx.coins };
+    if (tx.status === "paid") {
+      const { data: w } = await supabaseAdmin.from("wallets").select("coins").eq("user_id", userId).maybeSingle();
+      return {
+        status: "paid" as const,
+        coinsCredited: tx.coins,
+        creditedNow: false,
+        bakongRef: tx.bakong_ref ?? null,
+        bakongHash: tx.bakong_ref ?? null,
+        newBalance: w?.coins ?? null,
+        paidAt: tx.paid_at ?? null,
+      };
+    }
 
     if (new Date(tx.expires_at).getTime() < Date.now() && tx.status === "pending") {
       await supabaseAdmin.from("transactions").update({ status: "expired" }).eq("id", tx.id);
