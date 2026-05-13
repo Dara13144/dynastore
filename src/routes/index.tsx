@@ -385,6 +385,12 @@ function TopupModal({ onClose, onToast }: { onClose: () => void; onToast: (m: st
   const [attempts, setAttempts] = useState<Array<{ at: string; status: string; httpStatus: number | null; latencyMs: number | null; payload: unknown; providerMessage?: string | null }>>([]);
   const [showDebug, setShowDebug] = useState(false);
   const [pollCount, setPollCount] = useState(0);
+  const [flash, setFlash] = useState<FlashKind>(null);
+  useEffect(() => {
+    if (!flash) return;
+    const t = window.setTimeout(() => setFlash(null), 4000);
+    return () => window.clearTimeout(t);
+  }, [flash]);
 
   const createFn = useServerFn(createTopup);
   const checkFn = useServerFn(checkTopup);
