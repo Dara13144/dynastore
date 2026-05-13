@@ -184,6 +184,17 @@ function GamesTab() {
     });
   };
 
+  const uploadCoverImage = async (file: File): Promise<string | null> => {
+    if (!file.type.startsWith("image/")) { showToast("សូមជ្រើសរូបភាព"); return null; }
+    if (file.size > 10 * 1024 * 1024) { showToast("រូបភាពធំជាង 10MB"); return null; }
+    const safe = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+    const path = `covers/${Date.now()}_${Math.random().toString(36).slice(2, 8)}_${safe}`;
+    const { error } = await supabase.storage.from("game-images").upload(path, file, { upsert: true, contentType: file.type });
+    if (error) { showToast(`Upload: ${error.message}`); return null; }
+    const { data } = supabase.storage.from("game-images").getPublicUrl(path);
+    return data.publicUrl;
+  };
+
   const updateGame = async (id: string, patch: Partial<GameRow>) => {
     setBusy(true);
     const { error } = await supabase.from("games").update(patch).eq("id", id);
@@ -314,7 +325,17 @@ function GamesTab() {
             <Field label="ស្លាក" value={draft.badge ?? ""} onChange={(v) => setDraft({ ...draft, badge: v })} />
             <Field label="ការពិពណ៌នា" value={draft.description ?? ""} onChange={(v) => setDraft({ ...draft, description: v })} />
             <Field label="តម្លៃ (Balance)" type="number" value={draft.price_coins ? String(draft.price_coins) : ""} placeholder="ឧ. 1500" onChange={(v) => setDraft({ ...draft, price_coins: Number(v) || 0 })} />
-            <Field label="URL រូបភាព (cover)" value={draft.image_url ?? ""} onChange={(v) => setDraft({ ...draft, image_url: v })} />
+            <div className="block">
+              <span className="block text-[10px] uppercase tracking-wider text-muted-foreground mb-1">URL រូបភាព (cover)</span>
+              <div className="flex items-center gap-2">
+                <input value={draft.image_url ?? ""} placeholder="https://… ឬ ផ្ទុករូបឡើង" onChange={(e) => setDraft({ ...draft, image_url: e.target.value })} className="flex-1 rounded-lg bg-input px-3 py-2 text-xs outline-none ring-1 ring-border focus:ring-primary" />
+                <label className="shrink-0 cursor-pointer rounded-full bg-primary/10 text-primary px-3 py-2 text-[11px] font-semibold hover:bg-primary/20">
+                  ផ្ទុករូប
+                  <input type="file" accept="image/*" className="hidden" onChange={async (e) => { const f = e.target.files?.[0]; if (!f) return; const url = await uploadCoverImage(f); if (url) setDraft({ ...draft, image_url: url }); e.target.value = ""; }} />
+                </label>
+              </div>
+              {draft.image_url && <img src={draft.image_url} alt="cover" className="mt-2 h-20 rounded-lg object-cover ring-1 ring-border" />}
+            </div>
             <label className="block">
               <span className="block text-[10px] uppercase tracking-wider text-muted-foreground mb-1">ឯកសារហ្គេម (zip/installer)</span>
               <input type="file" accept=".zip,.rar,.7z,.exe,.msi,.apk,.iso,.dmg,.pkg,.tar,.gz" onChange={(e) => { const f = e.target.files?.[0] ?? null; if (f) { const err = validateFile(f); if (err) { showToast(err); e.target.value = ""; return; } } setDraftFile(f); }} className="w-full text-xs file:mr-2 file:rounded-full file:border-0 file:bg-primary file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-primary-foreground" />
@@ -353,7 +374,7 @@ function GamesTab() {
               </tr>
             </thead>
             <tbody>
-              {filtered.map((g) => <GameRowEditor key={g.id} game={g} busy={busy} onSave={(p) => updateGame(g.id, p)} onDelete={() => deleteGame(g)} onReplaceFile={(f) => replaceFile(g, f)} validateFile={validateFile} onValidationError={showToast} />)}
+              {filtered.map((g) => <GameRowEditor key={g.id} game={g} busy={busy} onSave={(p) => updateGame(g.id, p)} onDelete={() => deleteGame(g)} onReplaceFile={(f) => replaceFile(g, f)} validateFile={validateFile} onValidationError={showToast} onUploadCover={uploadCoverImage} />)}
               {filtered.length === 0 && <tr><td colSpan={7} className="text-center py-8 text-muted-foreground text-xs">{games.length === 0 ? "គ្មានហ្គេម។" : "រកមិនឃើញ។"}</td></tr>}
             </tbody>
           </table>
@@ -374,10 +395,11 @@ function Field({ label, value, onChange, type = "text", placeholder }: { label: 
   );
 }
 
-function GameRowEditor({ game, busy, onSave, onDelete, onReplaceFile, validateFile, onValidationError }: {
+function GameRowEditor({ game, busy, onSave, onDelete, onReplaceFile, validateFile, onValidationError, onUploadCover }: {
   game: GameRow; busy: boolean;
   onSave: (p: Partial<GameRow>) => void; onDelete: () => void; onReplaceFile: (f: File) => void;
   validateFile: (f: File) => string | null; onValidationError: (m: string) => void;
+  onUploadCover: (f: File) => Promise<string | null>;
 }) {
   const [edit, setEdit] = useState<GameRow>(game);
   useEffect(() => setEdit(game), [game]);
@@ -388,7 +410,12 @@ function GameRowEditor({ game, busy, onSave, onDelete, onReplaceFile, validateFi
       <td className="px-4 py-3 font-mono text-[11px] text-muted-foreground">{game.id}</td>
       <td className="px-4 py-3">
         <input value={edit.title} onChange={(e) => setEdit({ ...edit, title: e.target.value })} className="w-full bg-transparent outline-none focus:ring-1 focus:ring-primary rounded px-1" />
-        <input value={edit.image_url ?? ""} placeholder="URL រូបភាព" onChange={(e) => setEdit({ ...edit, image_url: e.target.value })} className="w-full text-[10px] text-muted-foreground bg-transparent outline-none focus:ring-1 focus:ring-primary rounded px-1 mt-0.5" />
+        <div className="flex items-center gap-1 mt-0.5">
+          <input value={edit.image_url ?? ""} placeholder="URL រូបភាព" onChange={(e) => setEdit({ ...edit, image_url: e.target.value })} className="flex-1 text-[10px] text-muted-foreground bg-transparent outline-none focus:ring-1 focus:ring-primary rounded px-1" />
+          <label className="text-[10px] text-primary cursor-pointer hover:underline shrink-0" title="ផ្ទុករូបឡើង">📷
+            <input type="file" accept="image/*" className="hidden" onChange={async (e) => { const f = e.target.files?.[0]; if (!f) return; const url = await onUploadCover(f); if (url) setEdit((p) => ({ ...p, image_url: url })); e.target.value = ""; }} />
+          </label>
+        </div>
       </td>
       <td className="px-4 py-3"><input value={edit.category} onChange={(e) => setEdit({ ...edit, category: e.target.value })} className="w-24 bg-transparent outline-none focus:ring-1 focus:ring-primary rounded px-1" /></td>
       <td className="px-4 py-3 text-right"><input type="number" value={edit.price_coins} onChange={(e) => setEdit({ ...edit, price_coins: Number(e.target.value) || 0 })} className="w-20 text-right bg-transparent outline-none focus:ring-1 focus:ring-primary rounded px-1" /></td>
