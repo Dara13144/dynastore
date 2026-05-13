@@ -357,7 +357,7 @@ function PendingTopupDetailModal({
             </div>
           )}
 
-          <DetailRow label="Pack" value={pack?.name ?? entry.packId} />
+          <DetailRow label="Pack" value={pack?.name ?? entry.packId ?? "—"} />
           <DetailRow label="Coins" value={`${entry.coins}`} />
           <DetailRow label="Amount (USD)" value={pack ? `$${pack.price.toFixed(2)}` : "—"} />
           <DetailRow label="MD5" value={entry.md5} mono onCopy={() => copy("md5", entry.md5)} copied={copied === "md5"} />
