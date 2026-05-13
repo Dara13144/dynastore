@@ -17,6 +17,31 @@ async function assertAdmin(userId: string) {
 
 const userLabel = formatUserById;
 
+/**
+ * Forward a topup notice to Telegram. Sends the slip image when slip_path is
+ * a non-empty string; otherwise falls back to a plain text message with the
+ * same caption and logs the reason so missed images are easy to diagnose.
+ */
+async function sendTopupNotice(
+  eventType: "topup_submitted" | "topup_approved" | "topup_rejected",
+  slipPath: string | null | undefined,
+  caption: string,
+  requestId: string,
+) {
+  const trimmed = typeof slipPath === "string" ? slipPath.trim() : "";
+  if (!trimmed) {
+    console.warn("[topup] slip_path missing — sending text-only Telegram notice", {
+      eventType, requestId, slip_path_raw: slipPath ?? null,
+    });
+    await notifyTelegram(caption, eventType);
+    return;
+  }
+  console.info("[topup] forwarding slip image to Telegram", {
+    eventType, requestId, slip_path: trimmed,
+  });
+  await notifyTelegramPhotoFromStorage("topup-slips", trimmed, caption, eventType);
+}
+
 
 async function coinsPerUsd(): Promise<number> {
   const { data } = await supabaseAdmin.from("app_settings").select("coins_per_usd").eq("id", 1).maybeSingle();
@@ -50,7 +75,7 @@ export const createTopupRequest = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     const who = await userLabel(context.userId);
     const caption = `🆕 <b>New Topup Request</b>\n👤 ${who}\n💵 $${Number(data.amount_usd).toFixed(2)} → <b>${coins.toLocaleString()} coins</b>${data.note ? `\n📝 ${data.note}` : ""}\n🆔 <code>${row.id}</code>`;
-    await notifyTelegramPhotoFromStorage("topup-slips", data.slip_path, caption, "topup_submitted");
+    await sendTopupNotice("topup_submitted", data.slip_path, caption, row.id);
     return row;
   });
 
@@ -151,11 +176,7 @@ export const adminApproveTopup = createServerFn({ method: "POST" })
     });
     const who = await userLabel(claimed.user_id);
     const caption = `✅ <b>Topup Approved</b>\n👤 ${who}\n💵 $${Number(claimed.amount_usd).toFixed(2)} → <b>+${Number(claimed.coins).toLocaleString()} coins</b>\n💼 New balance: ${bal.toLocaleString()}\n🆔 <code>${data.id}</code>`;
-    if (claimed.slip_path) {
-      await notifyTelegramPhotoFromStorage("topup-slips", claimed.slip_path, caption, "topup_approved");
-    } else {
-      await notifyTelegram(caption, "topup_approved");
-    }
+    await sendTopupNotice("topup_approved", claimed.slip_path, caption, data.id);
     return {
       ok: true,
       status: "approved" as const,
@@ -185,11 +206,7 @@ export const adminRejectTopup = createServerFn({ method: "POST" })
     if (!claimed) throw new Error("already_reviewed");
     const who = await userLabel(claimed.user_id);
     const caption = `❌ <b>Topup Rejected</b>\n👤 ${who}\n💵 $${Number(claimed.amount_usd).toFixed(2)}\n📝 ${data.reason}\n🆔 <code>${data.id}</code>`;
-    if (claimed.slip_path) {
-      await notifyTelegramPhotoFromStorage("topup-slips", claimed.slip_path, caption, "topup_rejected");
-    } else {
-      await notifyTelegram(caption, "topup_rejected");
-    }
+    await sendTopupNotice("topup_rejected", claimed.slip_path, caption, data.id);
     return { ok: true };
   });
 
