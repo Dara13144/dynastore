@@ -371,7 +371,7 @@ function TopupModal({ onClose, onToast }: { onClose: () => void; onToast: (m: st
     setStage("creating");
     try {
       const r = await createFn({ data: { amountUsd: amount } });
-      setQr(r.qr); setMd5(r.md5); setCoins(r.coins); setExpiresAt(new Date(r.expiresAt).getTime());
+      setQr(r.qr); setMd5(r.md5); setCoins(r.balance); setExpiresAt(new Date(r.expiresAt).getTime());
       const dataUrl = await QRCode.toDataURL(r.qr, { width: 320, margin: 1 });
       setQrDataUrl(dataUrl);
       setStage("qr");
@@ -381,7 +381,7 @@ function TopupModal({ onClose, onToast }: { onClose: () => void; onToast: (m: st
           const c = await checkFn({ data: { md5: r.md5 } });
           if (c.status === "paid") {
             stopPoll(); setStage("paid"); await refreshWallet();
-            onToast(`បានបន្ថែម ${r.coins.toLocaleString()} Balance!`);
+            onToast(`បានបន្ថែម ${r.balance.toLocaleString()} Balance!`);
           } else if (c.status === "expired") {
             stopPoll(); setStage("expired");
           }
