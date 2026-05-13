@@ -386,12 +386,12 @@ function TopupModal({ onClose, onToast }: { onClose: () => void; onToast: (m: st
     setAttempts((prev) => [entry, ...prev].slice(0, 10));
   };
 
-  const start = async () => {
+  const start = async (forceNew = false) => {
     if (!authed) { onToast("សូមចូលគណនីជាមុនសិន"); return; }
     setErrorMsg(null);
     setStage("creating");
     try {
-      const r = await createFn({ data: { amountUsd: amount } });
+      const r = await createFn({ data: { amountUsd: amount, forceNew } });
       setQr(r.qr); setOrderId(r.orderId); setBakongMd5(r.bakongMd5); setCoins(r.balance); setExpiresAt(new Date(r.expiresAt).getTime());
       const dataUrl = await QRCode.toDataURL(r.qr, { width: 320, margin: 1 });
       setQrDataUrl(dataUrl);
