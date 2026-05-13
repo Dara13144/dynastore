@@ -1097,7 +1097,9 @@ function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () 
     return () => { cancelled = true; };
   }, [authed, getMerchantInfo]);
   const qrWrapRef = useRef<HTMLDivElement | null>(null);
-  type Tx = { md5: string; qrPayload: string; coins: number; createdAt: number; expiresAt: number };
+  type Tx = { md5: string; qrPayload: string; coins: number; createdAt: number; expiresAt: number; billNumber: string | null };
+  type ApiCall = { at: number; tick: number; md5: string; status: string; responseCode: any; responseMessage: any; raw: any; error?: string };
+  const [apiLog, setApiLog] = useState<ApiCall[]>([]);
   const [tx, setTx] = useState<Tx | null>(null);
   const [reusedInfo, setReusedInfo] = useState<{ id: string; createdAt: string; expiresAt: string; status: string; coins: number; amountUsd: number } | null>(null);
   const [prevTx, setPrevTx] = useState<Tx | null>(null);
