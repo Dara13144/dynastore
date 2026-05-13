@@ -14,6 +14,7 @@ export function TopupModal({ onClose, onToast }: Props) {
   const submitFn = useServerFn(createTopupRequest);
   const listFn = useServerFn(listMyTopupRequests);
   const fileRef = useRef<HTMLInputElement>(null);
+  const qrBoxRef = useRef<HTMLDivElement>(null);
 
   const [qr, setQr] = useState<string | null>(null);
   const [rate, setRate] = useState(1);
