@@ -3,7 +3,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { useStore } from "@/lib/store";
-import { ArrowLeft, Plus, Eye, EyeOff, Trash2, Save, Loader2, Users, Gamepad2, FileArchive, Settings as SettingsIcon, Pencil, History, ChevronDown, ChevronUp, Search, Check, Wallet, X } from "lucide-react";
+import { ArrowLeft, Plus, Eye, EyeOff, Trash2, Save, Loader2, Users, Gamepad2, FileArchive, Settings as SettingsIcon, Pencil, History, ChevronDown, ChevronUp, Search, Check, Wallet, X, Download, Link as LinkIcon } from "lucide-react";
 import { StoreProvider } from "@/lib/store";
 import { getAppSettings, updateAppSettings, adminSetUserBalance, listBalanceChanges, listSettingsAudit, adminSetUserRole } from "@/lib/admin.functions";
 import { validateGameFile, validateGameFileUrl } from "@/lib/validate-game-file";
@@ -43,7 +43,7 @@ function AdminPage() {
   const { authed, loading } = useStore();
   const navigate = useNavigate();
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
-  const [tab, setTab] = useState<"games" | "users" | "topups" | "content" | "settings">("games");
+  const [tab, setTab] = useState<"games" | "users" | "topups" | "content" | "settings" | "logs">("games");
 
   useEffect(() => {
     if (loading) return;
@@ -85,6 +85,7 @@ function AdminPage() {
             <TabBtn active={tab === "topups"} onClick={() => setTab("topups")} icon={<Wallet className="h-3.5 w-3.5" />} label="សំណើ Topup" />
             <TabBtn active={tab === "content"} onClick={() => setTab("content")} icon={<Pencil className="h-3.5 w-3.5" />} label="មាតិកា" />
             <TabBtn active={tab === "settings"} onClick={() => setTab("settings")} icon={<SettingsIcon className="h-3.5 w-3.5" />} label="កំណត់" />
+            <TabBtn active={tab === "logs"} onClick={() => setTab("logs")} icon={<Download className="h-3.5 w-3.5" />} label="Logs" />
           </nav>
         </div>
       </header>
@@ -95,6 +96,7 @@ function AdminPage() {
         {tab === "topups" && <TopupsTab />}
         {tab === "content" && <ContentTab />}
         {tab === "settings" && <SettingsTab />}
+        {tab === "logs" && <DownloadLogsTab />}
       </main>
     </div>
   );
