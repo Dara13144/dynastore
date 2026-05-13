@@ -17,6 +17,7 @@ export type TopupResult =
       amountUsd: number;
       coins: number;
       packName: string;
+      billNumber: string | null;
       reused: true;
       reusedTx: ReusedTx;
     }
@@ -26,6 +27,7 @@ export type TopupResult =
       amountUsd: number;
       coins: number;
       packName: string;
+      billNumber: string | null;
       reused?: false;
     };
 
@@ -41,7 +43,7 @@ export type ExistingRow = {
 };
 
 export interface TopupDeps {
-  build: () => { md5: string; payload: string };
+  build: () => { md5: string; payload: string; billNumber: string };
   insert: (row: {
     user_id: string;
     md5: string;
