@@ -80,11 +80,12 @@ async function generateKhqrForUser(opts: {
       md5 = md5Hex(qr);
     } catch (e) { throw new Error("បរាជ័យបង្កើត KHQR: " + khqrErrorMessage(e)); }
     if (!qr || !md5) throw new Error("KHQR មិនត្រឹមត្រូវ — សូមពិនិត្យ Bakong credentials");
+    const issuedAt = new Date().toISOString();
     const { error } = await supabaseAdmin.from("transactions").insert({
       order_id: orderId, user_id: userId, bakong_md5: md5, qr_string: qr,
       amount_usd: amountUsd, coins, payment_method: "khqr", status: "pending", expires_at: expires,
     });
-    if (!error) return { orderId, bakongMd5: md5, qr, coins, amountUsd, expiresAt: expires };
+    if (!error) return { orderId, bakongMd5: md5, qr, coins, amountUsd, expiresAt: expires, issuedAt };
     if (!/duplicate key|unique constraint/i.test(error.message)) throw new Error(error.message);
   }
   throw new Error("បរាជ័យបង្កើត KHQR — សូមសាកម្តងទៀត។");
