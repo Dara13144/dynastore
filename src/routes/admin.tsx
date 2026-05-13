@@ -272,8 +272,8 @@ function GamesTab() {
               </tr>
             </thead>
             <tbody>
-              {games.map((g) => <GameRowEditor key={g.id} game={g} busy={busy} onSave={(p) => updateGame(g.id, p)} onDelete={() => deleteGame(g)} onReplaceFile={(f) => replaceFile(g, f)} />)}
-              {games.length === 0 && <tr><td colSpan={7} className="text-center py-8 text-muted-foreground text-xs">គ្មានហ្គេម។</td></tr>}
+              {filtered.map((g) => <GameRowEditor key={g.id} game={g} busy={busy} onSave={(p) => updateGame(g.id, p)} onDelete={() => deleteGame(g)} onReplaceFile={(f) => replaceFile(g, f)} />)}
+              {filtered.length === 0 && <tr><td colSpan={7} className="text-center py-8 text-muted-foreground text-xs">{games.length === 0 ? "គ្មានហ្គេម។" : "រកមិនឃើញ។"}</td></tr>}
             </tbody>
           </table>
         </div>
