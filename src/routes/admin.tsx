@@ -234,6 +234,7 @@ function GamesTab() {
         description: draft.description ?? "", badge: draft.badge ?? "",
         price_coins: Number(draft.price_coins) || 0, visible: draft.visible,
         image_url: draft.image_url ?? "",
+        file_url: draft.file_path ?? null,
       },
       draftFile,
       {
