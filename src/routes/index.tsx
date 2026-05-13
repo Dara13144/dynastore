@@ -352,6 +352,7 @@ type TopupStage = "choose" | "creating" | "qr" | "checking" | "paid" | "expired"
 function TopupModal({ onClose, onToast }: { onClose: () => void; onToast: (m: string) => void }) {
   const { authed, balance, refreshWallet } = useStore();
   const [amount, setAmount] = useState(5);
+  const [method, setMethod] = useState<"khqr" | "manual">("khqr");
   const [stage, setStage] = useState<TopupStage>("choose");
   const [qr, setQr] = useState<string | null>(null);
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
