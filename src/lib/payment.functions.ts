@@ -1,9 +1,14 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { createHash } from "crypto";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 // @ts-ignore - bakong-khqr is plain js
 import { BakongKHQR, IndividualInfo, khqrData } from "bakong-khqr";
+
+function md5Hex(input: string): string {
+  return createHash("md5").update(input, "utf8").digest("hex");
+}
 
 type PollDebug = {
   checkedAt: string;
@@ -160,6 +165,71 @@ export const createTopup = createServerFn({ method: "POST" })
   });
 
 
+export const validateTopup = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i) => z.object({ orderId: z.string().min(8).max(80) }).parse(i))
+  .handler(async ({ data, context }) => {
+    const { userId } = context;
+    const { data: tx } = await supabaseAdmin
+      .from("transactions")
+      .select("user_id, order_id, bakong_md5, qr_string, amount_usd, status, expires_at")
+      .eq("order_id", data.orderId)
+      .maybeSingle();
+    if (!tx || tx.user_id !== userId) {
+      return { ok: false as const, code: "tx_not_found", message: "ប្រតិបត្តិការមិនត្រូវបានរកឃើញ" };
+    }
+    if (!tx.bakong_md5 || !tx.qr_string) {
+      return { ok: false as const, code: "missing_qr", message: "QR ឬ MD5 មិនមាននៅក្នុងប្រតិបត្តិការ" };
+    }
+
+    // 1) Recompute MD5 of stored QR string and compare to stored bakong_md5
+    const recomputed = md5Hex(tx.qr_string);
+    if (recomputed !== tx.bakong_md5) {
+      return {
+        ok: false as const,
+        code: "md5_mismatch",
+        message: `MD5 មិនត្រូវនឹង QR — រំពឹង ${tx.bakong_md5.slice(0, 8)}… ទទួល ${recomputed.slice(0, 8)}…`,
+      };
+    }
+
+    // 2) Re-validate that current Bakong credentials still produce a structurally valid KHQR
+    //    (catches missing / mis-configured BAKONG_ACCOUNT_ID, merchant name, city, etc.)
+    try {
+      const { accountId, merchantName, merchantCity, phone } = await loadSettings();
+      const probe = new IndividualInfo(accountId, merchantName, merchantCity, {
+        currency: khqrData.currency.usd,
+        amount: Number(Number(tx.amount_usd).toFixed(2)),
+        mobileNumber: phone,
+        storeLabel: "Dyna Store",
+        terminalLabel: `validate-${userId.slice(0, 8)}`,
+        billNumber: `validate-${tx.order_id.slice(-12)}`,
+      });
+      const res = new BakongKHQR().generateIndividual(probe);
+      if (res?.status && res.status.code !== 0) {
+        return {
+          ok: false as const,
+          code: "invalid_credentials",
+          message: `Bakong credentials ត្រូវបានបដិសេធ: ${res.status.message ?? "unknown"}`,
+        };
+      }
+      if (!res?.data?.qr || !res?.data?.md5) {
+        return { ok: false as const, code: "invalid_credentials", message: "Bakong credentials មិនត្រឹមត្រូវ" };
+      }
+    } catch (e) {
+      return { ok: false as const, code: "invalid_credentials", message: "Bakong credentials បរាជ័យ: " + khqrErrorMessage(e) };
+    }
+
+    return {
+      ok: true as const,
+      code: "valid",
+      message: "KHQR & MD5 ត្រឹមត្រូវ",
+      orderId: tx.order_id,
+      bakongMd5: tx.bakong_md5,
+      status: tx.status,
+      expiresAt: tx.expires_at,
+    };
+  });
+
 export const checkTopup = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) => z.object({ orderId: z.string().min(8).max(80) }).parse(i))
@@ -180,6 +250,12 @@ export const checkTopup = createServerFn({ method: "POST" })
     if (new Date(tx.expires_at).getTime() < Date.now()) {
       await supabaseAdmin.from("transactions").update({ status: "expired", failure_reason: "expired_before_payment" }).eq("order_id", data.orderId).eq("status", "pending");
       return { status: "expired" as const, balance: null as number | null, debug: mkDebug({ source: "db", txStatus: "expired", bakongMd5: tx.bakong_md5, providerMessage: "expired_before_payment" }) };
+    }
+
+    // Reject tampered/invalid MD5/QR pairs early — never call Bakong with a bad MD5.
+    if (!tx.bakong_md5 || !tx.qr_string || md5Hex(tx.qr_string) !== tx.bakong_md5) {
+      await supabaseAdmin.from("transactions").update({ status: "failed", failure_reason: "md5_mismatch" }).eq("order_id", data.orderId).eq("status", "pending");
+      throw new Error("KHQR មិនត្រឹមត្រូវ — MD5 មិនត្រូវនឹង QR (សូមបង្កើត QR ថ្មី)");
     }
 
     // Verify with Bakong API. Network/CDN errors and Bakong's "Invalid data" / "Transaction could
