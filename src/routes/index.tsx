@@ -415,10 +415,13 @@ function TopupModal({ onClose, onToast }: { onClose: () => void; onToast: (m: st
     setStage("checking");
     try {
       const c = await checkFn({ data: { md5 } });
+      setPollCount((n) => n + 1);
+      setDebug({ at: new Date().toISOString(), status: c.status, payload: c.debug ?? c });
       if (c.status === "paid") { stopPoll(); setStage("paid"); await refreshWallet(); onToast(`បានបន្ថែម ${coins.toLocaleString()} Balance!`); }
       else if (c.status === "expired") { stopPoll(); setStage("expired"); }
       else { setStage("qr"); onToast("មិនទាន់ទទួលបានការបង់ប្រាក់"); }
     } catch (e) {
+      setDebug({ at: new Date().toISOString(), status: "error", payload: e instanceof Error ? e.message : String(e) });
       setErrorMsg(e instanceof Error ? e.message : "បរាជ័យផ្ទៀងផ្ទាត់");
       setStage("failed");
     }
