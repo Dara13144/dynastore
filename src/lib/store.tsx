@@ -46,6 +46,7 @@ type StoreCtx = {
   updateProfile: (patch: Partial<Pick<Profile, "display_name" | "avatar_url" | "bio">>) => Promise<{ error: string | null }>;
   refreshProfile: () => Promise<void>;
   refreshWallet: () => Promise<void>;
+  setBalance: (n: number) => void;
   refreshLibrary: () => Promise<void>;
   toggleWishlist: (gameId: string) => Promise<{ error: string | null; added: boolean }>;
   removeFromLibrary: (id: string) => Promise<void>;
@@ -102,6 +103,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     signOut: async () => { await supabase.auth.signOut(); },
     refreshProfile: async () => { if (userId) await fetchProfile(userId); },
     refreshWallet: async () => { if (userId) await fetchWallet(userId); },
+    setBalance,
     refreshLibrary: async () => { if (userId) await fetchLibrary(userId); },
     updateProfile: async (patch) => {
       if (!userId) return { error: "សូមចូលគណនីជាមុនសិន" };
