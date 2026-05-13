@@ -921,3 +921,149 @@ function TestiRow({ t, onUpd, onDel }: { t: Testi; onUpd: (patch: Partial<Testi>
   );
 }
 
+
+/* ============ TOPUPS TAB ============ */
+type TopupRow = {
+  id: string; user_id: string; user_name: string;
+  amount_usd: number; coins: number; status: "pending" | "approved" | "rejected";
+  slip_path: string; slip_url: string | null; note: string | null;
+  created_at: string; reviewed_at: string | null; reject_reason: string | null;
+};
+
+function TopupsTab() {
+  const listFn = useServerFn(adminListTopupRequests);
+  const approveFn = useServerFn(adminApproveTopup);
+  const rejectFn = useServerFn(adminRejectTopup);
+  const [rows, setRows] = useState<TopupRow[]>([]);
+  const [status, setStatus] = useState<"pending" | "approved" | "rejected" | "all">("pending");
+  const [busy, setBusy] = useState(false);
+  const [acting, setActing] = useState<string | null>(null);
+  const [previewSlip, setPreviewSlip] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    setBusy(true);
+    try {
+      const r = await listFn({ data: { status, limit: 200 } });
+      setRows(r as unknown as TopupRow[]);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to load");
+    } finally { setBusy(false); }
+  }, [listFn, status]);
+
+  useEffect(() => { load(); }, [load]);
+
+  const approve = async (id: string) => {
+    if (!confirm("Approve this top-up and credit coins?")) return;
+    setActing(id);
+    try {
+      const r = await approveFn({ data: { id } });
+      toast.success(`✓ Credited +${r.credited.toLocaleString()} coins (new balance ${r.new_balance.toLocaleString()})`);
+      await load();
+    } catch (e) { toast.error(e instanceof Error ? e.message : "Failed"); }
+    finally { setActing(null); }
+  };
+  const reject = async (id: string) => {
+    const reason = prompt("Reject reason?")?.trim();
+    if (!reason) return;
+    setActing(id);
+    try {
+      await rejectFn({ data: { id, reason } });
+      toast("Rejected");
+      await load();
+    } catch (e) { toast.error(e instanceof Error ? e.message : "Failed"); }
+    finally { setActing(null); }
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between gap-3">
+        <h2 className="font-display text-lg">សំណើបញ្ចូល Balance</h2>
+        <div className="flex items-center gap-2">
+          <select value={status} onChange={(e) => setStatus(e.target.value as typeof status)}
+            className="rounded-full bg-input px-3 py-1.5 text-xs ring-1 ring-border outline-none">
+            <option value="pending">Pending</option>
+            <option value="approved">Approved</option>
+            <option value="rejected">Rejected</option>
+            <option value="all">ទាំងអស់</option>
+          </select>
+          <button onClick={load} className="inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-xs hover:bg-accent">
+            {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Refresh"}
+          </button>
+        </div>
+      </div>
+
+      <div className="rounded-2xl border border-border/60 overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead className="bg-muted/30 text-xs text-muted-foreground">
+            <tr>
+              <th className="text-left p-3">User</th>
+              <th className="text-right p-3">USD</th>
+              <th className="text-right p-3">Coins</th>
+              <th className="text-left p-3">Status</th>
+              <th className="text-left p-3">Slip</th>
+              <th className="text-left p-3">Note</th>
+              <th className="text-left p-3">Created</th>
+              <th className="text-right p-3">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.length === 0 && !busy && (
+              <tr><td colSpan={8} className="p-6 text-center text-muted-foreground text-xs">គ្មានសំណើ</td></tr>
+            )}
+            {rows.map((r) => (
+              <tr key={r.id} className="border-t border-border/40">
+                <td className="p-3">
+                  <div className="font-medium">{r.user_name}</div>
+                  <div className="text-[10px] text-muted-foreground font-mono">{r.user_id.slice(0, 8)}</div>
+                </td>
+                <td className="p-3 text-right font-mono">${Number(r.amount_usd).toFixed(2)}</td>
+                <td className="p-3 text-right font-mono">{r.coins.toLocaleString()}</td>
+                <td className="p-3">
+                  <span className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                    r.status === "approved" ? "bg-emerald-500/20 text-emerald-400" :
+                    r.status === "pending" ? "bg-amber-500/20 text-amber-400" :
+                    "bg-destructive/20 text-destructive"
+                  }`}>{r.status}</span>
+                </td>
+                <td className="p-3">
+                  {r.slip_url ? (
+                    <button onClick={() => setPreviewSlip(r.slip_url)} className="text-xs text-primary hover:underline">មើល</button>
+                  ) : <span className="text-xs text-muted-foreground">—</span>}
+                </td>
+                <td className="p-3 text-xs text-muted-foreground max-w-[160px] truncate" title={r.note ?? ""}>{r.note ?? "—"}</td>
+                <td className="p-3 text-xs text-muted-foreground">{new Date(r.created_at).toLocaleString()}</td>
+                <td className="p-3 text-right">
+                  {r.status === "pending" ? (
+                    <div className="inline-flex gap-1">
+                      <button onClick={() => approve(r.id)} disabled={acting === r.id}
+                        className="inline-flex items-center gap-1 rounded-full bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 px-3 py-1 text-[11px] font-semibold disabled:opacity-50">
+                        {acting === r.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3" />} Approve
+                      </button>
+                      <button onClick={() => reject(r.id)} disabled={acting === r.id}
+                        className="inline-flex items-center gap-1 rounded-full bg-destructive/20 text-destructive hover:bg-destructive/30 px-3 py-1 text-[11px] font-semibold disabled:opacity-50">
+                        <X className="h-3 w-3" /> Reject
+                      </button>
+                    </div>
+                  ) : (
+                    <span className="text-[11px] text-muted-foreground" title={r.reject_reason ?? ""}>
+                      {r.reviewed_at ? new Date(r.reviewed_at).toLocaleDateString() : "—"}
+                    </span>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {previewSlip && (
+        <div className="fixed inset-0 z-[100] grid place-items-center bg-background/80 backdrop-blur-sm p-4" onClick={() => setPreviewSlip(null)}>
+          <div className="relative">
+            <button className="absolute -top-10 right-0 rounded-full bg-card p-2" onClick={() => setPreviewSlip(null)}><X className="h-4 w-4" /></button>
+            <img src={previewSlip} alt="slip" className="max-h-[80vh] max-w-[90vw] rounded-xl ring-1 ring-border" />
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
