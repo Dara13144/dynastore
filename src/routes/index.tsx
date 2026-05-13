@@ -6,7 +6,7 @@ import { Settings, LogIn, LogOut, Star, Send, Gamepad2, Sparkles, X, Plus, Libra
 import { supabase } from "@/integrations/supabase/client";
 import { submitManualTopup } from "@/lib/topup.functions";
 import { StoreProvider, useStore, type Game } from "@/lib/store";
-import { createTopup, checkTopup, purchaseGame } from "@/lib/payment.functions";
+import { createTopup, checkTopup, cancelTopup, purchaseGame } from "@/lib/payment.functions";
 import heroImg from "@/assets/hero-arcade.jpg";
 import logoD from "@/assets/dyna-logo.jpeg";
 
@@ -376,6 +376,22 @@ function TopupModal({ onClose, onToast }: { onClose: () => void; onToast: (m: st
 
   const createFn = useServerFn(createTopup);
   const checkFn = useServerFn(checkTopup);
+  const cancelFn = useServerFn(cancelTopup);
+  const [deleting, setDeleting] = useState(false);
+  const deleteQr = async () => {
+    if (!orderId || deleting) return;
+    setDeleting(true);
+    try {
+      await cancelFn({ data: { orderId } });
+      stopPoll();
+      onToast("បានលុប QR");
+      reset();
+    } catch (e) {
+      onToast(e instanceof Error ? e.message : "បរាជ័យលុប");
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   const stopPoll = () => { if (pollRef.current) { window.clearInterval(pollRef.current); pollRef.current = null; } setPolling(false); };
   useEffect(() => () => stopPoll(), []);

@@ -315,6 +315,30 @@ export const checkTopup = createServerFn({ method: "POST" })
     return { status: "paid" as const, balance: (row?.new_balance ?? 0) as number | null, debug };
   });
 
+export const cancelTopup = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i) => z.object({ orderId: z.string().min(1).max(128) }).parse(i))
+  .handler(async ({ data, context }) => {
+    const { data: tx, error: loadErr } = await supabaseAdmin
+      .from("transactions")
+      .select("id, user_id, status")
+      .eq("order_id", data.orderId)
+      .maybeSingle();
+    if (loadErr) throw new Error(loadErr.message);
+    if (!tx) throw new Error("transaction_not_found");
+    if (tx.user_id !== context.userId) throw new Error("forbidden");
+    if (tx.status === "completed" || tx.status === "paid") {
+      throw new Error("មិនអាចលុបបានទេ — បានបង់រួច");
+    }
+    if (tx.status === "cancelled") return { ok: true, status: "cancelled" as const };
+    const { error: upErr } = await supabaseAdmin
+      .from("transactions")
+      .update({ status: "cancelled", failure_reason: "user_cancelled", updated_at: new Date().toISOString() })
+      .eq("id", tx.id);
+    if (upErr) throw new Error(upErr.message);
+    return { ok: true, status: "cancelled" as const };
+  });
+
 export const purchaseGame = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) => z.object({ gameId: z.string().min(1).max(64) }).parse(i))
