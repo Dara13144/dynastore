@@ -153,7 +153,8 @@ export const createTopup = createServerFn({ method: "POST" })
           throw new Error(`KHQR generation rejected: ${res.status.message ?? "unknown"}${res.status.errorCode ? ` (${res.status.errorCode})` : ""}`);
         }
         qr = res?.data?.qr;
-        bakongMd5 = res?.data?.md5;
+        // Always recompute MD5 from the QR string — bakong-khqr's md5 field is unreliable.
+        bakongMd5 = qr ? md5Hex(qr) : undefined;
       } catch (e) {
         throw new Error("បរាជ័យបង្កើត KHQR: " + khqrErrorMessage(e));
       }
