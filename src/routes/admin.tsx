@@ -691,7 +691,7 @@ function SettingsAuditLog({ refreshKey }: { refreshKey: number }) {
             <tr>
               <th className="text-left px-2 py-1.5">ពេលវេលា</th>
               <th className="text-left px-2 py-1.5">ដោយ</th>
-              <th className="text-left px-2 py-1.5">Field</th>
+              <th className="text-left px-2 py-1.5">វាល</th>
               <th className="text-left px-2 py-1.5">ពី</th>
               <th className="text-left px-2 py-1.5">ទៅ</th>
             </tr>
