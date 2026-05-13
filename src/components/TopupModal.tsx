@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import QRCode from "qrcode";
-import { Loader2, X, Wallet, Check, Copy } from "lucide-react";
-import { createTopup, checkTopupStatus } from "@/lib/topup.functions";
+import { Loader2, X, Wallet, Check, Copy, Upload } from "lucide-react";
+import { createTopup, checkTopupStatus, submitTopupProof } from "@/lib/topup.functions";
 
 const PRESETS = [1, 2, 5, 10, 20, 50];
 
@@ -31,6 +31,31 @@ export function TopupModal({
 
   const createFn = useServerFn(createTopup);
   const checkFn = useServerFn(checkTopupStatus);
+  const proofFn = useServerFn(submitTopupProof);
+  const fileRef = useRef<HTMLInputElement | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [proofSent, setProofSent] = useState(false);
+
+  const onPickProof = async (file: File) => {
+    if (!tx) return;
+    if (file.size > 6_000_000) { onToast("File too large (max 6MB)"); return; }
+    setUploading(true);
+    try {
+      const buf = await file.arrayBuffer();
+      let bin = "";
+      const bytes = new Uint8Array(buf);
+      for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+      const b64 = btoa(bin);
+      const ct = (file.type === "image/jpeg" || file.type === "image/webp") ? file.type : "image/png";
+      await proofFn({ data: { md5: tx.md5, imageBase64: b64, contentType: ct } });
+      setProofSent(true);
+      onToast("បានផ្ញើទៅ Telegram ✓");
+    } catch (e) {
+      onToast(e instanceof Error ? e.message : "បរាជ័យ");
+    } finally {
+      setUploading(false);
+    }
+  };
 
   useEffect(() => {
     return () => {
@@ -145,6 +170,25 @@ export function TopupModal({
               <Copy className="h-3.5 w-3.5" /> ចម្លង QR string
             </button>
             <p className="text-[11px] text-muted-foreground">បើក Bakong/ABA/Wing → Scan QR → បង់ → រង់ចាំ ៤–៦ វិនាទី។</p>
+
+            <div className="pt-2 border-t border-border/40 mt-2">
+              <p className="text-[11px] text-muted-foreground mb-2">បើបង់រួចហើយ ផ្ញើរូប slip ទៅ Admin (Telegram)</p>
+              <input
+                ref={fileRef}
+                type="file"
+                accept="image/png,image/jpeg,image/webp"
+                hidden
+                onChange={(e) => { const f = e.target.files?.[0]; if (f) onPickProof(f); e.currentTarget.value = ""; }}
+              />
+              <button
+                onClick={() => fileRef.current?.click()}
+                disabled={uploading}
+                className="inline-flex items-center gap-1.5 rounded-full border border-primary/40 bg-primary/10 px-4 py-1.5 text-xs font-semibold text-primary hover:bg-primary/20 disabled:opacity-60"
+              >
+                {uploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
+                {proofSent ? "ផ្ញើរួច ✓ ផ្ញើម្តងទៀត" : "ផ្ទុករូប slip"}
+              </button>
+            </div>
           </div>
         )}
 
