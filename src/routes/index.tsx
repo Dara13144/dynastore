@@ -574,6 +574,31 @@ function TopupModal({ onClose, onToast }: { onClose: () => void; onToast: (m: st
             </div>
           </div>
         )}
+
+        {/* Debug panel — last Bakong callback payload + poll result */}
+        {(stage === "qr" || stage === "checking" || stage === "paid" || stage === "expired" || stage === "failed") && md5 && (
+          <div className="border-t border-border/60 px-5 py-3 text-[11px]">
+            <button onClick={() => setShowDebug((v) => !v)} className="w-full flex items-center justify-between text-muted-foreground hover:text-foreground">
+              <span className="inline-flex items-center gap-1.5 font-semibold">
+                <span className={`h-1.5 w-1.5 rounded-full ${debug?.status === "paid" ? "bg-emerald-400" : debug?.status === "expired" ? "bg-amber-400" : debug?.status === "error" ? "bg-destructive" : "bg-sky-400"}`} />
+                Debug • polls: {pollCount}{debug?.status ? ` • last: ${debug.status}` : ""}
+              </span>
+              <span>{showDebug ? "▾" : "▸"}</span>
+            </button>
+            {showDebug && (
+              <div className="mt-2 space-y-1.5">
+                <div className="flex justify-between gap-2"><span className="text-muted-foreground">md5</span><span className="font-mono truncate max-w-[240px]" title={md5}>{md5}</span></div>
+                <div className="flex justify-between gap-2"><span className="text-muted-foreground">checked at</span><span className="font-mono">{debug?.at ?? "—"}</span></div>
+                <div className="flex justify-between gap-2"><span className="text-muted-foreground">expires at</span><span className="font-mono">{expiresAt ? new Date(expiresAt).toISOString() : "—"}</span></div>
+                <div>
+                  <div className="text-muted-foreground mb-1">last payload</div>
+                  <pre className="max-h-48 overflow-auto rounded-lg bg-muted/30 border border-border/40 p-2 font-mono text-[10px] whitespace-pre-wrap break-all">{debug ? JSON.stringify(debug.payload, null, 2) : "(no poll yet)"}</pre>
+                </div>
+                <button onClick={() => { if (debug) navigator.clipboard.writeText(JSON.stringify(debug, null, 2)); }} className="text-primary hover:underline">ចម្លងព័ត៌មាន Debug</button>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
