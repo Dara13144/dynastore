@@ -1,0 +1,1 @@
+DROP POLICY IF EXISTS "public read game-images" ON storage.objects;
