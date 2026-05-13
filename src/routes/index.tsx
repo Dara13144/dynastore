@@ -548,6 +548,7 @@ function TopupModal({ onClose, onToast }: { onClose: () => void; onToast: (m: st
             paid: { label: "ទូទាត់ជោគជ័យ", cls: "bg-emerald-500/10 text-emerald-300 border-emerald-500/30", dot: "bg-emerald-400", pulse: false },
             expired: { label: "QR ផុតកំណត់", cls: "bg-amber-500/10 text-amber-300 border-amber-500/30", dot: "bg-amber-400", pulse: false },
             failed: { label: "បរាជ័យ", cls: "bg-destructive/10 text-destructive border-destructive/30", dot: "bg-destructive", pulse: false },
+            cancelled: { label: "បានលុប QR", cls: "bg-muted/40 text-muted-foreground border-border", dot: "bg-muted-foreground", pulse: false },
           };
           const s = map[stage];
           return (
