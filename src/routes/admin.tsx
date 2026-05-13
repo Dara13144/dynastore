@@ -360,11 +360,18 @@ function GamesTab() {
                 type="url"
                 placeholder="https://… link to zip/installer"
                 value={draft.file_path ?? ""}
-                onChange={(e) => setDraft({ ...draft, file_path: e.target.value || null })}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  setDraft({ ...draft, file_path: v || null });
+                  setDraftUrlError(v.trim() ? validateGameFileUrl(v) : null);
+                }}
                 disabled={!!draftFile}
                 className="w-full rounded-lg bg-muted/40 px-3 py-2 text-xs outline-none focus:ring-1 focus:ring-primary disabled:opacity-50"
               />
-              {draft.file_path && !draftFile && (
+              {draftUrlError && !draftFile && (
+                <span className="text-[10px] text-destructive mt-1 block">{draftUrlError}</span>
+              )}
+              {draft.file_path && !draftFile && !draftUrlError && (
                 <span className="text-[10px] text-emerald-400 mt-1 block">តំណបានកំណត់ — នឹងរក្សាទុកជា file_path</span>
               )}
             </label>
