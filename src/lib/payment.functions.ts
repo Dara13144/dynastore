@@ -116,7 +116,7 @@ export const checkTopup = createServerFn({ method: "POST" })
     const json = await res.json().catch(() => ({}));
     const latencyMs = Date.now() - startedAt;
     const paid = json?.responseCode === 0 && json?.data;
-    const debug = mkDebug({ source: "bakong", httpStatus, latencyMs, response: json, txStatus: tx.status });
+    const debug = mkDebug({ source: "bakong", httpStatus, latencyMs, response: JSON.stringify(json).slice(0, 2000), txStatus: tx.status });
     if (!paid) return { status: "pending" as const, balance: null as number | null, debug };
 
     const { data: credit, error } = await supabaseAdmin.rpc("credit_topup_atomic", { _md5: data.md5 });
