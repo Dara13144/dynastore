@@ -118,7 +118,18 @@ function GamesTab() {
   useEffect(() => { loadGames(); }, [loadGames]);
 
   const [uploadPct, setUploadPct] = useState<number | null>(null);
+  const ALLOWED_EXT = ["zip", "rar", "7z", "exe", "msi", "apk", "iso", "dmg", "pkg", "tar", "gz"];
+  const MAX_BYTES = 50 * 1024 ** 3; // 50 GB (bucket limit)
+  const validateFile = (file: File): string | null => {
+    const ext = file.name.split(".").pop()?.toLowerCase() ?? "";
+    if (!ALLOWED_EXT.includes(ext)) return `ប្រភេទឯកសារមិនអនុញ្ញាត (.${ext}). អនុញ្ញាត: ${ALLOWED_EXT.join(", ")}`;
+    if (file.size <= 0) return "ឯកសារទទេ";
+    if (file.size > MAX_BYTES) return `ឯកសារធំជាងកំណត់ ${(MAX_BYTES / 1024 ** 3).toFixed(0)}GB`;
+    return null;
+  };
   const uploadFile = async (gameId: string, file: File): Promise<{ path: string; size: number } | null> => {
+    const err = validateFile(file);
+    if (err) { showToast(err); return null; }
     const safe = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
     const path = `${gameId}/${Date.now()}_${safe}`;
     const RESUMABLE_THRESHOLD = 6 * 1024 * 1024; // 6MB
