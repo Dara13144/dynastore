@@ -133,13 +133,9 @@ function GamesTab() {
   useEffect(() => { loadGames(); }, [loadGames]);
 
   const [uploadPct, setUploadPct] = useState<number | null>(null);
-  const ALLOWED_EXT = ["zip", "rar", "7z", "exe", "msi", "apk", "iso", "dmg", "pkg", "tar", "gz"];
-  const MAX_BYTES = 5_000_000 * 1024 ** 3; // 5,000,000 GB (effectively unlimited)
+  // Accept all file types and any size — limited only by storage backend.
   const validateFile = (file: File): string | null => {
-    const ext = file.name.split(".").pop()?.toLowerCase() ?? "";
-    if (!ALLOWED_EXT.includes(ext)) return `ប្រភេទឯកសារមិនអនុញ្ញាត (.${ext}). អនុញ្ញាត: ${ALLOWED_EXT.join(", ")}`;
     if (file.size <= 0) return "ឯកសារទទេ";
-    if (file.size > MAX_BYTES) return `ឯកសារធំជាងកំណត់ ${(MAX_BYTES / 1024 ** 3).toFixed(0)}GB`;
     return null;
   };
   const uploadFile = async (gameId: string, file: File): Promise<{ path: string; size: number } | null> => {
@@ -357,7 +353,7 @@ function GamesTab() {
               </tr>
             </thead>
             <tbody>
-              {filtered.map((g) => <GameRowEditor key={g.id} game={g} busy={busy} onSave={(p) => updateGame(g.id, p)} onDelete={() => deleteGame(g)} onReplaceFile={(f) => replaceFile(g, f)} validateFile={validateFile} onValidationError={showToast} allowedExt={ALLOWED_EXT} maxBytes={MAX_BYTES} />)}
+              {filtered.map((g) => <GameRowEditor key={g.id} game={g} busy={busy} onSave={(p) => updateGame(g.id, p)} onDelete={() => deleteGame(g)} onReplaceFile={(f) => replaceFile(g, f)} validateFile={validateFile} onValidationError={showToast} />)}
               {filtered.length === 0 && <tr><td colSpan={7} className="text-center py-8 text-muted-foreground text-xs">{games.length === 0 ? "គ្មានហ្គេម។" : "រកមិនឃើញ។"}</td></tr>}
             </tbody>
           </table>
@@ -378,10 +374,10 @@ function Field({ label, value, onChange, type = "text", placeholder }: { label: 
   );
 }
 
-function GameRowEditor({ game, busy, onSave, onDelete, onReplaceFile, validateFile, onValidationError, allowedExt, maxBytes }: {
+function GameRowEditor({ game, busy, onSave, onDelete, onReplaceFile, validateFile, onValidationError }: {
   game: GameRow; busy: boolean;
   onSave: (p: Partial<GameRow>) => void; onDelete: () => void; onReplaceFile: (f: File) => void;
-  validateFile: (f: File) => string | null; onValidationError: (m: string) => void; allowedExt: string[]; maxBytes: number;
+  validateFile: (f: File) => string | null; onValidationError: (m: string) => void;
 }) {
   const [edit, setEdit] = useState<GameRow>(game);
   useEffect(() => setEdit(game), [game]);
@@ -414,11 +410,10 @@ function GameRowEditor({ game, busy, onSave, onDelete, onReplaceFile, validateFi
               className="text-[10px] text-emerald-400 hover:underline"
             >ទាញយក</button>
           )}
-          <label title={`អនុញ្ញាត: ${allowedExt.join(", ")} • កំណត់ ${(maxBytes / 1024 ** 3).toFixed(0)}GB`}>
+          <label title="ផ្ទុកឯកសារគ្រប់ប្រភេទ • គ្មានកំណត់ទំហំ">
             <span className="text-[10px] text-primary cursor-pointer hover:underline">{game.file_path ? "ប្តូរ" : "ផ្ទុកឡើង"}</span>
             <input
               type="file"
-              accept={allowedExt.map((e) => `.${e}`).join(",")}
               className="hidden"
               onChange={(e) => {
                 const f = e.target.files?.[0];
