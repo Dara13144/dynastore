@@ -195,7 +195,7 @@ describe("createGame integration - boundary file sizes", () => {
 
 describe("validateGameFileUrl - exact error messages", () => {
   // Imported inline to avoid touching the existing import block.
-  const { validateGameFileUrl, GAME_FILE_URL_ERRORS } = require("./validate-game-file");
+  // (validateGameFileUrl + GAME_FILE_URL_ERRORS imported at top)
 
   it("returns null for a valid https zip URL", () => {
     expect(validateGameFileUrl("https://cdn.example.com/games/g1.zip")).toBeNull();
