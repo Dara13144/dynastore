@@ -609,6 +609,7 @@ function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () 
   const [lastChecked, setLastChecked] = useState<number | null>(null);
   const [pollTick, setPollTick] = useState(0);
   const [paidAt, setPaidAt] = useState<number | null>(null);
+  const [paidInfo, setPaidInfo] = useState<{ bakongRef: string | null; newBalance: number | null; creditedNow: boolean } | null>(null);
   const [mismatch, setMismatch] = useState<{ scanned: string; active: string } | null>(null);
   const [autoCloseIn, setAutoCloseIn] = useState<number>(0);
   const POLL_WINDOW_S = 300;
@@ -708,6 +709,7 @@ function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () 
           if (r.status === "paid") {
             setStatus("paid");
             setPaidAt(Date.now());
+            setPaidInfo({ bakongRef: (r as any).bakongRef ?? null, newBalance: (r as any).newBalance ?? null, creditedNow: !!(r as any).creditedNow });
             onToast(`បានបន្ថែម ${cur.coins.toLocaleString()} Coins ✓`);
             refresh();
           } else if (r.status === "expired") {
@@ -783,6 +785,7 @@ function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () 
         if (r.status === "paid") {
           setStatus("paid");
           setPaidAt(Date.now());
+          setPaidInfo({ bakongRef: (r as any).bakongRef ?? null, newBalance: (r as any).newBalance ?? null, creditedNow: !!(r as any).creditedNow });
           onToast(`ការបង់ប្រាក់ជោគជ័យ ✓ — បន្ថែម ${cur.coins.toLocaleString()} Coins`);
           refresh();
         } else if (r.status === "expired") {
@@ -1305,6 +1308,24 @@ function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () 
                 <span className="truncate font-mono text-[10px]">{tx.md5}</span>
               </div>
             )}
+            {paidInfo?.bakongRef && (
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-muted-foreground">Bakong Ref / Hash</span>
+                <span className="truncate font-mono text-[10px]" title={paidInfo.bakongRef}>{paidInfo.bakongRef}</span>
+              </div>
+            )}
+            {paidInfo?.newBalance != null && (
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-muted-foreground">Wallet ថ្មី</span>
+                <span className="font-display text-sm text-coin">{paidInfo.newBalance.toLocaleString()} Coins</span>
+              </div>
+            )}
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-muted-foreground">ស្ថានភាព</span>
+              <span className="font-semibold text-primary">
+                {paidInfo?.creditedNow ? "Credited ✓ (Bakong API)" : "Confirmed ✓ (Bakong API)"}
+              </span>
+            </div>
             <div className="flex items-center justify-between gap-2">
               <span className="text-muted-foreground">ពេលវេលា</span>
               <span className="font-mono text-[11px]">
