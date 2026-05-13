@@ -47,9 +47,16 @@ export function TopupModal({
       for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
       const b64 = btoa(bin);
       const ct = (file.type === "image/jpeg" || file.type === "image/webp") ? file.type : "image/png";
-      await proofFn({ data: { md5: tx.md5, imageBase64: b64, contentType: ct } });
+      const r = await proofFn({ data: { md5: tx.md5, imageBase64: b64, contentType: ct } });
       setProofSent(true);
-      onToast("បានផ្ញើទៅ Telegram ✓");
+      const t = r?.telegram;
+      if (t && t.sent > 0 && t.failed === 0) {
+        onToast(`✓ ផ្ញើទៅ Telegram ជោគជ័យ (${t.sent}/${t.total})`);
+      } else if (t && t.sent > 0) {
+        onToast(`⚠ ផ្ញើបាន ${t.sent}/${t.total} — ${t.error ?? "មួយចំនួនបរាជ័យ"}`);
+      } else {
+        onToast(`✗ ផ្ញើទៅ Telegram បរាជ័យ — ${t?.error ?? "សូមទាក់ទង Admin"}`);
+      }
     } catch (e) {
       onToast(e instanceof Error ? e.message : "បរាជ័យ");
     } finally {
