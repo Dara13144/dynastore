@@ -8,6 +8,7 @@ import logoD from "@/assets/dyna-logo.jpeg";
 
 type TxRow = {
   id: string;
+  bakong_md5: string;
   amount_usd: number;
   coins: number;
   status: "pending" | "paid" | "failed" | "expired" | string;
