@@ -175,13 +175,57 @@ function GamesTab() {
     showToast("បន្ថែមរួច");
   };
 
+  const categories = Array.from(new Set(games.map((g) => g.category).filter(Boolean))).sort();
+  const q = query.trim().toLowerCase();
+  const filtered = games.filter((g) => {
+    if (catFilter !== "all" && g.category !== catFilter) return false;
+    if (visFilter === "visible" && !g.visible) return false;
+    if (visFilter === "hidden" && g.visible) return false;
+    if (!q) return true;
+    return (
+      g.id.toLowerCase().includes(q) ||
+      g.title.toLowerCase().includes(q) ||
+      (g.description ?? "").toLowerCase().includes(q) ||
+      (g.badge ?? "").toLowerCase().includes(q)
+    );
+  });
+
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="font-display text-xl">ហ្គេមទាំងអស់ ({games.length})</h2>
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <h2 className="font-display text-xl">ហ្គេមទាំងអស់ ({filtered.length}/{games.length})</h2>
         <button onClick={() => setCreating((v) => !v)} className="inline-flex items-center gap-1.5 rounded-full bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground">
           <Plus className="h-3.5 w-3.5" /> បន្ថែមហ្គេម
         </button>
+      </div>
+
+      <div className="rounded-2xl glass p-3 flex flex-wrap items-center gap-2">
+        <div className="relative flex-1 min-w-[200px]">
+          <Search className="h-3.5 w-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="ស្វែងរក title, id, badge…"
+            className="w-full rounded-full bg-input pl-9 pr-9 py-2 text-xs outline-none ring-1 ring-border focus:ring-primary"
+          />
+          {query && (
+            <button onClick={() => setQuery("")} className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground text-sm">×</button>
+          )}
+        </div>
+        <select value={catFilter} onChange={(e) => setCatFilter(e.target.value)} className="rounded-full bg-input px-3 py-2 text-xs ring-1 ring-border focus:ring-primary outline-none">
+          <option value="all">គ្រប់ Category</option>
+          {categories.map((c) => <option key={c} value={c}>{c}</option>)}
+        </select>
+        <div className="inline-flex rounded-full bg-muted/30 p-1 text-[11px] font-semibold">
+          {(["all", "visible", "hidden"] as const).map((v) => (
+            <button key={v} onClick={() => setVisFilter(v)} className={`px-3 py-1 rounded-full ${visFilter === v ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}>
+              {v === "all" ? "All" : v === "visible" ? "Visible" : "Hidden"}
+            </button>
+          ))}
+        </div>
+        {(query || catFilter !== "all" || visFilter !== "all") && (
+          <button onClick={() => { setQuery(""); setCatFilter("all"); setVisFilter("all"); }} className="text-[11px] text-muted-foreground hover:text-foreground underline">សម្អាត</button>
+        )}
       </div>
 
       {creating && (
