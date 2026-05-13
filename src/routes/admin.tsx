@@ -97,7 +97,7 @@ function GamesTab() {
   const [creating, setCreating] = useState(false);
   const [draft, setDraft] = useState<GameRow>({
     id: "", title: "", category: "", description: "", badge: "",
-    price_coins: 1000, visible: true, image_url: "", file_path: null, file_size_bytes: null,
+    price_coins: 0, visible: true, image_url: "", file_path: null, file_size_bytes: null,
   });
   const [draftFile, setDraftFile] = useState<File | null>(null);
 
