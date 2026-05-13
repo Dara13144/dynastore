@@ -512,7 +512,14 @@ function TopupModal({ onClose, onToast }: { onClose: () => void; onToast: (m: st
       setPollCount((n) => n + 1);
       recordAttempt(c.status, c.debug ?? c, c.debug?.httpStatus ?? null, c.debug?.latencyMs ?? null, c.debug?.providerMessage ?? null);
       if (c.status === "paid") { stopPoll(); setStage("paid"); await refreshWallet(); onToast(`បានបន្ថែម ${coins.toLocaleString()} Balance!`); }
-      else if (c.status === "expired") { stopPoll(); setStage("expired"); }
+      else if (c.status === "regenerated") {
+        // Auto-refresh QR after expiry
+        setQr(c.qr); setOrderId(c.orderId); setBakongMd5(c.bakongMd5);
+        setCoins(c.coins); setExpiresAt(new Date(c.expiresAt).getTime());
+        try { const QR = (await import("qrcode")).default; setQrDataUrl(await QR.toDataURL(c.qr, { margin: 1, scale: 8 })); } catch {}
+        setStage("qr");
+        onToast("QR ថ្មីបានបង្កើត — សូមស្កេនបន្ត");
+      }
       else { setStage("qr"); onToast(c.debug?.providerMessage ?? "មិនទាន់ទទួលបានការបង់ប្រាក់"); }
     } catch (e) {
       recordAttempt("error", e instanceof Error ? e.message : String(e));
