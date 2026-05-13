@@ -275,7 +275,7 @@ function GamesTab() {
           )}
         </div>
         <select value={catFilter} onChange={(e) => setCatFilter(e.target.value)} className="rounded-full bg-input px-3 py-2 text-xs ring-1 ring-border focus:ring-primary outline-none">
-          <option value="all">គ្រប់ Category</option>
+          <option value="all">គ្រប់ប្រភេទ</option>
           {categories.map((c) => <option key={c} value={c}>{c}</option>)}
         </select>
         <div className="inline-flex rounded-full bg-muted/30 p-1 text-[11px] font-semibold">
@@ -289,7 +289,7 @@ function GamesTab() {
           <button onClick={() => { setQuery(""); setCatFilter("all"); setVisFilter("all"); }} className="text-[11px] text-muted-foreground hover:text-foreground underline">សម្អាត</button>
         )}
         <button onClick={() => toggleSort("created_at")} className={`text-[11px] px-3 py-1.5 rounded-full ring-1 ring-border ${sortKey === "created_at" ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}>
-          Recently added{sortIcon("created_at")}
+          ថ្មីៗ{sortIcon("created_at")}
         </button>
       </div>
 
