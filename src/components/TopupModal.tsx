@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import QRCode from "react-qr-code";
-import { X, Wallet, Loader2, Upload, Check, Clock, AlertCircle } from "lucide-react";
+import { X, Wallet, Loader2, Upload, Check, Clock, AlertCircle, Download } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { getTopupConfig, createTopupRequest, listMyTopupRequests } from "@/lib/topup.functions";
 
