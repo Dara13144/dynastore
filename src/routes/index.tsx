@@ -390,8 +390,8 @@ function TopupModal({ onClose, onToast }: { onClose: () => void; onToast: (m: st
     if (stage === "qr" && expiresAt && now >= expiresAt) { stopPoll(); setStage("expired"); }
   }, [stage, expiresAt, now]);
 
-  const recordAttempt = (status: string, payload: unknown, httpStatus: number | null = null, latencyMs: number | null = null) => {
-    const entry = { at: new Date().toISOString(), status, httpStatus, latencyMs, payload };
+  const recordAttempt = (status: string, payload: unknown, httpStatus: number | null = null, latencyMs: number | null = null, providerMessage: string | null = null) => {
+    const entry = { at: new Date().toISOString(), status, httpStatus, latencyMs, payload, providerMessage };
     setDebug(entry);
     setAttempts((prev) => [entry, ...prev].slice(0, 10));
   };
