@@ -120,6 +120,7 @@ function Page() {
     <div className="min-h-screen">
       <Header onCart={() => setCartOpen(true)} onSettings={() => setSettingsOpen(true)} />
       <Hero />
+      <PendingTopupsPanel onResume={(p) => setPaymentPack(p)} />
       <CoinShop onBuyPack={(p) => setPaymentPack(p)} />
       <GamesSection onToast={showToast} onOpenCart={() => setCartOpen(true)} />
       <DealsBanner />
