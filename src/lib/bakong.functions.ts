@@ -13,10 +13,18 @@ const maskAccount = (id: string) => {
   return `${u}@${host}`;
 };
 
+const readBakongAccountId = () =>
+  process.env.BAKONG_ACCOUNT_ID ||
+  process.env.BAKONG_MERCHANT_ID ||
+  process.env.BAKONG_MERCHANT_ACCOUNT_NUMBER ||
+  "";
+
+const sanitizePhone = (value?: string | null) => value?.replace(/\D+/g, "") || undefined;
+
 export const getMerchantInfo = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async () => {
-    const accountIdRaw = process.env.BAKONG_ACCOUNT_ID || process.env.BAKONG_MERCHANT_ID || "";
+    const accountIdRaw = readBakongAccountId();
     return {
       merchantName: process.env.BAKONG_MERCHANT_NAME || null,
       merchantCity: process.env.BAKONG_MERCHANT_CITY || null,
@@ -59,14 +67,13 @@ export const createTopup = createServerFn({ method: "POST" })
     if (!pack) throw new Error("Invalid coin pack");
 
     // Read merchant configuration entirely from environment — no hardcoded values.
-    const accountId =
-      process.env.BAKONG_ACCOUNT_ID || process.env.BAKONG_MERCHANT_ID;
+    const accountId = readBakongAccountId();
     const merchantName = process.env.BAKONG_MERCHANT_NAME;
     const merchantCity = process.env.BAKONG_MERCHANT_CITY;
-    const merchantPhone = process.env.BAKONG_MERCHANT_PHONE;
+    const merchantPhone = sanitizePhone(process.env.BAKONG_MERCHANT_PHONE);
     const acquiringBank = process.env.BAKONG_ACQUIRING_BANK;
     const merchantId = process.env.BAKONG_MERCHANT_ID_NUMBER;
-    if (!accountId) throw new Error("BAKONG_ACCOUNT_ID (or BAKONG_MERCHANT_ID) is not configured");
+    if (!accountId) throw new Error("Bakong merchant account is not configured");
     if (!merchantName) throw new Error("BAKONG_MERCHANT_NAME is not configured");
     if (!merchantCity) throw new Error("BAKONG_MERCHANT_CITY is not configured");
 
@@ -85,9 +92,10 @@ export const createTopup = createServerFn({ method: "POST" })
         currency: "USD",
         billNumber,
         storeLabel: pack.name.slice(0, 25),
-        mobileNumber: merchantPhone?.replace(/\s+/g, "") || undefined,
+        mobileNumber: merchantPhone,
         terminalLabel: undefined,
         acquiringBank: acquiringBank || undefined,
+        accountInformation: merchantPhone,
         merchantId: merchantId || undefined,
       });
       md5 = built.md5;
