@@ -205,14 +205,16 @@ export function TopupModal({
                 accept="image/png,image/jpeg,image/webp"
                 hidden
                 onChange={(e) => { const f = e.target.files?.[0]; if (f) onPickProof(f); e.currentTarget.value = ""; }}
+              />
               <textarea
                 value={note}
                 onChange={(e) => setNote(e.target.value.slice(0, 500))}
                 placeholder="Caption (កែបាន មុន Resend)…"
                 rows={2}
-                className="w-full mb-2 rounded-xl bg-input px-3 py-2 text-xs outline-none ring-1 ring-border focus:ring-primary resize-none"
+                className="w-full mb-1 rounded-xl bg-input px-3 py-2 text-xs outline-none ring-1 ring-border focus:ring-primary resize-none"
               />
-              <div className="text-right text-[10px] text-muted-foreground -mt-1 mb-2">{note.length}/500</div>
+              <div className="text-right text-[10px] text-muted-foreground mb-2">{note.length}/500</div>
+              <div className="flex items-center justify-center gap-2 flex-wrap">
                 <button
                   onClick={() => fileRef.current?.click()}
                   disabled={uploading}
