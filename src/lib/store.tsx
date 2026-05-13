@@ -1,6 +1,7 @@
-import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useRef, useState, useCallback, type ReactNode } from "react";
 import { useSession } from "@/hooks/use-session";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import gtaImg from "@/assets/game-gta.jpg";
 import neonImg from "@/assets/game-neon.jpg";
 import rpgImg from "@/assets/game-rpg.jpg";
