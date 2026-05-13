@@ -319,9 +319,9 @@ function GamesTab() {
             <thead className="bg-muted/30 text-xs uppercase tracking-wider text-muted-foreground">
               <tr>
                 <th className="text-left px-4 py-3">ID</th>
-                <th className="text-left px-4 py-3">Title</th>
-                <th className="text-left px-4 py-3">Category</th>
-                <th className="text-right px-4 py-3">Price</th>
+                <th className="text-left px-4 py-3"><button onClick={() => toggleSort("title")} className="uppercase tracking-wider hover:text-foreground">Title{sortIcon("title")}</button></th>
+                <th className="text-left px-4 py-3"><button onClick={() => toggleSort("category")} className="uppercase tracking-wider hover:text-foreground">Category{sortIcon("category")}</button></th>
+                <th className="text-right px-4 py-3"><button onClick={() => toggleSort("price_coins")} className="uppercase tracking-wider hover:text-foreground">Price{sortIcon("price_coins")}</button></th>
                 <th className="text-center px-4 py-3">File</th>
                 <th className="text-center px-4 py-3">Visible</th>
                 <th className="text-right px-4 py-3">Action</th>
