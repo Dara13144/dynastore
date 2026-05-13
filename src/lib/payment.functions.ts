@@ -3,8 +3,7 @@ import { z } from "zod";
 import { createHash } from "crypto";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
-// @ts-ignore - bakong-khqr is plain js
-import { BakongKHQR, IndividualInfo, khqrData } from "bakong-khqr";
+import { encodeKhqr } from "@/lib/khqr-encode";
 
 function md5Hex(input: string): string {
   return createHash("md5").update(input, "utf8").digest("hex");
