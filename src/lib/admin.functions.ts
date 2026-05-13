@@ -99,4 +99,31 @@ export const listBalanceChanges = createServerFn({ method: "POST" })
     return (rows ?? []).map((r) => ({ ...r, changed_by_name: nameMap.get(r.changed_by) ?? "Admin" }));
   });
 
+export const adminSetUserRole = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i) => z.object({
+    user_id: z.string().uuid(),
+    is_admin: z.boolean(),
+  }).parse(i))
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context.userId);
+    if (data.user_id === context.userId && !data.is_admin) {
+      throw new Error("មិនអាចដកសិទ្ធិខ្លួនឯងបានទេ");
+    }
+    if (data.is_admin) {
+      const { error } = await supabaseAdmin
+        .from("user_roles")
+        .upsert({ user_id: data.user_id, role: "admin" }, { onConflict: "user_id,role" });
+      if (error) throw new Error(error.message);
+    } else {
+      const { error } = await supabaseAdmin
+        .from("user_roles")
+        .delete()
+        .eq("user_id", data.user_id)
+        .eq("role", "admin");
+      if (error) throw new Error(error.message);
+    }
+    return { ok: true, is_admin: data.is_admin };
+  });
+
 
