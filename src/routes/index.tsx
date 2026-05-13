@@ -402,8 +402,8 @@ function TopupModal({ onClose, onToast }: { onClose: () => void; onToast: (m: st
     try {
       await cancelFn({ data: { orderId } });
       stopPoll();
+      setStage("cancelled"); setFlash("cancelled");
       onToast("បានលុប QR");
-      reset();
     } catch (e) {
       onToast(e instanceof Error ? e.message : "បរាជ័យលុប");
     } finally {
