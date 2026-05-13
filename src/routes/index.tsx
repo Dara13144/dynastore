@@ -57,7 +57,7 @@ function Page() {
 }
 
 function Header({ onSettings, onTopup }: { onSettings: () => void; onTopup: () => void }) {
-  const { authed, signOut, balance } = useStore();
+  const { authed, signOut, balance, isAdmin } = useStore();
   return (
     <header className="sticky top-0 z-40 backdrop-blur-md bg-background/70 border-b border-border/60">
       <div className="container mx-auto px-4 h-16 flex items-center justify-between gap-3">
