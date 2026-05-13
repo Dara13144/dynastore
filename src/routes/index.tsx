@@ -96,24 +96,62 @@ function removePendingPayment(storageKey: string) {
   writePendingPayments(next);
 }
 
-function BakongConfigBanner() {
+type BakongConfigInfo = Awaited<ReturnType<typeof getMerchantInfoFn>>;
+type BakongConfigCtx = {
+  info: BakongConfigInfo | null;
+  fetchErr: string | null;
+  loading: boolean;
+  hasError: boolean;
+  hasWarning: boolean;
+  errorSummary: string | null;
+  reload: () => void;
+};
+const BakongConfigContext = React.createContext<BakongConfigCtx | null>(null);
+
+function BakongConfigProvider({ children }: { children: React.ReactNode }) {
   const { authed } = useStore();
   const getMerchantInfo = useServerFn(getMerchantInfoFn);
-  const [info, setInfo] = useState<Awaited<ReturnType<typeof getMerchantInfoFn>> | null>(null);
+  const [info, setInfo] = useState<BakongConfigInfo | null>(null);
   const [fetchErr, setFetchErr] = useState<string | null>(null);
-  const [dismissed, setDismissed] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const load = () => {
+  const reload = () => {
+    if (!authed) { setInfo(null); setFetchErr(null); return; }
+    setLoading(true);
     setFetchErr(null);
     getMerchantInfo()
       .then(setInfo)
-      .catch((e: any) => setFetchErr(e?.message || "Failed to load Bakong config"));
+      .catch((e: any) => setFetchErr(e?.message || "Failed to load Bakong config"))
+      .finally(() => setLoading(false));
   };
 
-  useEffect(() => {
-    if (!authed) { setInfo(null); return; }
-    load();
-  }, [authed]);
+  useEffect(() => { reload(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [authed]);
+
+  const issues = info?.configIssues ?? [];
+  const hasError = !!fetchErr || issues.some((i) => i.severity === "error");
+  const hasWarning = issues.some((i) => i.severity === "warning");
+  const errorSummary = fetchErr
+    ? fetchErr
+    : hasError
+      ? issues.filter((i) => i.severity === "error").map((i) => `${i.key}: ${i.message}`).join(" • ")
+      : null;
+
+  return (
+    <BakongConfigContext.Provider value={{ info, fetchErr, loading, hasError, hasWarning, errorSummary, reload }}>
+      {children}
+    </BakongConfigContext.Provider>
+  );
+}
+
+function useBakongConfig(): BakongConfigCtx {
+  const ctx = React.useContext(BakongConfigContext);
+  return ctx ?? { info: null, fetchErr: null, loading: false, hasError: false, hasWarning: false, errorSummary: null, reload: () => {} };
+}
+
+function BakongConfigBanner() {
+  const { authed } = useStore();
+  const { info, fetchErr, hasError, reload } = useBakongConfig();
+  const [dismissed, setDismissed] = useState(false);
 
   if (!authed || dismissed) return null;
 
@@ -126,7 +164,7 @@ function BakongConfigBanner() {
             <div className="font-semibold text-destructive">Bakong config check failed</div>
             <div className="text-muted-foreground mt-1 break-words">{fetchErr}</div>
           </div>
-          <button onClick={load} className="text-xs rounded-full border px-3 py-1 hover:bg-accent">Retry</button>
+          <button onClick={reload} className="text-xs rounded-full border px-3 py-1 hover:bg-accent">Retry</button>
         </div>
       </section>
     );
@@ -134,7 +172,6 @@ function BakongConfigBanner() {
 
   const issues = info?.configIssues ?? [];
   if (issues.length === 0) return null;
-  const hasError = issues.some((i) => i.severity === "error");
 
   return (
     <section className="container mx-auto px-4 pt-4">
@@ -143,7 +180,7 @@ function BakongConfigBanner() {
           <AlertTriangle className={`h-5 w-5 shrink-0 mt-0.5 ${hasError ? "text-destructive" : "text-yellow-500"}`} />
           <div className="flex-1 min-w-0">
             <div className={`font-semibold text-sm ${hasError ? "text-destructive" : "text-yellow-600 dark:text-yellow-400"}`}>
-              {hasError ? "Bakong KHQR is not ready" : "Bakong configuration warnings"}
+              {hasError ? "Bakong KHQR is not ready — topups are disabled" : "Bakong configuration warnings"}
             </div>
             <ul className="mt-2 space-y-1 text-xs">
               {issues.map((i, idx) => (
@@ -157,12 +194,12 @@ function BakongConfigBanner() {
             </ul>
             {hasError && (
               <p className="mt-2 text-xs text-muted-foreground">
-                Set the missing values in Backend → Secrets, then click Retry. Topup will fail until all errors are resolved.
+                Set the missing values in Backend → Secrets, then click Retry. Topup buttons stay disabled until all errors are resolved.
               </p>
             )}
           </div>
           <div className="flex flex-col gap-1">
-            <button onClick={load} className="text-xs rounded-full border px-3 py-1 hover:bg-accent">Retry</button>
+            <button onClick={reload} className="text-xs rounded-full border px-3 py-1 hover:bg-accent">Retry</button>
             {!hasError && (
               <button onClick={() => setDismissed(true)} className="text-xs rounded-full px-3 py-1 text-muted-foreground hover:bg-accent">Dismiss</button>
             )}
