@@ -16,8 +16,14 @@ async function assertAdmin(userId: string) {
 
 
 async function userLabel(userId: string): Promise<string> {
-  const { data } = await supabaseAdmin.from("profiles").select("display_name").eq("user_id", userId).maybeSingle();
-  return data?.display_name ?? userId.slice(0, 8);
+  const { data: prof } = await supabaseAdmin.from("profiles").select("display_name").eq("user_id", userId).maybeSingle();
+  const name = prof?.display_name ?? userId.slice(0, 8);
+  let email = "";
+  try {
+    const { data: u } = await supabaseAdmin.auth.admin.getUserById(userId);
+    email = u?.user?.email ?? "";
+  } catch { /* ignore */ }
+  return email ? `${name} (${email})` : name;
 }
 
 
