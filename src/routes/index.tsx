@@ -1769,6 +1769,8 @@ function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () 
                 ["Bakong Account", merchantInfo?.bakongAccountIdMasked],
                 ["Amount", `$${pack.price} USD`],
                 ["Coins", `${(pack.coins + (pack.bonus ?? 0)).toLocaleString()}`],
+                ["Bill Number", tx.billNumber ?? "— reused/restored —"],
+                ["Polling MD5", tx.md5],
                 ["Tx Created", new Date(tx.createdAt).toLocaleTimeString()],
                 ["Tx Expires", new Date(tx.expiresAt).toLocaleTimeString()],
               ].map(([k, v]) => (
