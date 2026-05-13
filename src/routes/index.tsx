@@ -358,6 +358,9 @@ function TopupModal({ onClose, onToast }: { onClose: () => void; onToast: (m: st
   const [expiresAt, setExpiresAt] = useState<number | null>(null);
   const [now, setNow] = useState(Date.now());
   const pollRef = useRef<number | null>(null);
+  const [debug, setDebug] = useState<{ at: string; status: string; payload: unknown } | null>(null);
+  const [showDebug, setShowDebug] = useState(false);
+  const [pollCount, setPollCount] = useState(0);
 
   const createFn = useServerFn(createTopup);
   const checkFn = useServerFn(checkTopup);
