@@ -1009,7 +1009,7 @@ function CoinShop({ onBuyPack }: { onBuyPack: (p: CoinPack) => void }) {
         <div className="mx-auto mt-6 max-w-3xl rounded-2xl border border-destructive/40 bg-destructive/10 p-4 text-sm flex items-start gap-3">
           <AlertTriangle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
           <div className="min-w-0">
-            <div className="font-semibold text-destructive">Topups disabled — Bakong configuration error</div>
+            <div className="font-semibold text-destructive">Add Balance disabled — Bakong configuration error</div>
             <div className="text-xs text-muted-foreground mt-1 break-words">{errorSummary || "See banner above for details."}</div>
           </div>
         </div>
