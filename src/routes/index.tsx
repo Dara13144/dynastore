@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import QRCode from "qrcode";
-import { Settings, LogIn, LogOut, Star, Send, Gamepad2, Sparkles, X, Coins, Plus, Library, Check, Loader2 } from "lucide-react";
+import { Settings, LogIn, LogOut, Star, Send, Gamepad2, Sparkles, X, Coins, Plus, Library, Check, Loader2, AlertTriangle, RefreshCw, Wallet, Copy, ShieldCheck } from "lucide-react";
 import { StoreProvider, useStore, type Game } from "@/lib/store";
 import { createTopup, checkTopup, purchaseGame } from "@/lib/payment.functions";
 import heroImg from "@/assets/hero-arcade.jpg";
