@@ -410,11 +410,10 @@ function GameRowEditor({ game, busy, onSave, onDelete, onReplaceFile, validateFi
               className="text-[10px] text-emerald-400 hover:underline"
             >ទាញយក</button>
           )}
-          <label title={`អនុញ្ញាត: ${allowedExt.join(", ")} • កំណត់ ${(maxBytes / 1024 ** 3).toFixed(0)}GB`}>
+          <label title="ផ្ទុកឯកសារគ្រប់ប្រភេទ • គ្មានកំណត់ទំហំ">
             <span className="text-[10px] text-primary cursor-pointer hover:underline">{game.file_path ? "ប្តូរ" : "ផ្ទុកឡើង"}</span>
             <input
               type="file"
-              accept={allowedExt.map((e) => `.${e}`).join(",")}
               className="hidden"
               onChange={(e) => {
                 const f = e.target.files?.[0];
