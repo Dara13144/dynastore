@@ -610,6 +610,10 @@ function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () 
   const [pollTick, setPollTick] = useState(0);
   const [paidAt, setPaidAt] = useState<number | null>(null);
   const [paidInfo, setPaidInfo] = useState<{ bakongRef: string | null; newBalance: number | null; creditedNow: boolean } | null>(null);
+  type TimelineEvent = { at: number; kind: "khqr" | "md5" | "bakong" | "credited" | "expired" | "error"; label: string; detail?: string };
+  const [events, setEvents] = useState<TimelineEvent[]>([]);
+  const pushEvent = (e: Omit<TimelineEvent, "at">) =>
+    setEvents((prev) => [...prev, { ...e, at: Date.now() }].slice(-50));
   const [mismatch, setMismatch] = useState<{ scanned: string; active: string } | null>(null);
   const [autoCloseIn, setAutoCloseIn] = useState<number>(0);
   const POLL_WINDOW_S = 300;
