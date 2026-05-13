@@ -231,9 +231,9 @@ function GamesTab() {
     const result = await submitCreateGame(
       {
         id: draft.id, title: draft.title, category: draft.category,
-        description: draft.description, badge: draft.badge,
+        description: draft.description ?? "", badge: draft.badge ?? "",
         price_coins: Number(draft.price_coins) || 0, visible: draft.visible,
-        image_url: draft.image_url,
+        image_url: draft.image_url ?? "",
       },
       draftFile,
       {
