@@ -51,6 +51,7 @@ export const createTopupRequest = createServerFn({ method: "POST" })
     const who = await userLabel(context.userId);
     await notifyTelegram(
       `🆕 <b>New Topup Request</b>\n👤 ${who}\n💵 $${Number(data.amount_usd).toFixed(2)} → <b>${coins.toLocaleString()} coins</b>${data.note ? `\n📝 ${data.note}` : ""}\n🆔 <code>${row.id}</code>`,
+      "topup_submitted",
     );
     return row;
   });
@@ -153,6 +154,7 @@ export const adminApproveTopup = createServerFn({ method: "POST" })
     const who = await userLabel(claimed.user_id);
     await notifyTelegram(
       `✅ <b>Topup Approved</b>\n👤 ${who}\n💵 $${Number(claimed.amount_usd).toFixed(2)} → <b>+${Number(claimed.coins).toLocaleString()} coins</b>\n💼 New balance: ${bal.toLocaleString()}\n🆔 <code>${data.id}</code>`,
+      "topup_approved",
     );
     return {
       ok: true,
@@ -184,6 +186,7 @@ export const adminRejectTopup = createServerFn({ method: "POST" })
     const who = await userLabel(claimed.user_id);
     await notifyTelegram(
       `❌ <b>Topup Rejected</b>\n👤 ${who}\n💵 $${Number(claimed.amount_usd).toFixed(2)}\n📝 ${data.reason}\n🆔 <code>${data.id}</code>`,
+      "topup_rejected",
     );
     return { ok: true };
   });
