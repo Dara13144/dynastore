@@ -14,6 +14,68 @@ export type Database = {
   }
   public: {
     Tables: {
+      games: {
+        Row: {
+          badge: string | null
+          category: string
+          created_at: string
+          description: string | null
+          id: string
+          price_coins: number
+          title: string
+        }
+        Insert: {
+          badge?: string | null
+          category: string
+          created_at?: string
+          description?: string | null
+          id: string
+          price_coins?: number
+          title: string
+        }
+        Update: {
+          badge?: string | null
+          category?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          price_coins?: number
+          title?: string
+        }
+        Relationships: []
+      }
+      library: {
+        Row: {
+          created_at: string
+          game_id: string
+          id: string
+          kind: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          game_id: string
+          id?: string
+          kind: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          game_id?: string
+          id?: string
+          kind?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "library_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "games"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -44,6 +106,45 @@ export type Database = {
         }
         Relationships: []
       }
+      transactions: {
+        Row: {
+          amount_usd: number
+          coins: number
+          created_at: string
+          expires_at: string
+          id: string
+          md5: string
+          paid_at: string | null
+          qr_string: string
+          status: Database["public"]["Enums"]["tx_status"]
+          user_id: string
+        }
+        Insert: {
+          amount_usd: number
+          coins: number
+          created_at?: string
+          expires_at: string
+          id?: string
+          md5: string
+          paid_at?: string | null
+          qr_string: string
+          status?: Database["public"]["Enums"]["tx_status"]
+          user_id: string
+        }
+        Update: {
+          amount_usd?: number
+          coins?: number
+          created_at?: string
+          expires_at?: string
+          id?: string
+          md5?: string
+          paid_at?: string | null
+          qr_string?: string
+          status?: Database["public"]["Enums"]["tx_status"]
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -65,11 +166,40 @@ export type Database = {
         }
         Relationships: []
       }
+      wallets: {
+        Row: {
+          balance: number
+          created_at: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          balance?: number
+          created_at?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          balance?: number
+          created_at?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      credit_topup_atomic: {
+        Args: { _md5: string }
+        Returns: {
+          message: string
+          new_balance: number
+          ok: boolean
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -77,9 +207,18 @@ export type Database = {
         }
         Returns: boolean
       }
+      purchase_game_atomic: {
+        Args: { _game_id: string; _user_id: string }
+        Returns: {
+          message: string
+          new_balance: number
+          ok: boolean
+        }[]
+      }
     }
     Enums: {
       app_role: "admin" | "user"
+      tx_status: "pending" | "paid" | "expired" | "cancelled"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -208,6 +347,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "user"],
+      tx_status: ["pending", "paid", "expired", "cancelled"],
     },
   },
 } as const
