@@ -65,29 +65,29 @@ afterAll(() => {
 describe("DB integrity: transactions CHECK constraints block inconsistent payloads", () => {
   it("baseline — a fully consistent (qr, md5(qr)) pair INSERTs successfully", () => {
     const orderId = `${tag}_baseline_${randomUUID()}`;
-    const r = tryInsert(orderId, VALID_QR, md5Hex(VALID_QR));
+    const r = tryInsert(orderId, freshValidQr(), md5Hex(freshValidQr()));
     expect(r.ok).toBe(true);
   });
 
   it("rejects md5 that does NOT match md5(qr_string) (transactions_md5_matches_qr)", () => {
     const orderId = `${tag}_mismatch_${randomUUID()}`;
-    const wrongMd5 = md5Hex(VALID_QR + "x"); // valid hex shape, wrong value
-    const r = tryInsert(orderId, VALID_QR, wrongMd5);
+    const wrongMd5 = md5Hex(freshValidQr() + "x"); // valid hex shape, wrong value
+    const r = tryInsert(orderId, freshValidQr(), wrongMd5);
     expect(r.ok).toBe(false);
     expect(r.error).toMatch(/transactions_md5_matches_qr|check constraint/i);
   });
 
   it("rejects bakong_md5 that is not 32-char lowercase hex (transactions_bakong_md5_shape)", () => {
     const orderId = `${tag}_md5shape_${randomUUID()}`;
-    const r = tryInsert(orderId, VALID_QR, "NOT-A-VALID-MD5");
+    const r = tryInsert(orderId, freshValidQr(), "NOT-A-VALID-MD5");
     expect(r.ok).toBe(false);
     expect(r.error).toMatch(/transactions_bakong_md5_shape|check constraint/i);
   });
 
   it("rejects bakong_md5 with uppercase hex (must be lowercase)", () => {
     const orderId = `${tag}_md5upper_${randomUUID()}`;
-    const upper = md5Hex(VALID_QR).toUpperCase();
-    const r = tryInsert(orderId, VALID_QR, upper);
+    const upper = md5Hex(freshValidQr()).toUpperCase();
+    const r = tryInsert(orderId, freshValidQr(), upper);
     expect(r.ok).toBe(false);
     expect(r.error).toMatch(/transactions_bakong_md5_shape|check constraint/i);
   });
@@ -102,7 +102,7 @@ describe("DB integrity: transactions CHECK constraints block inconsistent payloa
 
   it("rejects qr_string that does not start with '0002' (transactions_qr_string_shape)", () => {
     const orderId = `${tag}_badprefix_${randomUUID()}`;
-    const wrongPrefix = "9999" + VALID_QR.slice(4);
+    const wrongPrefix = "9999" + freshValidQr().slice(4);
     const r = tryInsert(orderId, wrongPrefix, md5Hex(wrongPrefix));
     expect(r.ok).toBe(false);
     expect(r.error).toMatch(/transactions_qr_string_shape|check constraint/i);
