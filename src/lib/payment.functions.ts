@@ -323,7 +323,15 @@ export const checkTopup = createServerFn({ method: "POST" })
       try {
         const res = await fetch("https://api-bakong.nbc.gov.kh/v1/check_transaction_by_md5", {
           method: "POST",
-          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+          headers: {
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+            // CloudFront in front of Bakong returns HTTP 403 ("Request blocked")
+            // when User-Agent is missing or matches a default fetch UA. A normal
+            // browser-like UA is required.
+            "User-Agent": "Mozilla/5.0 (compatible; DynaStore/1.0; +https://dynastore.lovable.app)",
+            Authorization: `Bearer ${token}`,
+          },
           body: JSON.stringify({ md5: tx.bakong_md5 }),
           signal: ctrl.signal,
         });
