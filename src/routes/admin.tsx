@@ -16,6 +16,7 @@ type GameRow = {
   id: string; title: string; category: string; description: string | null;
   badge: string | null; price_coins: number; visible: boolean;
   image_url: string | null; file_path: string | null; file_size_bytes: number | null;
+  created_at?: string;
 };
 
 type UserRow = {
