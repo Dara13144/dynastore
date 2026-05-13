@@ -105,7 +105,9 @@ export const createTopup = createServerFn({ method: "POST" })
       amount: data.amountUSD,
       currency: "USD",
       dynamic: true,
-      terminalLabel: userId.slice(0, 8),
+      // Per-tx unique label so each QR (and its MD5) is distinct.
+      // Max 25 chars; Bakong terminalLabel is free-form.
+      terminalLabel: `${userId.slice(0, 6)}${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`.slice(0, 25),
     });
     const qrString = encoded.qr;
     const md5 = createHash("md5").update(qrString).digest("hex");
