@@ -94,6 +94,28 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         href: appCss,
       },
     ],
+    scripts: [
+      {
+        type: "application/ld+json",
+        children: JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "Organization",
+          name: "Dyna Store",
+          url: "https://dynastore.lovable.app",
+          logo: "https://dynastore.lovable.app/favicon.ico",
+          description: "Dyna Store — ហាងហ្គេម PC និង Console នៅកម្ពុជា ជាមួយការទូទាត់តាម Bakong KHQR និងការទាញយកហ្គេមភ្លាមៗ។",
+        }),
+      },
+      {
+        type: "application/ld+json",
+        children: JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "WebSite",
+          name: "Dyna Store",
+          url: "https://dynastore.lovable.app",
+        }),
+      },
+    ],
   }),
   shellComponent: RootShell,
   component: RootComponent,
