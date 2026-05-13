@@ -463,7 +463,7 @@ function TopupModal({ onClose, onToast }: { onClose: () => void; onToast: (m: st
           } else if (c.status === "regenerated" && c.qr && c.orderId) {
             activeOrderId = c.orderId;
             setOrderId(c.orderId); setBakongMd5(c.bakongMd5 ?? ""); setQr(c.qr);
-            if (c.expiresAt) setTtlWindow(new Date(c.expiresAt).getTime());
+            if (c.expiresAt) setTtlWindow(new Date(c.expiresAt).getTime(), c.issuedAt ? new Date(c.issuedAt).getTime() : undefined);
             const dataUrl = await QRCode.toDataURL(c.qr, { width: 320, margin: 1 });
             setQrDataUrl(dataUrl);
             setFlash("regenerated");
