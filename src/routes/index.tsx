@@ -30,6 +30,72 @@ export const Route = createFileRoute("/")({
   ),
 });
 
+type PendingPaymentEntry = {
+  storageKey: string;
+  kind: "topup" | "checkout";
+  md5: string;
+  qrPayload: string;
+  coins: number;
+  createdAt: number;
+  expiresAt: number;
+  updatedAt: number;
+  packId?: string;
+  sessionId?: string;
+};
+
+const PENDING_PAYMENTS_STORAGE_KEY = "bakong:pendingTopups";
+
+function readPendingPayments(): Record<string, PendingPaymentEntry> {
+  if (typeof window === "undefined") return {};
+  try {
+    const raw = localStorage.getItem(PENDING_PAYMENTS_STORAGE_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === "object" ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+function writePendingPayments(entries: Record<string, PendingPaymentEntry>) {
+  if (typeof window === "undefined") return;
+  try {
+    if (Object.keys(entries).length === 0) localStorage.removeItem(PENDING_PAYMENTS_STORAGE_KEY);
+    else localStorage.setItem(PENDING_PAYMENTS_STORAGE_KEY, JSON.stringify(entries));
+  } catch {}
+}
+
+function prunePendingPayments(entries = readPendingPayments()) {
+  const now = Date.now();
+  const next = Object.fromEntries(
+    Object.entries(entries).filter(([, entry]) => entry && entry.md5 && entry.qrPayload && entry.expiresAt > now),
+  ) as Record<string, PendingPaymentEntry>;
+  if (Object.keys(next).length !== Object.keys(entries).length) writePendingPayments(next);
+  return next;
+}
+
+function getPendingPayment(storageKey: string) {
+  return prunePendingPayments()[storageKey] ?? null;
+}
+
+function getLatestPendingPayment(kind?: PendingPaymentEntry["kind"]) {
+  const entries = Object.values(prunePendingPayments());
+  const filtered = kind ? entries.filter((entry) => entry.kind === kind) : entries;
+  return filtered.sort((a, b) => (b.updatedAt || b.createdAt) - (a.updatedAt || a.createdAt))[0] ?? null;
+}
+
+function upsertPendingPayment(entry: PendingPaymentEntry) {
+  const next = prunePendingPayments();
+  next[entry.storageKey] = entry;
+  writePendingPayments(next);
+}
+
+function removePendingPayment(storageKey: string) {
+  const next = prunePendingPayments();
+  delete next[storageKey];
+  writePendingPayments(next);
+}
+
 function Page() {
   const [cartOpen, setCartOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -38,20 +104,11 @@ function Page() {
 
   // Restore pending topup after page refresh so polling resumes automatically.
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem("bakong:pendingTopup");
-      if (!raw) return;
-      const data = JSON.parse(raw) as { packId: string; expiresAt: number };
-      if (!data?.packId || !data?.expiresAt || Date.now() >= data.expiresAt) {
-        localStorage.removeItem("bakong:pendingTopup");
-        return;
-      }
-      const pack = COIN_PACKS.find((p) => p.id === data.packId);
-      if (pack) setPaymentPack(pack);
-      else localStorage.removeItem("bakong:pendingTopup");
-    } catch {
-      try { localStorage.removeItem("bakong:pendingTopup"); } catch {}
-    }
+    const pending = getLatestPendingPayment("topup");
+    if (!pending?.packId) return;
+    const pack = COIN_PACKS.find((p) => p.id === pending.packId);
+    if (pack) setPaymentPack(pack);
+    else removePendingPayment(pending.storageKey);
   }, []);
 
   const showToast = (msg: string) => {
@@ -636,10 +693,10 @@ function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () 
   const [autoCloseIn, setAutoCloseIn] = useState<number>(0);
   const POLL_WINDOW_S = 300;
   const AUTO_CLOSE_S = 6;
-  const STORAGE_KEY = "bakong:pendingTopup";
+  const storageKey = `topup:${pack.id}`;
 
   const clearPersistedTx = () => {
-    try { localStorage.removeItem(STORAGE_KEY); } catch {}
+    removePendingPayment(storageKey);
   };
 
   const closeAndClear = () => {
@@ -678,12 +735,8 @@ function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () 
   useEffect(() => {
     if (!authed) return;
     try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (!raw) return;
-      const data = JSON.parse(raw) as Tx & { packId: string };
+      const data = getPendingPayment(storageKey);
       if (!data || data.packId !== pack.id) return;
-      if (!data.md5 || !data.qrPayload || !data.expiresAt) return;
-      if (Date.now() >= data.expiresAt) { clearPersistedTx(); return; }
       setTx({
         md5: data.md5,
         qrPayload: data.qrPayload,
@@ -698,16 +751,24 @@ function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () 
       clearPersistedTx();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [authed, storageKey, pack.id]);
 
   // Persist tx whenever it's active so refresh can resume polling
   useEffect(() => {
     if (!tx) return;
     if (status === "paid" || status === "expired" || status === "error") return;
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...tx, packId: pack.id }));
-    } catch {}
-  }, [tx, status, pack.id]);
+    upsertPendingPayment({
+      storageKey,
+      kind: "topup",
+      packId: pack.id,
+      md5: tx.md5,
+      qrPayload: tx.qrPayload,
+      coins: tx.coins,
+      createdAt: tx.createdAt,
+      expiresAt: tx.expiresAt,
+      updatedAt: Date.now(),
+    });
+  }, [tx, status, pack.id, storageKey]);
 
   // Clear persisted tx on terminal states
   useEffect(() => {
