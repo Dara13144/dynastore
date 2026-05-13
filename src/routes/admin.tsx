@@ -939,6 +939,7 @@ function TopupsTab() {
   const [busy, setBusy] = useState(false);
   const [acting, setActing] = useState<string | null>(null);
   const [previewSlip, setPreviewSlip] = useState<string | null>(null);
+  const [outcome, setOutcome] = useState<Record<string, "approved" | "already" | "rejected">>({});
 
   const load = useCallback(async () => {
     setBusy(true);
