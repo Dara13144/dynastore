@@ -2,14 +2,14 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { ArrowLeft, Loader2, Receipt, Copy } from "lucide-react";
-import { useStore } from "@/lib/store";
+import { useStore, StoreProvider } from "@/lib/store";
 import { listMyTransactions } from "@/lib/admin.functions";
 import { StatusPill } from "@/routes/admin";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/payments")({
   head: () => ({ meta: [{ title: "ការទូទាត់ — Dyna Store" }] }),
-  component: PaymentsPage,
+  component: () => (<StoreProvider><PaymentsPage /></StoreProvider>),
 });
 
 type Tx = { md5: string; amount_usd: number; coins: number; status: string; created_at: string; expires_at: string; paid_at: string | null };
