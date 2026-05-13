@@ -114,7 +114,7 @@ export const listMyTransactions = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     const { data, error } = await supabaseAdmin
       .from("transactions")
-      .select("md5, amount_usd, coins, status, created_at, expires_at, paid_at")
+      .select("id, order_id, bakong_md5, amount_usd, coins, status, created_at, expires_at, paid_at, completed_at, payment_method")
       .eq("user_id", context.userId)
       .order("created_at", { ascending: false })
       .limit(100);
@@ -128,7 +128,7 @@ export const listAllTransactions = createServerFn({ method: "GET" })
     await assertAdmin(context.userId);
     const { data, error } = await supabaseAdmin
       .from("transactions")
-      .select("id, user_id, md5, amount_usd, coins, status, created_at, expires_at, paid_at")
+      .select("id, user_id, order_id, bakong_md5, amount_usd, coins, status, created_at, expires_at, paid_at, completed_at, payment_method")
       .order("created_at", { ascending: false })
       .limit(200);
     if (error) throw new Error(error.message);
