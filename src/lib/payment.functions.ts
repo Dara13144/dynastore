@@ -135,24 +135,18 @@ export const createTopup = createServerFn({ method: "POST" })
     for (let attempt = 0; attempt < 3; attempt++) {
       const orderId = `khqr_${crypto.randomUUID()}`;
       const nonce = `${userId.slice(0, 6)}-${Date.now().toString(36)}-${attempt}${Math.random().toString(36).slice(2, 6)}`;
-      const info = new IndividualInfo(accountId, merchantName, merchantCity, {
-        currency: khqrData.currency.usd,
-        amount: Number(data.amountUsd.toFixed(2)),
-        mobileNumber: phone,
-        storeLabel: "Dyna Store",
-        terminalLabel: `tp-${userId.slice(0, 8)}`,
-        billNumber: nonce,
-        expirationTimestamp: Date.now() + ttlMin * 60_000,
-      });
       try {
-        const res = new BakongKHQR().generateIndividual(info);
-        // bakong-khqr returns { status: {...}, data: null } on failure WITHOUT throwing.
-        if (res?.status && res.status.code !== 0) {
-          throw new Error(`KHQR generation rejected: ${res.status.message ?? "unknown"}${res.status.errorCode ? ` (${res.status.errorCode})` : ""}`);
-        }
-        qr = res?.data?.qr;
-        // Always recompute MD5 from the QR string — bakong-khqr's md5 field is unreliable.
-        bakongMd5 = qr ? md5Hex(qr) : undefined;
+        const res = encodeKhqr({
+          accountId, merchantName, merchantCity,
+          currency: "USD",
+          amount: Number(data.amountUsd.toFixed(2)),
+          mobileNumber: phone,
+          storeLabel: "Dyna Store",
+          terminalLabel: `tp-${userId.slice(0, 8)}`,
+          billNumber: nonce,
+        });
+        qr = res.qr;
+        bakongMd5 = md5Hex(qr);
       } catch (e) {
         throw new Error("បរាជ័យបង្កើត KHQR: " + khqrErrorMessage(e));
       }
