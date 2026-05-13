@@ -133,14 +133,13 @@ function GamesTab() {
   useEffect(() => { loadGames(); }, [loadGames]);
 
   const [uploadPct, setUploadPct] = useState<number | null>(null);
-  // Game archive uploads must be between 100 MB and 500 MB.
-  const MIN_GAME_FILE_BYTES = 100 * 1024 * 1024;
-  const MAX_GAME_FILE_BYTES = 500 * 1024 * 1024;
+  // Game archive uploads: only archive types allowed; size effectively unlimited.
+  const ALLOWED_EXTS = [".zip", ".rar", ".7z", ".tar", ".gz", ".tgz"];
   const validateFile = (file: File): string | null => {
     if (file.size <= 0) return "ឯកសារទទេ";
-    const mb = (file.size / 1024 / 1024).toFixed(1);
-    if (file.size < MIN_GAME_FILE_BYTES) return `ឯកសារតូចពេក (${mb}MB) — តម្រូវយ៉ាងតិច 100MB`;
-    if (file.size > MAX_GAME_FILE_BYTES) return `ឯកសារធំពេក (${mb}MB) — អតិបរមា 500MB`;
+    const name = file.name.toLowerCase();
+    const ok = ALLOWED_EXTS.some((ext) => name.endsWith(ext));
+    if (!ok) return `ប្រភេទឯកសារមិនអនុញ្ញាត — តម្រូវ ${ALLOWED_EXTS.join(", ")}`;
     return null;
   };
   const uploadFile = async (gameId: string, file: File): Promise<{ path: string; size: number } | null> => {
