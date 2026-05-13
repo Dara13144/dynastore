@@ -18,6 +18,23 @@ const QUICK = [
   "តើ Download ហ្គេមនៅណា?",
 ];
 
+const STORAGE_KEY = "dynastore_ai_chat_v1";
+
+function loadStored(): Msg[] {
+  if (typeof window === "undefined") return [WELCOME];
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEY);
+    if (!raw) return [WELCOME];
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed) || parsed.length === 0) return [WELCOME];
+    return parsed.filter(
+      (m) => m && (m.role === "user" || m.role === "assistant") && typeof m.content === "string"
+    );
+  } catch {
+    return [WELCOME];
+  }
+}
+
 export function DynastoreAIChat() {
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Msg[]>([WELCOME]);
@@ -26,9 +43,32 @@ export function DynastoreAIChat() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const chatFn = useServerFn(aiChat);
 
+  // Hydrate from localStorage on mount (client only) to avoid SSR mismatch
+  useEffect(() => {
+    setMessages(loadStored());
+  }, []);
+
+  // Persist on every change
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(messages.slice(-50)));
+    } catch {
+      /* quota or disabled — ignore */
+    }
+  }, [messages]);
+
   useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
   }, [messages, open]);
+
+  const clearHistory = () => {
+    setMessages([WELCOME]);
+    try {
+      window.localStorage.removeItem(STORAGE_KEY);
+    } catch {}
+  };
+
 
   const send = async (text: string) => {
     const t = text.trim();
