@@ -541,8 +541,8 @@ function UserRowEditor({ user, onUpdate }: { user: UserRow; onUpdate: (b: number
         </td>
         <td className="px-4 py-3 text-right">{user.owned}</td>
         <td className="px-4 py-3 text-center">
-          {user.is_admin ? <span className="inline-flex items-center rounded-full bg-primary/15 text-primary px-2 py-0.5 text-[10px] font-semibold">Admin</span>
-            : <span className="text-[10px] text-muted-foreground">User</span>}
+          {user.is_admin ? <span className="inline-flex items-center rounded-full bg-primary/15 text-primary px-2 py-0.5 text-[10px] font-semibold">អ្នកគ្រប់គ្រង</span>
+            : <span className="text-[10px] text-muted-foreground">អ្នកប្រើ</span>}
         </td>
         <td className="px-4 py-3 text-xs text-muted-foreground">{new Date(user.created_at).toLocaleDateString()}</td>
         <td className="px-4 py-3 text-right">
