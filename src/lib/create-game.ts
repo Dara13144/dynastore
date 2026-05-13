@@ -12,6 +12,8 @@ export type GameDraft = {
   price_coins: number;
   visible: boolean;
   image_url: string;
+  /** Optional external link to the game archive (alternative to uploading a file). */
+  file_url?: string | null;
 };
 
 export type CreateGameDeps = {
