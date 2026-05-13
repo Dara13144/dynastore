@@ -40,7 +40,7 @@ function AdminPage() {
   const { authed, loading } = useStore();
   const navigate = useNavigate();
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
-  const [tab, setTab] = useState<"games" | "users" | "transactions" | "content" | "settings">("games");
+  const [tab, setTab] = useState<"games" | "users" | "content" | "settings">("games");
 
   useEffect(() => {
     if (loading) return;
