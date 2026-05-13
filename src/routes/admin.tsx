@@ -38,6 +38,26 @@ function AdminDashboard() {
   const [err, setErr] = useState("");
   const [q, setQ] = useState("");
   const [filter, setFilter] = useState<string>("all");
+  const [lookupMd5, setLookupMd5] = useState("");
+  const [lookupBusy, setLookupBusy] = useState(false);
+  const [lookupErr, setLookupErr] = useState("");
+  const [lookupResult, setLookupResult] = useState<any>(null);
+
+  const runLookup = async (md5?: string) => {
+    const value = (md5 ?? lookupMd5).trim();
+    if (!value) return;
+    setLookupBusy(true);
+    setLookupErr("");
+    setLookupResult(null);
+    try {
+      const r = await lookupTransactionByMd5({ data: { md5: value } });
+      setLookupResult(r);
+    } catch (e: any) {
+      setLookupErr(e?.message || String(e));
+    } finally {
+      setLookupBusy(false);
+    }
+  };
 
   const load = async () => {
     setLoading(true);
@@ -102,6 +122,70 @@ function AdminDashboard() {
           {err}
         </div>
       )}
+
+      <section className="mb-6 p-4 rounded-lg border border-border bg-card">
+        <div className="flex items-center justify-between mb-2">
+          <h2 className="text-sm font-semibold">Lookup transaction by MD5</h2>
+          <span className="text-xs text-muted-foreground">Confirms the reuse path / debugs collisions</span>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <input
+            value={lookupMd5}
+            onChange={(e) => setLookupMd5(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter") runLookup(); }}
+            placeholder="Paste an md5 (e.g. from the duplicate-key error or debug log)"
+            className="flex-1 min-w-[280px] px-3 py-1.5 text-sm rounded-md border border-border bg-background font-mono"
+          />
+          <button
+            onClick={() => runLookup()}
+            disabled={lookupBusy || !lookupMd5.trim()}
+            className="px-3 py-1.5 text-sm rounded-md border border-border bg-primary text-primary-foreground disabled:opacity-50"
+          >
+            {lookupBusy ? "Looking up…" : "Lookup"}
+          </button>
+        </div>
+
+        {lookupErr && (
+          <div className="mt-3 p-2 rounded border border-red-500/30 bg-red-500/10 text-red-400 text-xs">
+            {lookupErr}
+          </div>
+        )}
+
+        {lookupResult && !lookupResult.found && (
+          <div className="mt-3 p-3 rounded border border-border bg-muted/30 text-sm">
+            No transaction found for md5 <code className="font-mono">{lookupResult.md5}</code>.
+          </div>
+        )}
+
+        {lookupResult?.found && (
+          <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-2 text-xs">
+            {[
+              ["Tx ID", lookupResult.transaction.id],
+              ["Status", lookupResult.transaction.status + (lookupResult.transaction.isPendingExpired ? " (expired in DB clock)" : "")],
+              ["User ID", lookupResult.transaction.userId],
+              ["MD5", lookupResult.transaction.md5],
+              ["Amount USD", `$${lookupResult.transaction.amountUsd.toFixed(2)}`],
+              ["Coins", String(lookupResult.transaction.coins)],
+              ["Created", new Date(lookupResult.transaction.createdAt).toLocaleString()],
+              ["Expires", `${new Date(lookupResult.transaction.expiresAt).toLocaleString()} (${lookupResult.transaction.secondsUntilExpiry}s)`],
+              ["Paid", lookupResult.transaction.paidAt ? new Date(lookupResult.transaction.paidAt).toLocaleString() : "—"],
+              ["Bakong Ref", lookupResult.transaction.bakongRef ?? "—"],
+              ["QR payload", lookupResult.transaction.qrPayloadPreview ?? "—"],
+            ].map(([k, v]) => (
+              <div key={k as string} className="flex gap-2 p-2 rounded bg-background border border-border">
+                <span className="text-muted-foreground w-24 shrink-0">{k}</span>
+                <span className="font-mono break-all">{v as string}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+
+      <div className="flex flex-wrap items-center gap-2 mb-4">
+        {(["all", "pending", "paid", "expired"] as const).map((s) => (
+          <button
+            key={s}
+            onClick={() => setFilter(s)}
 
       <div className="flex flex-wrap items-center gap-2 mb-4">
         {(["all", "pending", "paid", "expired"] as const).map((s) => (
