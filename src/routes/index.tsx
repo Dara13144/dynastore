@@ -256,7 +256,7 @@ function PendingTopupsPanel({ onResume }: { onResume: (pack: CoinPack) => void }
         <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
           <div className="flex items-center gap-2">
             <Clock className="h-4 w-4 text-primary" />
-            <h3 className="text-sm font-semibold">Pending Bakong Topups ({entries.length})</h3>
+            <h3 className="text-sm font-semibold">Pending Add Balance ({entries.length})</h3>
           </div>
           {latestPack && (
             <button
