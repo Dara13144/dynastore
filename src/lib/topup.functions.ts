@@ -139,14 +139,21 @@ export const adminApproveTopup = createServerFn({ method: "POST" })
     const { data: wallet } = await supabaseAdmin.from("wallets").select("balance").eq("user_id", claimed.user_id).maybeSingle();
     const current = Number(wallet?.balance ?? 0);
     const newBalance = current + Number(claimed.coins);
-    const { data: bal, error: e2 } = await supabaseAdmin.rpc("admin_set_balance", {
-      _user_id: claimed.user_id, _new_balance: newBalance, _reason: `Topup approved: $${claimed.amount_usd} (+${claimed.coins})`,
-    });
+    // Use service-role client directly (RPC admin_set_balance checks auth.uid() which is null here)
+    const { data: upserted, error: e2 } = await supabaseAdmin
+      .from("wallets")
+      .upsert({ user_id: claimed.user_id, balance: newBalance, updated_at: new Date().toISOString() }, { onConflict: "user_id" })
+      .select("balance").single();
     if (e2) {
-      // Roll back the claim so the admin can retry
       await supabaseAdmin.from("topup_requests").update({ status: "pending", reviewed_by: null, reviewed_at: null }).eq("id", data.id);
       throw new Error(e2.message);
     }
+    const bal = upserted.balance;
+    await supabaseAdmin.from("balance_changes").insert({
+      user_id: claimed.user_id, changed_by: context.userId,
+      old_balance: current, new_balance: newBalance,
+      reason: `Topup approved: $${claimed.amount_usd} (+${claimed.coins})`,
+    });
     const who = await userLabel(claimed.user_id);
     await notifyTelegram(
       `✅ <b>Topup Approved</b>\n👤 ${who}\n💵 $${Number(claimed.amount_usd).toFixed(2)} → <b>+${Number(claimed.coins).toLocaleString()} coins</b>\n💼 New balance: ${Number(bal).toLocaleString()}\n🆔 <code>${data.id}</code>`,
