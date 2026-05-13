@@ -81,7 +81,7 @@ function LoginPage() {
 
 
   return (
-    <div className="min-h-screen grid place-items-center bg-background px-4">
+    <main className="min-h-screen grid place-items-center bg-background px-4">
       <div className="w-full max-w-md rounded-3xl glass p-8 shadow-[var(--shadow-card)]">
         <Link to="/" className="flex items-center justify-center gap-2.5 mb-6">
           <img src={logoD} alt="" className="h-10 w-10 rounded-xl" />
@@ -132,6 +132,6 @@ function LoginPage() {
           {mode === "login" ? "មិនទាន់មានគណនី? បង្កើតថ្មី" : "មានគណនីរួច? ចូលប្រើ"}
         </button>
       </div>
-    </div>
+    </main>
   );
 }

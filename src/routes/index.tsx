@@ -43,10 +43,12 @@ function Page() {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <Header onSettings={() => setSettingsOpen(true)} onTopup={() => setTopupOpen(true)} />
-      <Hero />
-      <GamesSection onToast={showToast} onTopup={() => setTopupOpen(true)} />
-      <DealsBanner />
-      <Recommendations onToast={showToast} />
+      <main>
+        <Hero />
+        <GamesSection onToast={showToast} onTopup={() => setTopupOpen(true)} />
+        <DealsBanner />
+        <Recommendations onToast={showToast} />
+      </main>
       <Footer />
 
       {settingsOpen && <SettingsModal onClose={() => setSettingsOpen(false)} onToast={showToast} />}
