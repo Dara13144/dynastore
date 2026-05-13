@@ -184,6 +184,17 @@ function GamesTab() {
     });
   };
 
+  const uploadCoverImage = async (file: File): Promise<string | null> => {
+    if (!file.type.startsWith("image/")) { showToast("សូមជ្រើសរូបភាព"); return null; }
+    if (file.size > 10 * 1024 * 1024) { showToast("រូបភាពធំជាង 10MB"); return null; }
+    const safe = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+    const path = `covers/${Date.now()}_${Math.random().toString(36).slice(2, 8)}_${safe}`;
+    const { error } = await supabase.storage.from("game-images").upload(path, file, { upsert: true, contentType: file.type });
+    if (error) { showToast(`Upload: ${error.message}`); return null; }
+    const { data } = supabase.storage.from("game-images").getPublicUrl(path);
+    return data.publicUrl;
+  };
+
   const updateGame = async (id: string, patch: Partial<GameRow>) => {
     setBusy(true);
     const { error } = await supabase.from("games").update(patch).eq("id", id);
