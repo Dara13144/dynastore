@@ -1,7 +1,7 @@
 import { createFileRoute, Link, redirect } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { getAdminPayments } from "@/lib/admin.functions";
+import { getAdminPayments, lookupTransactionByMd5 } from "@/lib/admin.functions";
 
 export const Route = createFileRoute("/admin")({
   component: AdminDashboard,
