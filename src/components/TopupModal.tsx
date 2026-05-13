@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import QRCode from "react-qr-code";
-import { X, Wallet, Loader2, Upload, Check, Clock, AlertCircle } from "lucide-react";
+import { X, Wallet, Loader2, Upload, Check, Clock, AlertCircle, Download } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { getTopupConfig, createTopupRequest, listMyTopupRequests } from "@/lib/topup.functions";
 
@@ -14,6 +14,7 @@ export function TopupModal({ onClose, onToast }: Props) {
   const submitFn = useServerFn(createTopupRequest);
   const listFn = useServerFn(listMyTopupRequests);
   const fileRef = useRef<HTMLInputElement>(null);
+  const qrBoxRef = useRef<HTMLDivElement>(null);
 
   const [qr, setQr] = useState<string | null>(null);
   const [rate, setRate] = useState(1);
@@ -72,6 +73,40 @@ export function TopupModal({ onClose, onToast }: Props) {
     }
   }
 
+  function downloadQrPng() {
+    const svg = qrBoxRef.current?.querySelector("svg");
+    if (!svg) { onToast("QR មិនទាន់រួចរាល់"); return; }
+    const xml = new XMLSerializer().serializeToString(svg);
+    const svgBlob = new Blob([xml], { type: "image/svg+xml;charset=utf-8" });
+    const url = URL.createObjectURL(svgBlob);
+    const img = new Image();
+    img.onload = () => {
+      const SIZE = 1024;
+      const PAD = 64;
+      const canvas = document.createElement("canvas");
+      canvas.width = SIZE; canvas.height = SIZE + 80;
+      const ctx = canvas.getContext("2d")!;
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, PAD, PAD, SIZE - PAD * 2, SIZE - PAD * 2);
+      ctx.fillStyle = "#000";
+      ctx.font = "bold 28px system-ui, sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText("DYNASTORE • KHQR", SIZE / 2, SIZE + 40);
+      URL.revokeObjectURL(url);
+      canvas.toBlob((blob) => {
+        if (!blob) { onToast("Export បរាជ័យ"); return; }
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = "dynastore-khqr.png";
+        a.click();
+        setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+      }, "image/png");
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); onToast("Export បរាជ័យ"); };
+    img.src = url;
+  }
+
   return (
     <div className="fixed inset-0 z-[100] grid place-items-center bg-background/80 backdrop-blur-sm p-4 overflow-y-auto">
       <div className="w-full max-w-2xl my-auto rounded-3xl border border-border/60 bg-card shadow-2xl">
@@ -84,13 +119,21 @@ export function TopupModal({ onClose, onToast }: Props) {
           <p className="text-xs text-muted-foreground">ស្គេន KHQR ខាងក្រោម តាម Bakong, ApPay, ABA, ឬ Wing → បន្ទាប់មក upload រូបបង្កាន់ដៃ → admin នឹងបន្ថែម coins ឲ្យ។ អត្រា៖ <span className="text-foreground font-semibold">$1 = {rate.toLocaleString()} coins</span></p>
 
           {/* QR */}
-          <div className="rounded-2xl bg-white p-5 mx-auto w-full max-w-[320px] flex flex-col items-center">
-            {qr ? (
-              <QRCode value={qr} size={260} style={{ height: "auto", maxWidth: "100%", width: "100%" }} viewBox="0 0 256 256" />
-            ) : (
-              <div className="h-[260px] w-[260px] grid place-items-center text-muted-foreground"><Loader2 className="h-5 w-5 animate-spin" /></div>
-            )}
-            <div className="mt-3 text-center text-[10px] font-semibold tracking-wider text-black">DYNASTORE • KHQR</div>
+          <div className="mx-auto w-full max-w-[320px] flex flex-col items-center gap-3">
+            <div ref={qrBoxRef} className="rounded-2xl bg-white p-5 w-full flex flex-col items-center">
+              {qr ? (
+                <QRCode value={qr} size={260} style={{ height: "auto", maxWidth: "100%", width: "100%" }} viewBox="0 0 256 256" />
+              ) : (
+                <div className="h-[260px] w-[260px] grid place-items-center text-muted-foreground"><Loader2 className="h-5 w-5 animate-spin" /></div>
+              )}
+              <div className="mt-3 text-center text-[10px] font-semibold tracking-wider text-black">DYNASTORE • KHQR</div>
+            </div>
+            <button
+              onClick={downloadQrPng}
+              disabled={!qr}
+              className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-4 py-2 text-xs font-semibold hover:bg-accent disabled:opacity-50">
+              <Download className="h-3.5 w-3.5" /> ទាញយក KHQR (PNG)
+            </button>
           </div>
 
           <div className="space-y-3">

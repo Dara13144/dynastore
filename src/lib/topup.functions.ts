@@ -13,6 +13,31 @@ async function assertAdmin(userId: string) {
   if (!data) throw new Error("forbidden");
 }
 
+// Fire-and-forget Telegram notify to all configured chat IDs
+async function notifyTelegram(text: string): Promise<void> {
+  const token = process.env.TELEGRAM_BOT_TOKEN;
+  const chatIds = (process.env.TELEGRAM_CHAT_IDS ?? "").split(",").map((s) => s.trim()).filter(Boolean);
+  if (!token || chatIds.length === 0) return;
+  await Promise.all(chatIds.map(async (chat_id) => {
+    try {
+      const r = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ chat_id, text, parse_mode: "HTML", disable_web_page_preview: true }),
+      });
+      if (!r.ok) console.error("telegram send failed", r.status, await r.text());
+    } catch (e) {
+      console.error("telegram send error", e);
+    }
+  }));
+}
+
+async function userLabel(userId: string): Promise<string> {
+  const { data } = await supabaseAdmin.from("profiles").select("display_name").eq("user_id", userId).maybeSingle();
+  return data?.display_name ?? userId.slice(0, 8);
+}
+
+
 async function coinsPerUsd(): Promise<number> {
   const { data } = await supabaseAdmin.from("app_settings").select("coins_per_usd").eq("id", 1).maybeSingle();
   return Math.max(1, Number(data?.coins_per_usd ?? 1));
@@ -43,6 +68,10 @@ export const createTopupRequest = createServerFn({ method: "POST" })
       note: data.note ?? null,
     }).select("id, created_at, status, amount_usd, coins").single();
     if (error) throw new Error(error.message);
+    const who = await userLabel(context.userId);
+    await notifyTelegram(
+      `🆕 <b>New Topup Request</b>\n👤 ${who}\n💵 $${Number(data.amount_usd).toFixed(2)} → <b>${coins.toLocaleString()} coins</b>${data.note ? `\n📝 ${data.note}` : ""}\n🆔 <code>${row.id}</code>`,
+    );
     return row;
   });
 
@@ -98,24 +127,31 @@ export const adminApproveTopup = createServerFn({ method: "POST" })
   .inputValidator((i) => z.object({ id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
     await assertAdmin(context.userId);
-    const { data: req, error: e1 } = await supabaseAdmin
-      .from("topup_requests").select("id, user_id, coins, amount_usd, status").eq("id", data.id).maybeSingle();
-    if (e1) throw new Error(e1.message);
-    if (!req) throw new Error("not_found");
-    if (req.status !== "pending") throw new Error("already_reviewed");
+    // Atomic claim: only succeeds if still pending. Prevents double approve/reject.
+    const { data: claimed, error: e0 } = await supabaseAdmin
+      .from("topup_requests")
+      .update({ status: "approved", reviewed_by: context.userId, reviewed_at: new Date().toISOString() })
+      .eq("id", data.id).eq("status", "pending")
+      .select("id, user_id, coins, amount_usd").maybeSingle();
+    if (e0) throw new Error(e0.message);
+    if (!claimed) throw new Error("already_reviewed");
 
-    const { data: wallet } = await supabaseAdmin.from("wallets").select("balance").eq("user_id", req.user_id).maybeSingle();
+    const { data: wallet } = await supabaseAdmin.from("wallets").select("balance").eq("user_id", claimed.user_id).maybeSingle();
     const current = Number(wallet?.balance ?? 0);
-    const newBalance = current + Number(req.coins);
+    const newBalance = current + Number(claimed.coins);
     const { data: bal, error: e2 } = await supabaseAdmin.rpc("admin_set_balance", {
-      _user_id: req.user_id, _new_balance: newBalance, _reason: `Topup approved: $${req.amount_usd} (+${req.coins})`,
+      _user_id: claimed.user_id, _new_balance: newBalance, _reason: `Topup approved: $${claimed.amount_usd} (+${claimed.coins})`,
     });
-    if (e2) throw new Error(e2.message);
-    const { error: e3 } = await supabaseAdmin.from("topup_requests").update({
-      status: "approved", reviewed_by: context.userId, reviewed_at: new Date().toISOString(),
-    }).eq("id", data.id);
-    if (e3) throw new Error(e3.message);
-    return { ok: true, new_balance: Number(bal), credited: Number(req.coins) };
+    if (e2) {
+      // Roll back the claim so the admin can retry
+      await supabaseAdmin.from("topup_requests").update({ status: "pending", reviewed_by: null, reviewed_at: null }).eq("id", data.id);
+      throw new Error(e2.message);
+    }
+    const who = await userLabel(claimed.user_id);
+    await notifyTelegram(
+      `✅ <b>Topup Approved</b>\n👤 ${who}\n💵 $${Number(claimed.amount_usd).toFixed(2)} → <b>+${Number(claimed.coins).toLocaleString()} coins</b>\n💼 New balance: ${Number(bal).toLocaleString()}\n🆔 <code>${data.id}</code>`,
+    );
+    return { ok: true, new_balance: Number(bal), credited: Number(claimed.coins) };
   });
 
 // Admin: reject
@@ -127,10 +163,16 @@ export const adminRejectTopup = createServerFn({ method: "POST" })
   }).parse(i))
   .handler(async ({ data, context }) => {
     await assertAdmin(context.userId);
-    const { error } = await supabaseAdmin.from("topup_requests").update({
+    const { data: claimed, error } = await supabaseAdmin.from("topup_requests").update({
       status: "rejected", reviewed_by: context.userId, reviewed_at: new Date().toISOString(),
       reject_reason: data.reason,
-    }).eq("id", data.id).eq("status", "pending");
+    }).eq("id", data.id).eq("status", "pending").select("id, user_id, amount_usd").maybeSingle();
     if (error) throw new Error(error.message);
+    if (!claimed) throw new Error("already_reviewed");
+    const who = await userLabel(claimed.user_id);
+    await notifyTelegram(
+      `❌ <b>Topup Rejected</b>\n👤 ${who}\n💵 $${Number(claimed.amount_usd).toFixed(2)}\n📝 ${data.reason}\n🆔 <code>${data.id}</code>`,
+    );
     return { ok: true };
   });
+
