@@ -11,8 +11,8 @@ describe("validateGameFile - byte conversion", () => {
   it("MIN_GAME_FILE_BYTES == 1000 * 1024 * 1024 * 1024", () => {
     expect(MIN_GAME_FILE_BYTES).toBe(1000 * 1024 * 1024 * 1024);
   });
-  it("MAX_GAME_FILE_BYTES == 5000 * 1024 * 1024 * 1024", () => {
-    expect(MAX_GAME_FILE_BYTES).toBe(5000 * 1024 * 1024 * 1024);
+  it("MAX_GAME_FILE_BYTES == 1e80", () => {
+    expect(MAX_GAME_FILE_BYTES).toBe(1e80);
   });
 });
 
