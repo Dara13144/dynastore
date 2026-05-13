@@ -1243,6 +1243,7 @@ function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () 
         coins: res.coins,
         createdAt: createdAtMs,
         expiresAt: expiresAtMs,
+        billNumber: (res as any).billNumber ?? null,
       });
       setReusedInfo(reused && reusedTx ? reusedTx : null);
       pushEvent({
