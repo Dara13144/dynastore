@@ -259,6 +259,42 @@ export type Database = {
         }
         Relationships: []
       }
+      telegram_notifications: {
+        Row: {
+          attempts: number
+          chat_id: string
+          created_at: string
+          error: string | null
+          event_type: string
+          http_status: number | null
+          id: string
+          message_preview: string | null
+          status: string
+        }
+        Insert: {
+          attempts?: number
+          chat_id: string
+          created_at?: string
+          error?: string | null
+          event_type: string
+          http_status?: number | null
+          id?: string
+          message_preview?: string | null
+          status: string
+        }
+        Update: {
+          attempts?: number
+          chat_id?: string
+          created_at?: string
+          error?: string | null
+          event_type?: string
+          http_status?: number | null
+          id?: string
+          message_preview?: string | null
+          status?: string
+        }
+        Relationships: []
+      }
       testimonials: {
         Row: {
           created_at: string
