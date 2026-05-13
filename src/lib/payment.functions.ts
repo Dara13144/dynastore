@@ -304,6 +304,15 @@ export const checkTopup = createServerFn({ method: "POST" })
     // not be found" responses both mean "still waiting" — they MUST NOT throw.
     const token = process.env.BAKONG_DEVELOPER_TOKEN;
     if (!token) throw new Error("Bakong token missing");
+    // Optional Cambodia-based proxy. Bakong NBC API geo-blocks non-KH IPs
+    // (HTTP 403 from CloudFront), so we route through a proxy in Cambodia
+    // when BAKONG_PROXY_URL is configured. The proxy must accept the same
+    // POST body and forward to https://api-bakong.nbc.gov.kh.
+    const proxyUrl = process.env.BAKONG_PROXY_URL;
+    const proxyToken = process.env.BAKONG_PROXY_TOKEN;
+    const targetUrl = proxyUrl
+      ? `${proxyUrl.replace(/\/$/, "")}/v1/check_transaction_by_md5`
+      : "https://api-bakong.nbc.gov.kh/v1/check_transaction_by_md5";
     const startedAt = Date.now();
     let httpStatus = 0;
     let json: Record<string, any> = {};
@@ -312,16 +321,14 @@ export const checkTopup = createServerFn({ method: "POST" })
       const ctrl = new AbortController();
       const timer = setTimeout(() => ctrl.abort(), 8000);
       try {
-        const res = await fetch("https://api-bakong.nbc.gov.kh/v1/check_transaction_by_md5", {
+        const res = await fetch(targetUrl, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
             "Accept": "application/json",
-            // CloudFront in front of Bakong returns HTTP 403 ("Request blocked")
-            // when User-Agent is missing or matches a default fetch UA. A normal
-            // browser-like UA is required.
             "User-Agent": "Mozilla/5.0 (compatible; DynaStore/1.0; +https://dynastore.lovable.app)",
             Authorization: `Bearer ${token}`,
+            ...(proxyToken ? { "X-Proxy-Token": proxyToken } : {}),
           },
           body: JSON.stringify({ md5: tx.bakong_md5 }),
           signal: ctrl.signal,
