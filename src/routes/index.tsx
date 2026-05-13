@@ -130,7 +130,7 @@ function Hero() {
           <span className="gradient-text">ទិញហ្គេម</span> ដោយ Balance
         </h1>
         <p className="mt-4 text-base md:text-lg text-muted-foreground">
-          បន្ថែម Balance តាម KHQR ហើយទិញហ្គេម PC/Console ភ្លាមៗ។ 1 USD = 100 Balance។
+          បន្ថែម Balance តាម KHQR ហើយទិញហ្គេម PC/Console ភ្លាមៗ។ 1 USD = 1 Balance។
         </p>
       </div>
     </section>
