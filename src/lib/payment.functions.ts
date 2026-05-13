@@ -78,34 +78,39 @@ export const checkTopup = createServerFn({ method: "POST" })
   .inputValidator((i) => z.object({ md5: z.string().min(8).max(64) }).parse(i))
   .handler(async ({ data, context }) => {
     const { userId } = context;
+    const checkedAt = new Date().toISOString();
     const { data: tx } = await supabaseAdmin
       .from("transactions").select("*").eq("md5", data.md5).maybeSingle();
     if (!tx || tx.user_id !== userId) throw new Error("transaction_not_found");
     if (tx.status === "paid") {
       const { data: w } = await supabaseAdmin.from("wallets").select("balance").eq("user_id", userId).maybeSingle();
-      return { status: "paid" as const, balance: w?.balance ?? 0 };
+      return { status: "paid" as const, balance: w?.balance ?? 0, debug: { checkedAt, source: "db", txStatus: tx.status, bakong: null as unknown } };
     }
     if (new Date(tx.expires_at).getTime() < Date.now()) {
       await supabaseAdmin.from("transactions").update({ status: "expired" }).eq("md5", data.md5).eq("status", "pending");
-      return { status: "expired" as const, balance: null };
+      return { status: "expired" as const, balance: null, debug: { checkedAt, source: "db", txStatus: "expired", bakong: null as unknown } };
     }
 
     // Verify with Bakong API
     const token = process.env.BAKONG_DEVELOPER_TOKEN;
     if (!token) throw new Error("Bakong token missing");
+    const startedAt = Date.now();
     const res = await fetch("https://api-bakong.nbc.gov.kh/v1/check_transaction_by_md5", {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
       body: JSON.stringify({ md5: data.md5 }),
     });
+    const httpStatus = res.status;
     const json = await res.json().catch(() => ({}));
+    const latencyMs = Date.now() - startedAt;
     const paid = json?.responseCode === 0 && json?.data;
-    if (!paid) return { status: "pending" as const, balance: null };
+    const debug = { checkedAt, source: "bakong", httpStatus, latencyMs, response: json, txStatus: tx.status };
+    if (!paid) return { status: "pending" as const, balance: null, debug };
 
     const { data: credit, error } = await supabaseAdmin.rpc("credit_topup_atomic", { _md5: data.md5 });
     if (error) throw new Error(error.message);
     const row = Array.isArray(credit) ? credit[0] : credit;
-    return { status: "paid" as const, balance: row?.new_balance ?? 0 };
+    return { status: "paid" as const, balance: row?.new_balance ?? 0, debug };
   });
 
 export const purchaseGame = createServerFn({ method: "POST" })
