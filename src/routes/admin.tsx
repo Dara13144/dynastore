@@ -478,10 +478,13 @@ function GameRowEditor({ game, busy, onSave, onDelete, onReplaceFile, validateFi
 function UsersTab() {
   const [rows, setRows] = useState<UserRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [meId, setMeId] = useState<string | null>(null);
 
   useEffect(() => {
     (async () => {
       setLoading(true);
+      const { data: { user } } = await supabase.auth.getUser();
+      setMeId(user?.id ?? null);
       const [{ data: profiles }, { data: wallets }, { data: lib }, { data: roles }] = await Promise.all([
         supabase.from("profiles").select("user_id, display_name, created_at"),
         supabase.from("wallets").select("user_id, balance"),
@@ -522,7 +525,13 @@ function UsersTab() {
               {loading ? <tr><td colSpan={7} className="text-center py-8 text-xs text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin inline" /></td></tr>
                 : rows.length === 0 ? <tr><td colSpan={7} className="text-center py-8 text-xs text-muted-foreground">គ្មានអ្នកប្រើ។</td></tr>
                 : rows.map((u) => (
-                  <UserRowEditor key={u.user_id} user={u} onUpdate={(b) => setRows(rs => rs.map(x => x.user_id === u.user_id ? { ...x, balance: b } : x))} />
+                  <UserRowEditor
+                    key={u.user_id}
+                    user={u}
+                    isMe={meId === u.user_id}
+                    onUpdate={(b) => setRows(rs => rs.map(x => x.user_id === u.user_id ? { ...x, balance: b } : x))}
+                    onRoleChange={(isAdmin) => setRows(rs => rs.map(x => x.user_id === u.user_id ? { ...x, is_admin: isAdmin } : x))}
+                  />
                 ))}
             </tbody>
           </table>
