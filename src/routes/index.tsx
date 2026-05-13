@@ -609,6 +609,7 @@ function PaymentModal({ pack, onClose, onToast }: { pack: CoinPack; onClose: () 
   const [lastChecked, setLastChecked] = useState<number | null>(null);
   const [pollTick, setPollTick] = useState(0);
   const [paidAt, setPaidAt] = useState<number | null>(null);
+  const [paidInfo, setPaidInfo] = useState<{ bakongRef: string | null; newBalance: number | null; creditedNow: boolean } | null>(null);
   const [mismatch, setMismatch] = useState<{ scanned: string; active: string } | null>(null);
   const [autoCloseIn, setAutoCloseIn] = useState<number>(0);
   const POLL_WINDOW_S = 300;
