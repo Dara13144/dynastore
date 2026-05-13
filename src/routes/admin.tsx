@@ -222,27 +222,27 @@ function GamesTab() {
   };
 
   const createGame = async () => {
-    if (!draft.id.trim() || !draft.title.trim()) { showToast("ត្រូវការ id និង title"); return; }
     if (draftFile) {
       const preErr = validateFile(draftFile);
-      if (preErr) { setDraftFileError(preErr); showToast(preErr); return; }
+      if (preErr) setDraftFileError(preErr);
     }
     setBusy(true);
-    let file_path: string | null = null;
-    let file_size_bytes: number | null = null;
-    if (draftFile) {
-      const up = await uploadFile(draft.id.trim(), draftFile);
-      if (!up) { setBusy(false); return; }
-      file_path = up.path; file_size_bytes = up.size;
-    }
-    const { error } = await supabase.from("games").insert({
-      id: draft.id.trim(), title: draft.title.trim(), category: draft.category.trim() || "GAME",
-      description: draft.description, badge: draft.badge || null,
-      price_coins: Number(draft.price_coins) || 0, visible: draft.visible,
-      image_url: draft.image_url || null, file_path, file_size_bytes,
-    });
+    const result = await submitCreateGame(
+      {
+        id: draft.id, title: draft.title, category: draft.category,
+        description: draft.description, badge: draft.badge,
+        price_coins: Number(draft.price_coins) || 0, visible: draft.visible,
+        image_url: draft.image_url,
+      },
+      draftFile,
+      {
+        uploadFile: (gameId, file) => uploadFile(gameId, file as File),
+        insertGame: (row) => supabase.from("games").insert(row),
+        onError: showToast,
+      },
+    );
     setBusy(false);
-    if (error) { showToast(error.message); return; }
+    if (!result.ok) return;
     setCreating(false);
     setDraft({ id: "", title: "", category: "", description: "", badge: "", price_coins: 0, visible: true, image_url: "", file_path: null, file_size_bytes: null });
     setDraftFile(null);
