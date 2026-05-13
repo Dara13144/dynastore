@@ -919,3 +919,97 @@ function TestiRow({ t, onUpd, onDel }: { t: Testi; onUpd: (patch: Partial<Testi>
     </tr>
   );
 }
+
+/* ============ TRANSACTIONS TAB ============ */
+type TxRow = {
+  id: string; user_id: string; user_name: string; md5: string;
+  amount_usd: number; coins: number; status: "pending" | "paid" | "expired";
+  bakong_ref: string | null; created_at: string; paid_at: string | null; expires_at: string;
+};
+
+function TransactionsTab() {
+  const listFn = useServerFn(listTransactions);
+  const [rows, setRows] = useState<TxRow[]>([]);
+  const [status, setStatus] = useState<"all" | "pending" | "paid" | "expired">("all");
+  const [busy, setBusy] = useState(false);
+
+  const load = useCallback(async () => {
+    setBusy(true);
+    try {
+      const r = await listFn({ data: { status, limit: 200 } });
+      setRows(r as unknown as TxRow[]);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to load");
+    } finally {
+      setBusy(false);
+    }
+  }, [listFn, status]);
+
+  useEffect(() => { load(); }, [load]);
+
+  const fmt = (s: string | null) => s ? new Date(s).toLocaleString() : "—";
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between gap-3">
+        <h2 className="font-display text-lg">ប្រតិបត្តិការទាំងអស់</h2>
+        <div className="flex items-center gap-2">
+          <select
+            value={status}
+            onChange={(e) => setStatus(e.target.value as typeof status)}
+            className="rounded-full bg-input px-3 py-1.5 text-xs ring-1 ring-border outline-none"
+          >
+            <option value="all">ទាំងអស់</option>
+            <option value="pending">Pending</option>
+            <option value="paid">Paid</option>
+            <option value="expired">Expired</option>
+          </select>
+          <button onClick={load} className="inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-xs hover:bg-accent">
+            {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Refresh"}
+          </button>
+        </div>
+      </div>
+
+      <div className="rounded-2xl border border-border/60 overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead className="bg-muted/30 text-xs text-muted-foreground">
+            <tr>
+              <th className="text-left p-3">User</th>
+              <th className="text-right p-3">USD</th>
+              <th className="text-right p-3">Coins</th>
+              <th className="text-left p-3">Status</th>
+              <th className="text-left p-3">Ref</th>
+              <th className="text-left p-3">Created</th>
+              <th className="text-left p-3">Paid</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.length === 0 && !busy && (
+              <tr><td colSpan={7} className="p-6 text-center text-muted-foreground text-xs">គ្មានប្រតិបត្តិការ</td></tr>
+            )}
+            {rows.map((r) => (
+              <tr key={r.id} className="border-t border-border/40">
+                <td className="p-3">
+                  <div className="font-medium">{r.user_name}</div>
+                  <div className="text-[10px] text-muted-foreground font-mono">{r.user_id.slice(0, 8)}</div>
+                </td>
+                <td className="p-3 text-right font-mono">${Number(r.amount_usd).toFixed(2)}</td>
+                <td className="p-3 text-right font-mono">{r.coins.toLocaleString()}</td>
+                <td className="p-3">
+                  <span className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                    r.status === "paid" ? "bg-emerald-500/20 text-emerald-400" :
+                    r.status === "pending" ? "bg-amber-500/20 text-amber-400" :
+                    "bg-muted text-muted-foreground"
+                  }`}>{r.status}</span>
+                </td>
+                <td className="p-3 text-xs font-mono truncate max-w-[160px]" title={r.bakong_ref ?? ""}>{r.bakong_ref ?? "—"}</td>
+                <td className="p-3 text-xs text-muted-foreground">{fmt(r.created_at)}</td>
+                <td className="p-3 text-xs text-muted-foreground">{fmt(r.paid_at)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
