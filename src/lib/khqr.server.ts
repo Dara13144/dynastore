@@ -47,7 +47,6 @@ export function buildKhqr(input: KhqrInput): { payload: string; md5: string } {
   } else {
     const info = new IndividualInfo(
       input.bakongAccountId,
-      currency,
       input.merchantName.slice(0, 25),
       input.merchantCity.slice(0, 15),
       optionalData
