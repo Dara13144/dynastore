@@ -260,6 +260,7 @@ export const validateTopup = createServerFn({ method: "POST" })
       bakongMd5: tx.bakong_md5,
       status: tx.status,
       expiresAt: tx.expires_at,
+      issuedAt: tx.created_at,
     };
   });
 
