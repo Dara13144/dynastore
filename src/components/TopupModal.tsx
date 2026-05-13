@@ -31,6 +31,31 @@ export function TopupModal({
 
   const createFn = useServerFn(createTopup);
   const checkFn = useServerFn(checkTopupStatus);
+  const proofFn = useServerFn(submitTopupProof);
+  const fileRef = useRef<HTMLInputElement | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [proofSent, setProofSent] = useState(false);
+
+  const onPickProof = async (file: File) => {
+    if (!tx) return;
+    if (file.size > 6_000_000) { onToast("File too large (max 6MB)"); return; }
+    setUploading(true);
+    try {
+      const buf = await file.arrayBuffer();
+      let bin = "";
+      const bytes = new Uint8Array(buf);
+      for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+      const b64 = btoa(bin);
+      const ct = (file.type === "image/jpeg" || file.type === "image/webp") ? file.type : "image/png";
+      await proofFn({ data: { md5: tx.md5, imageBase64: b64, contentType: ct } });
+      setProofSent(true);
+      onToast("បានផ្ញើទៅ Telegram ✓");
+    } catch (e) {
+      onToast(e instanceof Error ? e.message : "បរាជ័យ");
+    } finally {
+      setUploading(false);
+    }
+  };
 
   useEffect(() => {
     return () => {
