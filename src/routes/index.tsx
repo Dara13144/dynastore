@@ -692,7 +692,7 @@ function TopupModal({ onClose, onToast }: { onClose: () => void; onToast: (m: st
               </div>
               {isExpired && (
                 <button
-                  onClick={() => start()}
+                  onClick={() => start(true)}
                   className="w-full rounded-xl bg-primary py-2.5 text-sm font-semibold text-primary-foreground hover:opacity-90 inline-flex items-center justify-center gap-2"
                 >
                   <RefreshCw className="h-4 w-4" /> បង្កើត QR ថ្មី
