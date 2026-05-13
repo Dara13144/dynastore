@@ -57,7 +57,7 @@ function Page() {
 }
 
 function Header({ onSettings, onTopup }: { onSettings: () => void; onTopup: () => void }) {
-  const { authed, signOut, balance } = useStore();
+  const { authed, signOut, balance, isAdmin } = useStore();
   return (
     <header className="sticky top-0 z-40 backdrop-blur-md bg-background/70 border-b border-border/60">
       <div className="container mx-auto px-4 h-16 flex items-center justify-between gap-3">
@@ -91,6 +91,9 @@ function Header({ onSettings, onTopup }: { onSettings: () => void; onTopup: () =
           </button>
           {authed ? (
             <>
+              {isAdmin && (
+                <Link to="/admin" className="hidden sm:inline-flex items-center gap-1.5 rounded-full border border-primary/40 bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary hover:bg-primary/20">Admin</Link>
+              )}
               <Link to="/account" className="inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-xs font-medium hover:bg-accent">គណនី</Link>
               <button onClick={() => signOut()} className="inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-xs font-medium hover:bg-accent">
                 <LogOut className="h-3.5 w-3.5" /> ចេញ

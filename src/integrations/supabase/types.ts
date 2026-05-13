@@ -23,6 +23,7 @@ export type Database = {
           id: string
           price_coins: number
           title: string
+          visible: boolean
         }
         Insert: {
           badge?: string | null
@@ -32,6 +33,7 @@ export type Database = {
           id: string
           price_coins?: number
           title: string
+          visible?: boolean
         }
         Update: {
           badge?: string | null
@@ -41,6 +43,7 @@ export type Database = {
           id?: string
           price_coins?: number
           title?: string
+          visible?: boolean
         }
         Relationships: []
       }

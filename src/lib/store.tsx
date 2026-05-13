@@ -34,6 +34,7 @@ const GUEST_PROFILE: Profile = { display_name: "Player", avatar_url: null, bio: 
 
 type StoreCtx = {
   authed: boolean;
+  isAdmin: boolean;
   loading: boolean;
   profile: Profile;
   games: Game[];
@@ -59,6 +60,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [balance, setBalance] = useState(0);
   const [library, setLibrary] = useState<LibraryItem[]>([]);
   const [recs, setRecs] = useState<Recommendation[]>(INITIAL_RECS);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   const userId = session?.user?.id ?? null;
 
@@ -87,12 +89,14 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    if (!userId) { setProfile(GUEST_PROFILE); setBalance(0); setLibrary([]); return; }
+    if (!userId) { setProfile(GUEST_PROFILE); setBalance(0); setLibrary([]); setIsAdmin(false); return; }
     fetchProfile(userId); fetchWallet(userId); fetchLibrary(userId);
+    supabase.from("user_roles").select("role").eq("user_id", userId).eq("role", "admin").maybeSingle()
+      .then(({ data }) => setIsAdmin(!!data));
   }, [userId, fetchProfile, fetchWallet, fetchLibrary]);
 
   const value: StoreCtx = {
-    authed: !!session, loading, profile, games, balance, library, recs,
+    authed: !!session, isAdmin, loading, profile, games, balance, library, recs,
     signOut: async () => { await supabase.auth.signOut(); },
     refreshProfile: async () => { if (userId) await fetchProfile(userId); },
     refreshWallet: async () => { if (userId) await fetchWallet(userId); },
