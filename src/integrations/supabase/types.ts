@@ -62,6 +62,42 @@ export type Database = {
         }
         Relationships: []
       }
+      bakong_webhook_events: {
+        Row: {
+          delivery_id: string | null
+          hash: string | null
+          id: string
+          md5: string | null
+          outcome: string
+          payload: Json | null
+          received_at: string
+          status_code: number
+          topup_request_id: string | null
+        }
+        Insert: {
+          delivery_id?: string | null
+          hash?: string | null
+          id?: string
+          md5?: string | null
+          outcome: string
+          payload?: Json | null
+          received_at?: string
+          status_code: number
+          topup_request_id?: string | null
+        }
+        Update: {
+          delivery_id?: string | null
+          hash?: string | null
+          id?: string
+          md5?: string | null
+          outcome?: string
+          payload?: Json | null
+          received_at?: string
+          status_code?: number
+          topup_request_id?: string | null
+        }
+        Relationships: []
+      }
       balance_changes: {
         Row: {
           changed_by: string
