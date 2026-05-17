@@ -37,7 +37,7 @@ export function TopupModal({ onClose, onToast }: Props) {
   const qrBoxRef = useRef<HTMLDivElement>(null);
   const autoQrBoxRef = useRef<HTMLDivElement>(null);
 
-  const [mode, setMode] = useState<Mode>("manual");
+  const [mode] = useState<Mode>("manual");
   const [staticQr, setStaticQr] = useState<string | null>(null);
   const [rate, setRate] = useState(1);
   const [amount, setAmount] = useState<number>(1);
@@ -346,9 +346,6 @@ export function TopupModal({ onClose, onToast }: Props) {
             <X className="h-4 w-4" />
           </button>
         </div>
-
-        {/* setMode kept for future use */}
-        {void setMode}
 
         <div className="p-5 space-y-5">
           <p className="text-xs text-muted-foreground">
