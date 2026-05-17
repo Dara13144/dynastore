@@ -12,8 +12,8 @@ import {
 } from "lucide-react";
 import { StoreProvider, useStore } from "@/lib/store";
 import { useSession } from "@/hooks/use-session";
-import { supabase } from "@/integrations/supabase/client";
-import { resolveDownloadUrl } from "@/lib/download-game-file";
+import { useServerFn } from "@tanstack/react-start";
+import { getGameDownloadUrl } from "@/lib/games.functions";
 import { toast } from "sonner";
 import logoD from "@/assets/dyna-logo.jpeg";
 
@@ -43,22 +43,24 @@ export const Route = createFileRoute("/library")({
   ),
 });
 
-function DownloadBtn({ filePath }: { filePath: string | null }) {
+function DownloadBtn({ gameId, hasFile }: { gameId: string; hasFile: boolean }) {
   const [busy, setBusy] = useState(false);
-  if (!filePath) {
+  const fetchUrl = useServerFn(getGameDownloadUrl);
+  if (!hasFile) {
     return <span className="text-[11px] text-muted-foreground">មិនទាន់មានឯកសារ</span>;
   }
   const onClick = async () => {
     setBusy(true);
-    const result = await resolveDownloadUrl(filePath, (path, exp, opts) =>
-      supabase.storage.from("game-files").createSignedUrl(path, exp, opts),
-    );
-    setBusy(false);
-    if (!result.ok) {
-      toast.error("មិនអាចបង្កើតតំណទាញយកបាន", { description: result.error });
-      return;
+    try {
+      const result = await fetchUrl({ data: { gameId, via: "direct" } });
+      window.open(result.url, "_blank", "noopener,noreferrer");
+    } catch (e) {
+      toast.error("មិនអាចបង្កើតតំណទាញយកបាន", {
+        description: e instanceof Error ? e.message : "unknown",
+      });
+    } finally {
+      setBusy(false);
     }
-    window.open(result.url, "_blank", "noopener,noreferrer");
   };
   return (
     <button
@@ -147,7 +149,7 @@ function LibraryPage() {
                           <Check className="h-3 w-3" /> ជាកម្មសិទ្ធ
                         </span>
                       }
-                      action={<DownloadBtn filePath={g.file_path ?? null} />}
+                      action={<DownloadBtn gameId={g.id} hasFile={!!g.file_path} />}
                     />
                   ),
               )}

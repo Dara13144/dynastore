@@ -50,6 +50,8 @@ import { DashboardTab } from "@/components/admin/DashboardTab";
 import { TutorialsTab } from "@/components/admin/TutorialsTab";
 import { adminListTopupRequests, adminApproveTopup, adminRejectTopup } from "@/lib/topup.functions";
 import { getKhqrSettings, setKhqrAccountId, previewKhqr } from "@/lib/khqr-settings.functions";
+import { getS3SignedUploadUrl, getS3Status } from "@/lib/external-storage.functions";
+import { Cloud, HardDrive } from "lucide-react";
 import QRCode from "react-qr-code";
 import {
   AlertDialog,
@@ -295,7 +297,65 @@ function GamesTab() {
   const [draftFile, setDraftFile] = useState<File | null>(null);
   const [draftFileError, setDraftFileError] = useState<string | null>(null);
   const [draftUrlError, setDraftUrlError] = useState<string | null>(null);
-  const [sourceMode, setSourceMode] = useState<"file" | "library">("file");
+  const [sourceMode, setSourceMode] = useState<"file" | "s3" | "library">("file");
+  const [s3Connected, setS3Connected] = useState<boolean | null>(null);
+  const [s3UploadedKey, setS3UploadedKey] = useState<string | null>(null);
+  const [s3UploadedSize, setS3UploadedSize] = useState<number | null>(null);
+  const [s3Pct, setS3Pct] = useState<number | null>(null);
+  const [s3Error, setS3Error] = useState<string | null>(null);
+  const [s3Busy, setS3Busy] = useState(false);
+  const s3XhrRef = useRef<XMLHttpRequest | null>(null);
+  const getS3SignedUploadUrlFn = useServerFn(getS3SignedUploadUrl);
+  const getS3StatusFn = useServerFn(getS3Status);
+  useEffect(() => {
+    getS3StatusFn({})
+      .then((r) => setS3Connected(r.connected))
+      .catch(() => setS3Connected(false));
+  }, [getS3StatusFn]);
+
+  const uploadToS3 = async (gameId: string, file: File) => {
+    setS3Busy(true);
+    setS3Error(null);
+    setS3Pct(0);
+    try {
+      const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+      const key = `games/${gameId}/${Date.now()}_${safeName}`;
+      const signed = await getS3SignedUploadUrlFn({
+        data: { key, contentType: file.type || "application/octet-stream" },
+      });
+      await new Promise<void>((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        s3XhrRef.current = xhr;
+        xhr.open(signed.method || "PUT", signed.uploadUrl);
+        if (file.type) xhr.setRequestHeader("Content-Type", file.type);
+        xhr.upload.onprogress = (e) => {
+          if (e.lengthComputable) setS3Pct(Math.round((e.loaded / e.total) * 100));
+        };
+        xhr.onload = () => {
+          s3XhrRef.current = null;
+          if (xhr.status >= 200 && xhr.status < 300) resolve();
+          else reject(new Error(`S3 PUT ${xhr.status}: ${xhr.responseText.slice(0, 200)}`));
+        };
+        xhr.onerror = () => {
+          s3XhrRef.current = null;
+          reject(new Error("network error"));
+        };
+        xhr.onabort = () => {
+          s3XhrRef.current = null;
+          reject(new Error("aborted"));
+        };
+        xhr.send(file);
+      });
+      setS3UploadedKey(signed.key);
+      setS3UploadedSize(file.size);
+      setS3Pct(100);
+      setDraft((d) => ({ ...d, file_path: signed.key, file_size_bytes: file.size }));
+    } catch (e) {
+      setS3Error(e instanceof Error ? e.message : "unknown");
+    } finally {
+      setS3Busy(false);
+    }
+  };
 
   const showToast = (m: string) => {
     setToast(m);
@@ -678,9 +738,15 @@ function GamesTab() {
         price_coins: Number(draft.price_coins) || 0,
         visible: draft.visible,
         image_url: draft.image_url ?? "",
-        file_url: draft.file_path ?? null,
+        file_url: sourceMode === "library" ? (draft.file_path ?? null) : null,
+        storage_provider:
+          sourceMode === "s3" ? "s3" : sourceMode === "library" ? "external_url" : "supabase",
+        external_file:
+          sourceMode === "s3" && s3UploadedKey
+            ? { path: s3UploadedKey, size: s3UploadedSize }
+            : null,
       },
-      draftFile,
+      sourceMode === "file" ? draftFile : null,
       {
         uploadFile: async (gameId, file) => {
           const up = await uploadFile(gameId, file as File);
@@ -723,6 +789,10 @@ function GamesTab() {
     setDraftFile(null);
     setDraftFileError(null);
     setDraftUrlError(null);
+    setS3UploadedKey(null);
+    setS3UploadedSize(null);
+    setS3Pct(null);
+    setS3Error(null);
     loadGames();
     showToast("បន្ថែមរួច");
     setTimeout(() => setUploadStage("idle"), 1500);
@@ -1013,17 +1083,30 @@ function GamesTab() {
               <span className="block text-[10px] uppercase tracking-wider text-muted-foreground mb-1">
                 ប្រភពឯកសារហ្គេម
               </span>
-              <div className="inline-flex rounded-full bg-muted/30 p-1 mb-2">
+              <div className="inline-flex rounded-full bg-muted/30 p-1 mb-2 flex-wrap">
                 <button
                   type="button"
                   onClick={() => {
                     setSourceMode("file");
                     setDraft({ ...draft, file_path: null });
                     setDraftUrlError(null);
+                    setS3UploadedKey(null);
                   }}
                   className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-semibold transition ${sourceMode === "file" ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}
                 >
-                  <Plus className="h-3 w-3" /> Add File
+                  <HardDrive className="h-3 w-3" /> Supabase
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSourceMode("s3");
+                    setDraft({ ...draft, file_path: null });
+                    setDraftFile(null);
+                    setDraftFileError(null);
+                  }}
+                  className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-semibold transition ${sourceMode === "s3" ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}
+                >
+                  <Cloud className="h-3 w-3" /> AWS S3
                 </button>
                 <button
                   type="button"
@@ -1031,10 +1114,11 @@ function GamesTab() {
                     setSourceMode("library");
                     setDraftFile(null);
                     setDraftFileError(null);
+                    setS3UploadedKey(null);
                   }}
                   className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-semibold transition ${sourceMode === "library" ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}
                 >
-                  <LinkIcon className="h-3 w-3" /> Add Library
+                  <LinkIcon className="h-3 w-3" /> External URL
                 </button>
               </div>
 
@@ -1195,6 +1279,63 @@ function GamesTab() {
                     </div>
                   )}
                 </div>
+              ) : sourceMode === "s3" ? (
+                <div className="animate-fade-in space-y-2">
+                  <div className="flex items-center gap-2 text-[10px]">
+                    <span
+                      className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 font-semibold ${
+                        s3Connected === true
+                          ? "bg-emerald-500/15 text-emerald-400"
+                          : s3Connected === false
+                            ? "bg-destructive/15 text-destructive"
+                            : "bg-muted text-muted-foreground"
+                      }`}
+                    >
+                      <Cloud className="h-3 w-3" />
+                      {s3Connected === true
+                        ? "S3 connector បានភ្ជាប់"
+                        : s3Connected === false
+                          ? "S3 connector មិនទាន់ភ្ជាប់"
+                          : "កំពុងពិនិត្យ…"}
+                    </span>
+                  </div>
+                  <input
+                    type="file"
+                    accept=".zip,.rar,.7z,.tar,.gz,.tgz"
+                    disabled={s3Busy || s3Connected === false}
+                    onChange={(e) => {
+                      const f = e.target.files?.[0];
+                      if (!f || !draft.id.trim()) {
+                        if (!draft.id.trim()) setS3Error("ត្រូវការ id ហ្គេមជាមុនសិន");
+                        return;
+                      }
+                      void uploadToS3(draft.id.trim(), f);
+                    }}
+                    className="w-full text-xs file:mr-2 file:rounded-full file:border-0 file:bg-primary file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-primary-foreground"
+                  />
+                  <p className="text-[10px] text-muted-foreground">
+                    ឯកសារនឹង upload ផ្ទាល់ទៅ AWS S3 តាមរយៈ signed URL — មិនមានដែនកំណត់ Supabase 50GB
+                  </p>
+                  {s3Pct !== null && (
+                    <div className="space-y-1">
+                      <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+                        <div
+                          className={`h-full transition-all ${s3Pct === 100 ? "bg-emerald-500" : "bg-primary"}`}
+                          style={{ width: `${s3Pct}%` }}
+                        />
+                      </div>
+                      <span className="text-[10px] text-muted-foreground">{s3Pct}%</span>
+                    </div>
+                  )}
+                  {s3UploadedKey && (
+                    <span className="block text-[10px] text-emerald-400">
+                      ✓ Uploaded · key: <code className="text-[10px]">{s3UploadedKey}</code>
+                    </span>
+                  )}
+                  {s3Error && (
+                    <span className="block text-[10px] text-destructive">{s3Error}</span>
+                  )}
+                </div>
               ) : (
                 <div className="animate-fade-in">
                   <input
@@ -1237,7 +1378,8 @@ function GamesTab() {
                 busy ||
                 !!draftFileError ||
                 !!draftUrlError ||
-                (sourceMode === "library" && !(draft.file_path ?? "").trim())
+                (sourceMode === "library" && !(draft.file_path ?? "").trim()) ||
+                (sourceMode === "s3" && !s3UploadedKey)
               }
               onClick={createGame}
               className="rounded-full bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground disabled:opacity-50"

@@ -3,6 +3,7 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { getRequestHeader, getRequestIP } from "@tanstack/react-start/server";
+import { signS3ReadUrl } from "./external-storage.functions";
 
 export const getGameDownloadUrl = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -27,14 +28,16 @@ export const getGameDownloadUrl = createServerFn({ method: "POST" })
 
     const { data: game } = await supabaseAdmin
       .from("games")
-      .select("id, title, file_path, file_size_bytes")
+      .select("id, title, file_path, file_size_bytes, storage_provider")
       .eq("id", data.gameId)
       .maybeSingle();
     if (!game?.file_path) throw new Error("file_unavailable");
 
-    // External http(s) file_path: no signed URL, just open the link.
+    const provider = (game as { storage_provider?: string }).storage_provider ?? "supabase";
     let url: string;
-    if (/^https?:\/\//i.test(game.file_path)) {
+    if (provider === "s3") {
+      url = await signS3ReadUrl(game.file_path);
+    } else if (provider === "external_url" || /^https?:\/\//i.test(game.file_path)) {
       url = game.file_path;
     } else {
       const { data: signed, error } = await supabaseAdmin.storage
