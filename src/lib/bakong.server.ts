@@ -37,11 +37,15 @@ export function buildKhqr(amountUsd: number, billNumber: string): string {
   const acquiringBank = env("BAKONG_ACQUIRING_BANK", "");
   const phone = env("BAKONG_MERCHANT_PHONE", "");
 
-  // Merchant account info (tag 29) for individual / static-account merchant
-  const sub00 = tlv("00", accountId);
-  let mai = sub00;
-  if (acquiringBank) mai += tlv("01", acquiringBank);
+  // Merchant account info (tag 29) — Bakong KHQR individual/merchant spec.
+  // Subtag 00 MUST be the Bakong GUID; subtag 01 is the Bakong account ID
+  // (e.g. "username@aclb"). Anything else triggers Q0626 "invalid QR" on ABA/ACLEDA.
+  const mai =
+    tlv("00", "kh.gov.nbc.bakong") +
+    tlv("01", accountId);
   const merchantAccountInfo = tlv("29", mai);
+  // acquiringBank kept in env for display/labelling only — NOT part of tag 29.
+  void acquiringBank;
 
   // Additional data (tag 62): bill number + store label (phone)
   let additional = tlv("01", billNumber.slice(0, 25));
