@@ -17,6 +17,7 @@ import { Route as AccountRouteImport } from './routes/account'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as GamesIdRouteImport } from './routes/games.$id'
 import { Route as ApiPublicBakongWebhookRouteImport } from './routes/api/public/bakong-webhook'
+import { Route as ApiPublicHooksExpireBakongTopupsRouteImport } from './routes/api/public/hooks/expire-bakong-topups'
 
 const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
   id: '/sitemap.xml',
@@ -58,6 +59,12 @@ const ApiPublicBakongWebhookRoute = ApiPublicBakongWebhookRouteImport.update({
   path: '/api/public/bakong-webhook',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicHooksExpireBakongTopupsRoute =
+  ApiPublicHooksExpireBakongTopupsRouteImport.update({
+    id: '/api/public/hooks/expire-bakong-topups',
+    path: '/api/public/hooks/expire-bakong-topups',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -68,6 +75,7 @@ export interface FileRoutesByFullPath {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/games/$id': typeof GamesIdRoute
   '/api/public/bakong-webhook': typeof ApiPublicBakongWebhookRoute
+  '/api/public/hooks/expire-bakong-topups': typeof ApiPublicHooksExpireBakongTopupsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -78,6 +86,7 @@ export interface FileRoutesByTo {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/games/$id': typeof GamesIdRoute
   '/api/public/bakong-webhook': typeof ApiPublicBakongWebhookRoute
+  '/api/public/hooks/expire-bakong-topups': typeof ApiPublicHooksExpireBakongTopupsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -89,6 +98,7 @@ export interface FileRoutesById {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/games/$id': typeof GamesIdRoute
   '/api/public/bakong-webhook': typeof ApiPublicBakongWebhookRoute
+  '/api/public/hooks/expire-bakong-topups': typeof ApiPublicHooksExpireBakongTopupsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -101,6 +111,7 @@ export interface FileRouteTypes {
     | '/sitemap.xml'
     | '/games/$id'
     | '/api/public/bakong-webhook'
+    | '/api/public/hooks/expire-bakong-topups'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -111,6 +122,7 @@ export interface FileRouteTypes {
     | '/sitemap.xml'
     | '/games/$id'
     | '/api/public/bakong-webhook'
+    | '/api/public/hooks/expire-bakong-topups'
   id:
     | '__root__'
     | '/'
@@ -121,6 +133,7 @@ export interface FileRouteTypes {
     | '/sitemap.xml'
     | '/games/$id'
     | '/api/public/bakong-webhook'
+    | '/api/public/hooks/expire-bakong-topups'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -132,6 +145,7 @@ export interface RootRouteChildren {
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   GamesIdRoute: typeof GamesIdRoute
   ApiPublicBakongWebhookRoute: typeof ApiPublicBakongWebhookRoute
+  ApiPublicHooksExpireBakongTopupsRoute: typeof ApiPublicHooksExpireBakongTopupsRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -192,6 +206,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicBakongWebhookRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/hooks/expire-bakong-topups': {
+      id: '/api/public/hooks/expire-bakong-topups'
+      path: '/api/public/hooks/expire-bakong-topups'
+      fullPath: '/api/public/hooks/expire-bakong-topups'
+      preLoaderRoute: typeof ApiPublicHooksExpireBakongTopupsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -204,7 +225,18 @@ const rootRouteChildren: RootRouteChildren = {
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   GamesIdRoute: GamesIdRoute,
   ApiPublicBakongWebhookRoute: ApiPublicBakongWebhookRoute,
+  ApiPublicHooksExpireBakongTopupsRoute: ApiPublicHooksExpireBakongTopupsRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
