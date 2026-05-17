@@ -235,6 +235,12 @@ export const createBakongTopup = createServerFn({ method: "POST" })
     const rate = await coinsPerUsd();
     const coins = Math.round(data.amount_usd * rate);
     const billNumber = `DS${Date.now().toString(36).toUpperCase()}${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
+    if (typeof buildKhqr !== "function") {
+      throw new Error(`[createBakongTopup] buildKhqr is ${typeof buildKhqr} — export missing from "@/lib/bakong.server" (src/lib/bakong.server.ts). Restart dev server / check the file's exports.`);
+    }
+    if (typeof md5Hex !== "function") {
+      throw new Error(`[createBakongTopup] md5Hex is ${typeof md5Hex} — export missing from "@/lib/bakong.server" (src/lib/bakong.server.ts).`);
+    }
     const qr = buildKhqr(data.amount_usd, billNumber);
     const md5 = md5Hex(qr);
     const expiresAt = new Date(Date.now() + BAKONG_TTL_SEC * 1000).toISOString();
