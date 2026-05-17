@@ -91,8 +91,12 @@ export const listMyTopupRequests = createServerFn({ method: "GET" })
       .limit(20);
     if (error) throw new Error(error.message);
     const out = await Promise.all((data ?? []).map(async (r) => {
-      const { data: signed } = await supabaseAdmin.storage.from("topup-slips").createSignedUrl(r.slip_path, 60 * 30);
-      return { ...r, slip_url: signed?.signedUrl ?? null };
+      let slip_url: string | null = null;
+      if (r.slip_path) {
+        const { data: signed } = await supabaseAdmin.storage.from("topup-slips").createSignedUrl(r.slip_path, 60 * 30);
+        slip_url = signed?.signedUrl ?? null;
+      }
+      return { ...r, slip_url };
     }));
     return out;
   });
