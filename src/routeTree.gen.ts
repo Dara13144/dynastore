@@ -20,6 +20,7 @@ import { Route as AdminKhqrDebugRouteImport } from './routes/admin.khqr-debug'
 import { Route as ApiPublicBakongWebhookRouteImport } from './routes/api/public/bakong-webhook'
 import { Route as ApiPaymentCreateRouteImport } from './routes/api/payment/create'
 import { Route as ApiPublicHooksExpireBakongTopupsRouteImport } from './routes/api/public/hooks/expire-bakong-topups'
+import { Route as ApiPaymentStatusIdRouteImport } from './routes/api/payment/status.$id'
 
 const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
   id: '/sitemap.xml',
@@ -77,6 +78,11 @@ const ApiPublicHooksExpireBakongTopupsRoute =
     path: '/api/public/hooks/expire-bakong-topups',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPaymentStatusIdRoute = ApiPaymentStatusIdRouteImport.update({
+  id: '/api/payment/status/$id',
+  path: '/api/payment/status/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -89,6 +95,7 @@ export interface FileRoutesByFullPath {
   '/games/$id': typeof GamesIdRoute
   '/api/payment/create': typeof ApiPaymentCreateRoute
   '/api/public/bakong-webhook': typeof ApiPublicBakongWebhookRoute
+  '/api/payment/status/$id': typeof ApiPaymentStatusIdRoute
   '/api/public/hooks/expire-bakong-topups': typeof ApiPublicHooksExpireBakongTopupsRoute
 }
 export interface FileRoutesByTo {
@@ -102,6 +109,7 @@ export interface FileRoutesByTo {
   '/games/$id': typeof GamesIdRoute
   '/api/payment/create': typeof ApiPaymentCreateRoute
   '/api/public/bakong-webhook': typeof ApiPublicBakongWebhookRoute
+  '/api/payment/status/$id': typeof ApiPaymentStatusIdRoute
   '/api/public/hooks/expire-bakong-topups': typeof ApiPublicHooksExpireBakongTopupsRoute
 }
 export interface FileRoutesById {
@@ -116,6 +124,7 @@ export interface FileRoutesById {
   '/games/$id': typeof GamesIdRoute
   '/api/payment/create': typeof ApiPaymentCreateRoute
   '/api/public/bakong-webhook': typeof ApiPublicBakongWebhookRoute
+  '/api/payment/status/$id': typeof ApiPaymentStatusIdRoute
   '/api/public/hooks/expire-bakong-topups': typeof ApiPublicHooksExpireBakongTopupsRoute
 }
 export interface FileRouteTypes {
@@ -131,6 +140,7 @@ export interface FileRouteTypes {
     | '/games/$id'
     | '/api/payment/create'
     | '/api/public/bakong-webhook'
+    | '/api/payment/status/$id'
     | '/api/public/hooks/expire-bakong-topups'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -144,6 +154,7 @@ export interface FileRouteTypes {
     | '/games/$id'
     | '/api/payment/create'
     | '/api/public/bakong-webhook'
+    | '/api/payment/status/$id'
     | '/api/public/hooks/expire-bakong-topups'
   id:
     | '__root__'
@@ -157,6 +168,7 @@ export interface FileRouteTypes {
     | '/games/$id'
     | '/api/payment/create'
     | '/api/public/bakong-webhook'
+    | '/api/payment/status/$id'
     | '/api/public/hooks/expire-bakong-topups'
   fileRoutesById: FileRoutesById
 }
@@ -170,6 +182,7 @@ export interface RootRouteChildren {
   GamesIdRoute: typeof GamesIdRoute
   ApiPaymentCreateRoute: typeof ApiPaymentCreateRoute
   ApiPublicBakongWebhookRoute: typeof ApiPublicBakongWebhookRoute
+  ApiPaymentStatusIdRoute: typeof ApiPaymentStatusIdRoute
   ApiPublicHooksExpireBakongTopupsRoute: typeof ApiPublicHooksExpireBakongTopupsRoute
 }
 
@@ -252,6 +265,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicHooksExpireBakongTopupsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/payment/status/$id': {
+      id: '/api/payment/status/$id'
+      path: '/api/payment/status/$id'
+      fullPath: '/api/payment/status/$id'
+      preLoaderRoute: typeof ApiPaymentStatusIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -275,6 +295,7 @@ const rootRouteChildren: RootRouteChildren = {
   GamesIdRoute: GamesIdRoute,
   ApiPaymentCreateRoute: ApiPaymentCreateRoute,
   ApiPublicBakongWebhookRoute: ApiPublicBakongWebhookRoute,
+  ApiPaymentStatusIdRoute: ApiPaymentStatusIdRoute,
   ApiPublicHooksExpireBakongTopupsRoute: ApiPublicHooksExpireBakongTopupsRoute,
 }
 export const routeTree = rootRouteImport
