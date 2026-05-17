@@ -117,13 +117,18 @@ export function SplitFileGuideDialog({
           </div>
         </div>
 
-        <DialogFooter className="gap-2 sm:gap-2">
-          {onSwitchToExternal && (
-            <Button type="button" variant="outline" onClick={onSwitchToExternal}>
-              <Cloud className="h-3.5 w-3.5 mr-1.5" /> ប្ដូរទៅ S3 / External
+        <DialogFooter className="gap-2 sm:gap-2 flex-wrap">
+          {onSwitchToLibrary && (
+            <Button type="button" onClick={onSwitchToLibrary} className="bg-emerald-600 hover:bg-emerald-700 text-white">
+              <LinkIcon className="h-3.5 w-3.5 mr-1.5" /> ប្រើ External URL (មិនបាច់បំបែក)
             </Button>
           )}
-          <Button type="button" onClick={onClose}>យល់ហើយ</Button>
+          {onSwitchToExternal && (
+            <Button type="button" variant="outline" onClick={onSwitchToExternal}>
+              <Cloud className="h-3.5 w-3.5 mr-1.5" /> ប្ដូរទៅ AWS S3
+            </Button>
+          )}
+          <Button type="button" variant="ghost" onClick={onClose}>យល់ហើយ</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
