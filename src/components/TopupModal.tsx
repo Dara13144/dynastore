@@ -505,6 +505,8 @@ export function TopupModal({ onClose, onToast }: Props) {
         </div>
 
         <div className="p-5 space-y-5">
+          <TutorialVideo slug="topup" />
+
           <p className="text-xs text-muted-foreground">
             អត្រា៖{" "}
             <span className="text-foreground font-semibold">
