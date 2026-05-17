@@ -313,7 +313,7 @@ export const verifyBakongTopup = createServerFn({ method: "POST" })
 
     const { data: credit, error: cErr } = await supabaseAdmin.rpc("credit_topup_atomic", {
       _request_id: row.id,
-      _bakong_response: check as unknown as Record<string, unknown>,
+      _bakong_response: JSON.parse(JSON.stringify(check)),
     });
     if (cErr) throw new Error(cErr.message);
     const result = Array.isArray(credit) ? credit[0] : credit;
