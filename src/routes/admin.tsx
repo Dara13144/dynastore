@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { useStore } from "@/lib/store";
@@ -307,7 +307,34 @@ function GamesTab() {
   }, [loadGames]);
 
   const [uploadPct, setUploadPct] = useState<number | null>(null);
+  const [uploadStats, setUploadStats] = useState<{
+    sent: number;
+    total: number;
+    speedBps: number;
+    etaSec: number;
+  } | null>(null);
+  const uploadRef = useRef<{ abort: () => void } | null>(null);
   const validateFile = (file: File): string | null => validateGameFile(file);
+
+  // Warn before closing/refreshing tab while an upload is in flight.
+  useEffect(() => {
+    if (uploadPct === null) return;
+    const handler = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [uploadPct]);
+
+  const cancelUpload = () => {
+    uploadRef.current?.abort();
+    uploadRef.current = null;
+    setUploadPct(null);
+    setUploadStats(null);
+    showToast("Upload បានបោះបង់");
+  };
+
   const uploadFile = async (
     gameId: string,
     file: File,
@@ -319,7 +346,10 @@ function GamesTab() {
     }
     const safe = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
     const path = `${gameId}/${Date.now()}_${safe}`;
-    const RESUMABLE_THRESHOLD = 6 * 1024 * 1024; // 6MB
+    // Use single PUT only for very small files (<=2MB). Anything larger
+    // goes through TUS so we get resumable, chunked, abortable streaming
+    // that keeps the UI responsive and never blocks on a single huge PUT.
+    const RESUMABLE_THRESHOLD = 2 * 1024 * 1024; // 2MB
     if (file.size <= RESUMABLE_THRESHOLD) {
       const { error } = await supabase.storage
         .from("game-files")
@@ -339,11 +369,26 @@ function GamesTab() {
       return null;
     }
     const projectUrl = import.meta.env.VITE_SUPABASE_URL as string;
+    // Adaptive chunk size: bigger chunks for big files cut request overhead,
+    // but stay bounded so we don't pin memory at multi-GB scale.
+    const GB = 1024 * 1024 * 1024;
+    const chunkSize =
+      file.size >= 50 * GB
+        ? 64 * 1024 * 1024 // 64MB for >=50GB
+        : file.size >= 5 * GB
+          ? 32 * 1024 * 1024 // 32MB for >=5GB
+          : file.size >= 200 * 1024 * 1024
+            ? 16 * 1024 * 1024 // 16MB for >=200MB
+            : 8 * 1024 * 1024; // 8MB default
     return await new Promise((resolve) => {
       setUploadPct(0);
+      setUploadStats({ sent: 0, total: file.size, speedBps: 0, etaSec: 0 });
+      let lastTs = performance.now();
+      let lastSent = 0;
+      let aborted = false;
       const upload = new tus.Upload(file, {
         endpoint: `${projectUrl}/storage/v1/upload/resumable`,
-        retryDelays: [0, 1000, 3000, 5000, 10000],
+        retryDelays: [0, 1000, 3000, 5000, 10000, 20000, 30000],
         headers: {
           authorization: `Bearer ${token}`,
           "x-upsert": "true",
@@ -356,23 +401,56 @@ function GamesTab() {
           contentType: file.type || "application/octet-stream",
           cacheControl: "3600",
         },
-        chunkSize: 6 * 1024 * 1024,
+        chunkSize,
+        // parallelUploads: 1 keeps memory bounded for huge files.
+        parallelUploads: 1,
         onError: (err: Error) => {
+          if (aborted) return;
           setUploadPct(null);
+          setUploadStats(null);
+          uploadRef.current = null;
           showToast(`Upload: ${err.message}`);
           resolve(null);
         },
         onProgress: (sent: number, total: number) => {
-          setUploadPct(Math.round((sent / total) * 100));
+          const now = performance.now();
+          const dt = (now - lastTs) / 1000;
+          // Throttle React updates to ~4/s to keep the UI smooth on huge files.
+          if (dt >= 0.25 || sent === total) {
+            const speedBps = dt > 0 ? (sent - lastSent) / dt : 0;
+            const remaining = Math.max(total - sent, 0);
+            const etaSec = speedBps > 0 ? remaining / speedBps : 0;
+            setUploadPct(Math.round((sent / total) * 100));
+            setUploadStats({ sent, total, speedBps, etaSec });
+            lastTs = now;
+            lastSent = sent;
+          }
         },
         onSuccess: () => {
           setUploadPct(null);
+          setUploadStats(null);
+          uploadRef.current = null;
           resolve({ path, size: file.size });
         },
       });
+      uploadRef.current = {
+        abort: () => {
+          aborted = true;
+          try {
+            upload.abort(true);
+          } catch {
+            /* ignore */
+          }
+          resolve(null);
+        },
+      };
       upload.findPreviousUploads().then((prev: import("tus-js-client").PreviousUpload[]) => {
+        if (aborted) return;
         if (prev.length) upload.resumeFromPreviousUpload(prev[0]);
         upload.start();
+      }).catch(() => {
+        // localStorage unavailable — start fresh rather than blocking.
+        if (!aborted) upload.start();
       });
     });
   };
@@ -716,11 +794,46 @@ function GamesTab() {
                     <span className="text-[10px] text-destructive mt-1 block">{draftFileError}</span>
                   )}
                   {uploadPct !== null && (
-                    <div className="mt-2 h-1.5 w-full rounded-full bg-muted overflow-hidden">
-                      <div
-                        className="h-full bg-primary transition-all"
-                        style={{ width: `${uploadPct}%` }}
-                      />
+                    <div className="mt-2 space-y-1">
+                      <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
+                        <div
+                          className="h-full bg-primary transition-all"
+                          style={{ width: `${uploadPct}%` }}
+                        />
+                      </div>
+                      <div className="flex items-center justify-between text-[10px] text-muted-foreground">
+                        <span>
+                          {uploadPct}%
+                          {uploadStats && uploadStats.total > 0 && (
+                            <>
+                              {" · "}
+                              {(uploadStats.sent / 1024 / 1024).toFixed(1)}/
+                              {(uploadStats.total / 1024 / 1024).toFixed(1)} MB
+                              {uploadStats.speedBps > 0 && (
+                                <>
+                                  {" · "}
+                                  {(uploadStats.speedBps / 1024 / 1024).toFixed(2)} MB/s
+                                </>
+                              )}
+                              {uploadStats.etaSec > 0 && uploadStats.etaSec < 86400 && (
+                                <>
+                                  {" · ETA "}
+                                  {uploadStats.etaSec >= 60
+                                    ? `${Math.round(uploadStats.etaSec / 60)}m`
+                                    : `${Math.round(uploadStats.etaSec)}s`}
+                                </>
+                              )}
+                            </>
+                          )}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={cancelUpload}
+                          className="rounded-full bg-destructive/15 px-2 py-0.5 text-[10px] font-semibold text-destructive hover:bg-destructive/25"
+                        >
+                          បោះបង់
+                        </button>
+                      </div>
                     </div>
                   )}
                 </div>
