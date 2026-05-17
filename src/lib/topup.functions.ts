@@ -286,7 +286,7 @@ export const verifyBakongTopup = createServerFn({ method: "POST" })
 
     type Out =
       | { status: "approved"; new_balance: number; credited: number; error?: undefined }
-      | { status: "pending"; new_balance: 0; credited: 0; error?: "rate_limited" | "upstream_error" | "network_error" }
+      | { status: "pending"; new_balance: 0; credited: 0; error?: "rate_limited" | "upstream_error" | "network_error" | "auth_error" }
       | { status: "rejected" | "expired"; new_balance: 0; credited: 0; error?: undefined };
 
     // Already final?
