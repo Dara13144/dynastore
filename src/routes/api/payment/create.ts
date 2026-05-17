@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import QRCode from "qrcode";
 import { randomUUID } from "crypto";
-import { buildKhqr, md5Hex } from "@/lib/bakong.server";
+import { buildKhqr, md5Hex, getEffectiveBakongAccountId } from "@/lib/bakong.server";
 import { payments } from "@/lib/payment-store.server";
 
 // GET /api/payment/create?amount=1
