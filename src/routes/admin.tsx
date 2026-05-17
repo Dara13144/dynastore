@@ -341,6 +341,9 @@ function GamesTab() {
       return null;
     }
   });
+  const [showDiagnostics, setShowDiagnostics] = useState(false);
+  const [lastLimitFetchAt, setLastLimitFetchAt] = useState<number | null>(null);
+  const [lastLimitFetchError, setLastLimitFetchError] = useState<string | null>(null);
   const fetchBucketLimit = useServerFn(getGameFilesBucketLimit);
   useEffect(() => {
     let alive = true;
