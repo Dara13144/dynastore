@@ -953,11 +953,45 @@ function GamesTab() {
                       <span className="text-muted-foreground/70"> (ដែនកំណត់ bucket បច្ចុប្បន្ន)</span>
                     ) : null}
                   </p>
-                  {draftFile && !draftFileError && (
-                    <span className="text-[10px] text-emerald-400 mt-1 block">
-                      {draftFile.name} · {(draftFile.size / 1024 / 1024).toFixed(2)} MB
-                    </span>
-                  )}
+                  {draftFile && !draftFileError && (() => {
+                    const max = effectiveMaxBytes();
+                    const pct = Math.min(100, (draftFile.size / max) * 100);
+                    const tone =
+                      pct >= 90
+                        ? "bg-destructive"
+                        : pct >= 70
+                          ? "bg-amber-400"
+                          : "bg-emerald-400";
+                    const textTone =
+                      pct >= 90
+                        ? "text-destructive"
+                        : pct >= 70
+                          ? "text-amber-400"
+                          : "text-emerald-400";
+                    return (
+                      <div className="mt-1 space-y-1">
+                        <span className="text-[10px] text-emerald-400 block">
+                          {draftFile.name} · {(draftFile.size / 1024 / 1024).toFixed(2)} MB
+                        </span>
+                        <div
+                          className="h-1 w-full overflow-hidden rounded-full bg-muted"
+                          role="progressbar"
+                          aria-valuenow={Math.round(pct)}
+                          aria-valuemin={0}
+                          aria-valuemax={100}
+                          aria-label="ទំហំឯកសារធៀបនឹងដែនកំណត់"
+                        >
+                          <div
+                            className={`h-full ${tone} transition-all`}
+                            style={{ width: `${pct}%` }}
+                          />
+                        </div>
+                        <span className={`text-[10px] ${textTone} block`}>
+                          {pct.toFixed(1)}% នៃ {formatBytes(max)}
+                        </span>
+                      </div>
+                    );
+                  })()}
                   {draftFileError && (
                     <span className="text-[10px] text-destructive mt-1 block">{draftFileError}</span>
                   )}
