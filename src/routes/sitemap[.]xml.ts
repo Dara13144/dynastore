@@ -22,7 +22,8 @@ export const Route = createFileRoute("/sitemap.xml")({
 
         try {
           const url = process.env.SUPABASE_URL ?? process.env.VITE_SUPABASE_URL;
-          const key = process.env.SUPABASE_PUBLISHABLE_KEY ?? process.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+          const key =
+            process.env.SUPABASE_PUBLISHABLE_KEY ?? process.env.VITE_SUPABASE_PUBLISHABLE_KEY;
           if (url && key) {
             const sb = createClient(url, key);
             const { data } = await sb.from("games").select("id, created_at").eq("visible", true);

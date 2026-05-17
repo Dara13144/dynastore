@@ -2,7 +2,11 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
-import { notifyTelegram, notifyTelegramPhotoFromStorage, formatUserById } from "@/lib/telegram.server";
+import {
+  notifyTelegram,
+  notifyTelegramPhotoFromStorage,
+  formatUserById,
+} from "@/lib/telegram.server";
 import { buildKhqr, md5Hex, checkTransactionByMd5, BakongApiError } from "@/lib/bakong.server";
 
 // Static KHQR payload for DynaStore (Bakong account: ben_sothida@bkr)
@@ -11,10 +15,13 @@ export const KHQR_PAYLOAD =
 
 async function assertAdmin(userId: string) {
   const { data } = await supabaseAdmin
-    .from("user_roles").select("role").eq("user_id", userId).eq("role", "admin").maybeSingle();
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", userId)
+    .eq("role", "admin")
+    .maybeSingle();
   if (!data) throw new Error("forbidden");
 }
-
 
 const userLabel = formatUserById;
 
@@ -32,20 +39,27 @@ async function sendTopupNotice(
   const trimmed = typeof slipPath === "string" ? slipPath.trim() : "";
   if (!trimmed) {
     console.warn("[topup] slip_path missing — sending text-only Telegram notice", {
-      eventType, requestId, slip_path_raw: slipPath ?? null,
+      eventType,
+      requestId,
+      slip_path_raw: slipPath ?? null,
     });
     await notifyTelegram(caption, eventType);
     return;
   }
   console.info("[topup] forwarding slip image to Telegram", {
-    eventType, requestId, slip_path: trimmed,
+    eventType,
+    requestId,
+    slip_path: trimmed,
   });
   await notifyTelegramPhotoFromStorage("topup-slips", trimmed, caption, eventType);
 }
 
-
 async function coinsPerUsd(): Promise<number> {
-  const { data } = await supabaseAdmin.from("app_settings").select("coins_per_usd").eq("id", 1).maybeSingle();
+  const { data } = await supabaseAdmin
+    .from("app_settings")
+    .select("coins_per_usd")
+    .eq("id", 1)
+    .maybeSingle();
   return Math.max(1, Number(data?.coins_per_usd ?? 1));
 }
 
@@ -58,21 +72,29 @@ export const getTopupConfig = createServerFn({ method: "GET" }).handler(async ()
 // User: submit a topup request with an uploaded slip
 export const createTopupRequest = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((i) => z.object({
-    amount_usd: z.number().min(0.5).max(10000),
-    slip_path: z.string().min(1).max(500),
-    note: z.string().trim().max(300).optional(),
-  }).parse(i))
+  .inputValidator((i) =>
+    z
+      .object({
+        amount_usd: z.number().min(0.5).max(10000),
+        slip_path: z.string().min(1).max(500),
+        note: z.string().trim().max(300).optional(),
+      })
+      .parse(i),
+  )
   .handler(async ({ data, context }) => {
     const rate = await coinsPerUsd();
     const coins = Math.round(data.amount_usd * rate);
-    const { data: row, error } = await supabaseAdmin.from("topup_requests").insert({
-      user_id: context.userId,
-      amount_usd: data.amount_usd,
-      coins,
-      slip_path: data.slip_path,
-      note: data.note ?? null,
-    }).select("id, created_at, status, amount_usd, coins").single();
+    const { data: row, error } = await supabaseAdmin
+      .from("topup_requests")
+      .insert({
+        user_id: context.userId,
+        amount_usd: data.amount_usd,
+        coins,
+        slip_path: data.slip_path,
+        note: data.note ?? null,
+      })
+      .select("id, created_at, status, amount_usd, coins")
+      .single();
     if (error) throw new Error(error.message);
     const who = await userLabel(context.userId);
     const caption = `🆕 <b>New Topup Request</b>\n👤 ${who}\n💵 $${Number(data.amount_usd).toFixed(2)} → <b>${coins.toLocaleString()} coins</b>${data.note ? `\n📝 ${data.note}` : ""}\n🆔 <code>${row.id}</code>`;
@@ -91,46 +113,62 @@ export const listMyTopupRequests = createServerFn({ method: "GET" })
       .order("created_at", { ascending: false })
       .limit(20);
     if (error) throw new Error(error.message);
-    const out = await Promise.all((data ?? []).map(async (r) => {
-      let slip_url: string | null = null;
-      if (r.slip_path) {
-        const { data: signed } = await supabaseAdmin.storage.from("topup-slips").createSignedUrl(r.slip_path, 60 * 30);
-        slip_url = signed?.signedUrl ?? null;
-      }
-      return { ...r, slip_url };
-    }));
+    const out = await Promise.all(
+      (data ?? []).map(async (r) => {
+        let slip_url: string | null = null;
+        if (r.slip_path) {
+          const { data: signed } = await supabaseAdmin.storage
+            .from("topup-slips")
+            .createSignedUrl(r.slip_path, 60 * 30);
+          slip_url = signed?.signedUrl ?? null;
+        }
+        return { ...r, slip_url };
+      }),
+    );
     return out;
   });
 
 // Admin: list all requests
 export const adminListTopupRequests = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((i) => z.object({
-    status: z.enum(["all","pending","approved","rejected"]).default("pending"),
-    limit: z.number().int().min(1).max(500).default(100),
-  }).parse(i ?? {}))
+  .inputValidator((i) =>
+    z
+      .object({
+        status: z.enum(["all", "pending", "approved", "rejected"]).default("pending"),
+        limit: z.number().int().min(1).max(500).default(100),
+      })
+      .parse(i ?? {}),
+  )
   .handler(async ({ data, context }) => {
     await assertAdmin(context.userId);
-    let q = supabaseAdmin.from("topup_requests")
-      .select("id, user_id, amount_usd, coins, status, slip_path, note, created_at, reviewed_at, reviewed_by, reject_reason")
-      .order("created_at", { ascending: false }).limit(data.limit);
+    let q = supabaseAdmin
+      .from("topup_requests")
+      .select(
+        "id, user_id, amount_usd, coins, status, slip_path, note, created_at, reviewed_at, reviewed_by, reject_reason",
+      )
+      .order("created_at", { ascending: false })
+      .limit(data.limit);
     if (data.status !== "all") q = q.eq("status", data.status);
     const { data: rows, error } = await q;
     if (error) throw new Error(error.message);
-    const ids = Array.from(new Set((rows ?? []).map(r => r.user_id)));
+    const ids = Array.from(new Set((rows ?? []).map((r) => r.user_id)));
     const { data: profs } = ids.length
       ? await supabaseAdmin.from("profiles").select("user_id, display_name").in("user_id", ids)
       : { data: [] as { user_id: string; display_name: string }[] };
-    const map = new Map((profs ?? []).map(p => [p.user_id, p.display_name]));
+    const map = new Map((profs ?? []).map((p) => [p.user_id, p.display_name]));
     // sign slip URLs
-    const out = await Promise.all((rows ?? []).map(async (r) => {
-      let slip_url: string | null = null;
-      if (r.slip_path) {
-        const { data: signed } = await supabaseAdmin.storage.from("topup-slips").createSignedUrl(r.slip_path, 60 * 30);
-        slip_url = signed?.signedUrl ?? null;
-      }
-      return { ...r, user_name: map.get(r.user_id) ?? "—", slip_url };
-    }));
+    const out = await Promise.all(
+      (rows ?? []).map(async (r) => {
+        let slip_url: string | null = null;
+        if (r.slip_path) {
+          const { data: signed } = await supabaseAdmin.storage
+            .from("topup-slips")
+            .createSignedUrl(r.slip_path, 60 * 30);
+          slip_url = signed?.signedUrl ?? null;
+        }
+        return { ...r, user_name: map.get(r.user_id) ?? "—", slip_url };
+      }),
+    );
     return out;
   });
 
@@ -143,16 +181,29 @@ export const adminApproveTopup = createServerFn({ method: "POST" })
     // Atomic claim: only succeeds if still pending. Prevents double credit.
     const { data: claimed, error: e0 } = await supabaseAdmin
       .from("topup_requests")
-      .update({ status: "approved", reviewed_by: context.userId, reviewed_at: new Date().toISOString() })
-      .eq("id", data.id).eq("status", "pending")
-      .select("id, user_id, coins, amount_usd, slip_path").maybeSingle();
+      .update({
+        status: "approved",
+        reviewed_by: context.userId,
+        reviewed_at: new Date().toISOString(),
+      })
+      .eq("id", data.id)
+      .eq("status", "pending")
+      .select("id, user_id, coins, amount_usd, slip_path")
+      .maybeSingle();
     if (e0) throw new Error(e0.message);
     if (!claimed) {
       // Idempotent path: request was already processed. Do NOT credit again.
       const { data: existing } = await supabaseAdmin
-        .from("topup_requests").select("status, user_id, coins, amount_usd, reject_reason").eq("id", data.id).maybeSingle();
+        .from("topup_requests")
+        .select("status, user_id, coins, amount_usd, reject_reason")
+        .eq("id", data.id)
+        .maybeSingle();
       if (!existing) throw new Error("not_found");
-      const { data: w } = await supabaseAdmin.from("wallets").select("balance").eq("user_id", existing.user_id).maybeSingle();
+      const { data: w } = await supabaseAdmin
+        .from("wallets")
+        .select("balance")
+        .eq("user_id", existing.user_id)
+        .maybeSingle();
       return {
         ok: true,
         status: existing.status as "approved" | "rejected",
@@ -165,22 +216,35 @@ export const adminApproveTopup = createServerFn({ method: "POST" })
       };
     }
 
-    const { data: wallet } = await supabaseAdmin.from("wallets").select("balance").eq("user_id", claimed.user_id).maybeSingle();
+    const { data: wallet } = await supabaseAdmin
+      .from("wallets")
+      .select("balance")
+      .eq("user_id", claimed.user_id)
+      .maybeSingle();
     const current = Number(wallet?.balance ?? 0);
     const newBalance = current + Number(claimed.coins);
     // Use service-role client directly (RPC admin_set_balance checks auth.uid() which is null here)
     const { data: upserted, error: e2 } = await supabaseAdmin
       .from("wallets")
-      .upsert({ user_id: claimed.user_id, balance: newBalance, updated_at: new Date().toISOString() }, { onConflict: "user_id" })
-      .select("balance").single();
+      .upsert(
+        { user_id: claimed.user_id, balance: newBalance, updated_at: new Date().toISOString() },
+        { onConflict: "user_id" },
+      )
+      .select("balance")
+      .single();
     if (e2) {
-      await supabaseAdmin.from("topup_requests").update({ status: "pending", reviewed_by: null, reviewed_at: null }).eq("id", data.id);
+      await supabaseAdmin
+        .from("topup_requests")
+        .update({ status: "pending", reviewed_by: null, reviewed_at: null })
+        .eq("id", data.id);
       throw new Error(e2.message);
     }
     const bal = Number(upserted.balance);
     await supabaseAdmin.from("balance_changes").insert({
-      user_id: claimed.user_id, changed_by: context.userId,
-      old_balance: current, new_balance: newBalance,
+      user_id: claimed.user_id,
+      changed_by: context.userId,
+      old_balance: current,
+      new_balance: newBalance,
       reason: `Topup approved: $${claimed.amount_usd} (+${claimed.coins})`,
     });
     const who = await userLabel(claimed.user_id);
@@ -201,16 +265,28 @@ export const adminApproveTopup = createServerFn({ method: "POST" })
 // Admin: reject
 export const adminRejectTopup = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((i) => z.object({
-    id: z.string().uuid(),
-    reason: z.string().trim().min(1).max(300),
-  }).parse(i))
+  .inputValidator((i) =>
+    z
+      .object({
+        id: z.string().uuid(),
+        reason: z.string().trim().min(1).max(300),
+      })
+      .parse(i),
+  )
   .handler(async ({ data, context }) => {
     await assertAdmin(context.userId);
-    const { data: claimed, error } = await supabaseAdmin.from("topup_requests").update({
-      status: "rejected", reviewed_by: context.userId, reviewed_at: new Date().toISOString(),
-      reject_reason: data.reason,
-    }).eq("id", data.id).eq("status", "pending").select("id, user_id, amount_usd, slip_path").maybeSingle();
+    const { data: claimed, error } = await supabaseAdmin
+      .from("topup_requests")
+      .update({
+        status: "rejected",
+        reviewed_by: context.userId,
+        reviewed_at: new Date().toISOString(),
+        reject_reason: data.reason,
+      })
+      .eq("id", data.id)
+      .eq("status", "pending")
+      .select("id, user_id, amount_usd, slip_path")
+      .maybeSingle();
     if (error) throw new Error(error.message);
     if (!claimed) throw new Error("already_reviewed");
     const who = await userLabel(claimed.user_id);
@@ -228,33 +304,45 @@ const BAKONG_TTL_SEC = 5 * 60; // 5 minutes
 // Create a unique amount-bound KHQR + pending request row.
 export const createBakongTopup = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((i) => z.object({
-    amount_usd: z.number().min(0.5).max(10000),
-  }).parse(i))
+  .inputValidator((i) =>
+    z
+      .object({
+        amount_usd: z.number().min(0.5).max(10000),
+      })
+      .parse(i),
+  )
   .handler(async ({ data, context }) => {
     const rate = await coinsPerUsd();
     const coins = Math.round(data.amount_usd * rate);
     const billNumber = `DS${Date.now().toString(36).toUpperCase()}${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
     if (typeof buildKhqr !== "function") {
-      throw new Error(`[createBakongTopup] buildKhqr is ${typeof buildKhqr} — export missing from "@/lib/bakong.server" (src/lib/bakong.server.ts). Restart dev server / check the file's exports.`);
+      throw new Error(
+        `[createBakongTopup] buildKhqr is ${typeof buildKhqr} — export missing from "@/lib/bakong.server" (src/lib/bakong.server.ts). Restart dev server / check the file's exports.`,
+      );
     }
     if (typeof md5Hex !== "function") {
-      throw new Error(`[createBakongTopup] md5Hex is ${typeof md5Hex} — export missing from "@/lib/bakong.server" (src/lib/bakong.server.ts).`);
+      throw new Error(
+        `[createBakongTopup] md5Hex is ${typeof md5Hex} — export missing from "@/lib/bakong.server" (src/lib/bakong.server.ts).`,
+      );
     }
     const qr = buildKhqr(data.amount_usd, billNumber);
     const md5 = md5Hex(qr);
     const expiresAt = new Date(Date.now() + BAKONG_TTL_SEC * 1000).toISOString();
 
-    const { data: row, error } = await supabaseAdmin.from("topup_requests").insert({
-      user_id: context.userId,
-      amount_usd: data.amount_usd,
-      coins,
-      slip_path: null,
-      qr_payload: qr,
-      md5,
-      expires_at: expiresAt,
-      note: `Bakong auto · ${billNumber}`,
-    }).select("id, created_at, status, amount_usd, coins, qr_payload, md5, expires_at").single();
+    const { data: row, error } = await supabaseAdmin
+      .from("topup_requests")
+      .insert({
+        user_id: context.userId,
+        amount_usd: data.amount_usd,
+        coins,
+        slip_path: null,
+        qr_payload: qr,
+        md5,
+        expires_at: expiresAt,
+        note: `Bakong auto · ${billNumber}`,
+      })
+      .select("id, created_at, status, amount_usd, coins, qr_payload, md5, expires_at")
+      .single();
     if (error) throw new Error(error.message);
 
     const who = await formatUserById(context.userId);
@@ -285,30 +373,50 @@ export const verifyBakongTopup = createServerFn({ method: "POST" })
     const { data: row, error } = await supabaseAdmin
       .from("topup_requests")
       .select("id, user_id, status, md5, amount_usd, coins, expires_at")
-      .eq("id", data.id).maybeSingle();
+      .eq("id", data.id)
+      .maybeSingle();
     if (error) throw new Error(error.message);
     if (!row) throw new Error("not_found");
     if (row.user_id !== context.userId) throw new Error("forbidden");
 
     type Out =
       | { status: "approved"; new_balance: number; credited: number; error?: undefined }
-      | { status: "pending"; new_balance: 0; credited: 0; error?: "rate_limited" | "upstream_error" | "network_error" | "auth_error" }
+      | {
+          status: "pending";
+          new_balance: 0;
+          credited: 0;
+          error?: "rate_limited" | "upstream_error" | "network_error" | "auth_error";
+        }
       | { status: "rejected" | "expired"; new_balance: 0; credited: 0; error?: undefined };
 
     // Already final?
     if (row.status === "approved") {
-      const { data: w } = await supabaseAdmin.from("wallets").select("balance").eq("user_id", row.user_id).maybeSingle();
-      return { status: "approved", new_balance: Number(w?.balance ?? 0), credited: 0 } satisfies Out;
+      const { data: w } = await supabaseAdmin
+        .from("wallets")
+        .select("balance")
+        .eq("user_id", row.user_id)
+        .maybeSingle();
+      return {
+        status: "approved",
+        new_balance: Number(w?.balance ?? 0),
+        credited: 0,
+      } satisfies Out;
     }
     if (row.status === "rejected" || row.status === "expired") {
-      return { status: row.status as "rejected" | "expired", new_balance: 0, credited: 0 } satisfies Out;
+      return {
+        status: row.status as "rejected" | "expired",
+        new_balance: 0,
+        credited: 0,
+      } satisfies Out;
     }
 
     // Expired?
     if (row.expires_at && new Date(row.expires_at).getTime() < Date.now()) {
-      await supabaseAdmin.from("topup_requests")
+      await supabaseAdmin
+        .from("topup_requests")
         .update({ status: "expired", reviewed_at: new Date().toISOString() })
-        .eq("id", row.id).eq("status", "pending");
+        .eq("id", row.id)
+        .eq("status", "pending");
       return { status: "expired", new_balance: 0, credited: 0 } satisfies Out;
     }
 
@@ -320,15 +428,27 @@ export const verifyBakongTopup = createServerFn({ method: "POST" })
     } catch (e) {
       if (e instanceof BakongApiError) {
         if (e.kind === "auth_error") {
-          console.error("[verifyBakongTopup] Bakong auth_error — token invalid/expired", { id: row.id, status: e.status });
+          console.error("[verifyBakongTopup] Bakong auth_error — token invalid/expired", {
+            id: row.id,
+            status: e.status,
+          });
         } else {
-          console.warn("[verifyBakongTopup] transient Bakong error", { id: row.id, kind: e.kind, status: e.status });
+          console.warn("[verifyBakongTopup] transient Bakong error", {
+            id: row.id,
+            kind: e.kind,
+            status: e.status,
+          });
         }
         const errKind = e.kind === "auth_error" ? "auth_error" : "upstream_error";
         return { status: "pending", new_balance: 0, credited: 0, error: errKind } satisfies Out;
       }
       console.error("[verifyBakongTopup] unexpected error", e);
-      return { status: "pending", new_balance: 0, credited: 0, error: "network_error" } satisfies Out;
+      return {
+        status: "pending",
+        new_balance: 0,
+        credited: 0,
+        error: "network_error",
+      } satisfies Out;
     }
 
     // responseCode 0 = found/paid; non-zero = not found yet

@@ -40,10 +40,14 @@ export const Route = createFileRoute("/api/payment/create")({
           log("building KHQR", { paymentId, billNumber, amount });
 
           if (typeof buildKhqr !== "function") {
-            throw new Error(`[/api/payment/create] buildKhqr is ${typeof buildKhqr} — export missing from "@/lib/bakong.server" (src/lib/bakong.server.ts). Restart dev server / check the file's exports.`);
+            throw new Error(
+              `[/api/payment/create] buildKhqr is ${typeof buildKhqr} — export missing from "@/lib/bakong.server" (src/lib/bakong.server.ts). Restart dev server / check the file's exports.`,
+            );
           }
           if (typeof md5Hex !== "function") {
-            throw new Error(`[/api/payment/create] md5Hex is ${typeof md5Hex} — export missing from "@/lib/bakong.server" (src/lib/bakong.server.ts).`);
+            throw new Error(
+              `[/api/payment/create] md5Hex is ${typeof md5Hex} — export missing from "@/lib/bakong.server" (src/lib/bakong.server.ts).`,
+            );
           }
           const khqr = buildKhqr(amount, billNumber);
           const md5 = md5Hex(khqr);
@@ -60,8 +64,13 @@ export const Route = createFileRoute("/api/payment/create")({
           log("QR image generated", { paymentId, qrImageBytes: qrImage.length });
 
           payments.set(paymentId, {
-            id: paymentId, amount, billNumber, md5, khqr,
-            status: "pending", createdAt: Date.now(),
+            id: paymentId,
+            amount,
+            billNumber,
+            md5,
+            khqr,
+            status: "pending",
+            createdAt: Date.now(),
           });
           log("payment stored", { paymentId, totalInStore: payments.size });
 
@@ -69,7 +78,14 @@ export const Route = createFileRoute("/api/payment/create")({
           log("done", { paymentId, elapsedMs });
 
           return Response.json({
-            success: true, paymentId, amount, billNumber, md5, khqr, qrImage, reqId,
+            success: true,
+            paymentId,
+            amount,
+            billNumber,
+            md5,
+            khqr,
+            qrImage,
+            reqId,
           });
         } catch (e) {
           const err = e as Error;

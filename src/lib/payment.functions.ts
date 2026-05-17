@@ -10,7 +10,8 @@ export const purchaseGame = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { userId } = context;
     const { data: result, error } = await supabaseAdmin.rpc("purchase_game_atomic", {
-      _user_id: userId, _game_id: data.gameId,
+      _user_id: userId,
+      _game_id: data.gameId,
     });
     if (error) throw new Error(error.message);
     const row = Array.isArray(result) ? result[0] : result;
@@ -20,7 +21,11 @@ export const purchaseGame = createServerFn({ method: "POST" })
 
     if (ok && message === "purchased") {
       const [{ data: game }, who] = await Promise.all([
-        supabaseAdmin.from("games").select("title, price_coins, image_url").eq("id", data.gameId).maybeSingle(),
+        supabaseAdmin
+          .from("games")
+          .select("title, price_coins, image_url")
+          .eq("id", data.gameId)
+          .maybeSingle(),
         formatUserById(userId),
       ]);
       const caption = `🎮 <b>Game Purchased</b>\n👤 ${who}\n🕹️ ${game?.title ?? data.gameId}\n💰 -${Number(game?.price_coins ?? 0).toLocaleString()} coins\n💼 Balance: ${Number(balance).toLocaleString()}`;

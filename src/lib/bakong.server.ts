@@ -77,7 +77,11 @@ export class BakongApiError extends Error {
   kind: "auth_error" | "upstream_error" | "network_error";
   code: string;
   status?: number;
-  constructor(kind: "auth_error" | "upstream_error" | "network_error", message: string, status?: number) {
+  constructor(
+    kind: "auth_error" | "upstream_error" | "network_error",
+    message: string,
+    status?: number,
+  ) {
     super(message);
     this.name = "BakongApiError";
     this.kind = kind;

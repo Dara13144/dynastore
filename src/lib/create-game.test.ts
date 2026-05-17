@@ -1,6 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { submitCreateGame, type CreateGameDeps, type GameDraft } from "./create-game";
-import { MIN_GAME_FILE_BYTES, MAX_GAME_FILE_BYTES, GAME_FILE_URL_ERRORS } from "./validate-game-file";
+import {
+  MIN_GAME_FILE_BYTES,
+  MAX_GAME_FILE_BYTES,
+  GAME_FILE_URL_ERRORS,
+} from "./validate-game-file";
 
 /**
  * Integration tests for the real createGame submit path used by admin.tsx.
@@ -9,13 +13,21 @@ import { MIN_GAME_FILE_BYTES, MAX_GAME_FILE_BYTES, GAME_FILE_URL_ERRORS } from "
  */
 
 const validDraft = (over: Partial<GameDraft> = {}): GameDraft => ({
-  id: "g1", title: "Game One", category: "ACTION", description: "d",
-  badge: "", price_coins: 100, visible: true, image_url: "", ...over,
+  id: "g1",
+  title: "Game One",
+  category: "ACTION",
+  description: "d",
+  badge: "",
+  price_coins: 100,
+  visible: true,
+  image_url: "",
+  ...over,
 });
 
 function makeDeps() {
   const uploadFile: CreateGameDeps["uploadFile"] = vi.fn(async (gameId, file) => ({
-    path: `${gameId}/${file.name}`, size: file.size,
+    path: `${gameId}/${file.name}`,
+    size: file.size,
   }));
   const insertGame: CreateGameDeps["insertGame"] = vi.fn(async () => ({ error: null }));
   const onError = vi.fn();
@@ -24,10 +36,16 @@ function makeDeps() {
 
 describe("submitCreateGame - invalid files never call upload or insert", () => {
   let deps: ReturnType<typeof makeDeps>;
-  beforeEach(() => { deps = makeDeps(); });
+  beforeEach(() => {
+    deps = makeDeps();
+  });
 
   it("rejects file under 1GB BEFORE upload + insert", async () => {
-    const r = await submitCreateGame(validDraft(), { name: "g.zip", size: MIN_GAME_FILE_BYTES - 1 }, deps);
+    const r = await submitCreateGame(
+      validDraft(),
+      { name: "g.zip", size: MIN_GAME_FILE_BYTES - 1 },
+      deps,
+    );
     expect(r.ok).toBe(false);
     if (!r.ok) expect(r.reason).toBe("invalid_file");
     expect(deps.uploadFile).not.toHaveBeenCalled();
@@ -36,7 +54,11 @@ describe("submitCreateGame - invalid files never call upload or insert", () => {
   });
 
   it("rejects file over 5000GB BEFORE upload + insert", async () => {
-    const r = await submitCreateGame(validDraft(), { name: "g.zip", size: MAX_GAME_FILE_BYTES + 1 }, deps);
+    const r = await submitCreateGame(
+      validDraft(),
+      { name: "g.zip", size: MAX_GAME_FILE_BYTES + 1 },
+      deps,
+    );
     expect(r.ok).toBe(false);
     if (!r.ok) expect(r.reason).toBe("invalid_file");
     expect(deps.uploadFile).not.toHaveBeenCalled();
@@ -45,7 +67,11 @@ describe("submitCreateGame - invalid files never call upload or insert", () => {
   });
 
   it("rejects disallowed extension BEFORE upload + insert", async () => {
-    const r = await submitCreateGame(validDraft(), { name: "g.exe", size: MIN_GAME_FILE_BYTES }, deps);
+    const r = await submitCreateGame(
+      validDraft(),
+      { name: "g.exe", size: MIN_GAME_FILE_BYTES },
+      deps,
+    );
     expect(r.ok).toBe(false);
     if (!r.ok) expect(r.reason).toBe("invalid_file");
     expect(deps.uploadFile).not.toHaveBeenCalled();
@@ -62,14 +88,22 @@ describe("submitCreateGame - invalid files never call upload or insert", () => {
   });
 
   it("rejects tricky filename file.zip.bak BEFORE upload + insert", async () => {
-    const r = await submitCreateGame(validDraft(), { name: "file.zip.bak", size: MIN_GAME_FILE_BYTES }, deps);
+    const r = await submitCreateGame(
+      validDraft(),
+      { name: "file.zip.bak", size: MIN_GAME_FILE_BYTES },
+      deps,
+    );
     expect(r.ok).toBe(false);
     expect(deps.uploadFile).not.toHaveBeenCalled();
     expect(deps.insertGame).not.toHaveBeenCalled();
   });
 
   it("rejects missing id/title BEFORE upload + insert", async () => {
-    const r = await submitCreateGame(validDraft({ id: "  ", title: "" }), { name: "g.zip", size: MIN_GAME_FILE_BYTES }, deps);
+    const r = await submitCreateGame(
+      validDraft({ id: "  ", title: "" }),
+      { name: "g.zip", size: MIN_GAME_FILE_BYTES },
+      deps,
+    );
     expect(r.ok).toBe(false);
     if (!r.ok) expect(r.reason).toBe("missing_fields");
     expect(deps.uploadFile).not.toHaveBeenCalled();
@@ -79,20 +113,35 @@ describe("submitCreateGame - invalid files never call upload or insert", () => {
 
 describe("submitCreateGame - valid path calls upload + insert exactly once", () => {
   let deps: ReturnType<typeof makeDeps>;
-  beforeEach(() => { deps = makeDeps(); });
+  beforeEach(() => {
+    deps = makeDeps();
+  });
 
   it("accepts file at the 1GB minimum boundary", async () => {
-    const r = await submitCreateGame(validDraft(), { name: "g.zip", size: MIN_GAME_FILE_BYTES }, deps);
+    const r = await submitCreateGame(
+      validDraft(),
+      { name: "g.zip", size: MIN_GAME_FILE_BYTES },
+      deps,
+    );
     expect(r.ok).toBe(true);
     expect(deps.uploadFile).toHaveBeenCalledTimes(1);
     expect(deps.insertGame).toHaveBeenCalledTimes(1);
-    expect(deps.insertGame).toHaveBeenCalledWith(expect.objectContaining({
-      id: "g1", title: "Game One", file_path: "g1/g.zip", file_size_bytes: MIN_GAME_FILE_BYTES,
-    }));
+    expect(deps.insertGame).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: "g1",
+        title: "Game One",
+        file_path: "g1/g.zip",
+        file_size_bytes: MIN_GAME_FILE_BYTES,
+      }),
+    );
   });
 
   it("accepts file at the 5000GB maximum boundary", async () => {
-    const r = await submitCreateGame(validDraft(), { name: "g.zip", size: MAX_GAME_FILE_BYTES }, deps);
+    const r = await submitCreateGame(
+      validDraft(),
+      { name: "g.zip", size: MAX_GAME_FILE_BYTES },
+      deps,
+    );
     expect(r.ok).toBe(true);
     expect(deps.uploadFile).toHaveBeenCalledTimes(1);
     expect(deps.insertGame).toHaveBeenCalledTimes(1);
@@ -103,9 +152,12 @@ describe("submitCreateGame - valid path calls upload + insert exactly once", () 
     expect(r.ok).toBe(true);
     expect(deps.uploadFile).not.toHaveBeenCalled();
     expect(deps.insertGame).toHaveBeenCalledTimes(1);
-    expect(deps.insertGame).toHaveBeenCalledWith(expect.objectContaining({
-      file_path: null, file_size_bytes: null,
-    }));
+    expect(deps.insertGame).toHaveBeenCalledWith(
+      expect.objectContaining({
+        file_path: null,
+        file_size_bytes: null,
+      }),
+    );
   });
 
   it("uses file_url as file_path when no file is uploaded (no upload, single insert)", async () => {
@@ -114,9 +166,12 @@ describe("submitCreateGame - valid path calls upload + insert exactly once", () 
     expect(r.ok).toBe(true);
     expect(deps.uploadFile).not.toHaveBeenCalled();
     expect(deps.insertGame).toHaveBeenCalledTimes(1);
-    expect(deps.insertGame).toHaveBeenCalledWith(expect.objectContaining({
-      file_path: url, file_size_bytes: null,
-    }));
+    expect(deps.insertGame).toHaveBeenCalledWith(
+      expect.objectContaining({
+        file_path: url,
+        file_size_bytes: null,
+      }),
+    );
   });
 
   it("prefers uploaded file over file_url when both are provided", async () => {
@@ -127,11 +182,13 @@ describe("submitCreateGame - valid path calls upload + insert exactly once", () 
     );
     expect(r.ok).toBe(true);
     expect(deps.uploadFile).toHaveBeenCalledTimes(1);
-    expect(deps.insertGame).toHaveBeenCalledWith(expect.objectContaining({
-      file_path: "g1/g.zip", file_size_bytes: MIN_GAME_FILE_BYTES,
-    }));
+    expect(deps.insertGame).toHaveBeenCalledWith(
+      expect.objectContaining({
+        file_path: "g1/g.zip",
+        file_size_bytes: MIN_GAME_FILE_BYTES,
+      }),
+    );
   });
-
 
   it("aborts insert when uploadFile fails", async () => {
     const upload = vi.fn(async () => null);
@@ -172,8 +229,15 @@ describe("submitCreateGame - URL validation gates the insert", () => {
     };
   }
   const draft = (file_url: string): GameDraft => ({
-    id: "g1", title: "G1", category: "", description: "", badge: "",
-    price_coins: 0, visible: true, image_url: "", file_url,
+    id: "g1",
+    title: "G1",
+    category: "",
+    description: "",
+    badge: "",
+    price_coins: 0,
+    visible: true,
+    image_url: "",
+    file_url,
   });
 
   it("rejects ftp:// link with BAD_PROTOCOL message and no insert", async () => {

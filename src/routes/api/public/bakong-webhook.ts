@@ -111,7 +111,11 @@ export const Route = createFileRoute("/api/public/bakong-webhook")({
         if (!secret) {
           console.error("[bakong-webhook] BAKONG_WEBHOOK_SECRET not configured");
           return json(
-            { ok: false, code: "webhook_not_configured", message: "Server is missing BAKONG_WEBHOOK_SECRET." },
+            {
+              ok: false,
+              code: "webhook_not_configured",
+              message: "Server is missing BAKONG_WEBHOOK_SECRET.",
+            },
             503,
           );
         }
@@ -136,11 +140,13 @@ export const Route = createFileRoute("/api/public/bakong-webhook")({
         try {
           payload = await request.json();
         } catch {
-          return json({ ok: false, code: "invalid_json", message: "Request body must be JSON." }, 400);
+          return json(
+            { ok: false, code: "invalid_json", message: "Request body must be JSON." },
+            400,
+          );
         }
 
-        const deliveryId =
-          payload.delivery_id ?? request.headers.get("x-delivery-id") ?? null;
+        const deliveryId = payload.delivery_id ?? request.headers.get("x-delivery-id") ?? null;
 
         // Freshness window
         const maxAgeS = Number(process.env.BAKONG_WEBHOOK_MAX_AGE_SECONDS ?? DEFAULT_MAX_AGE_S);
@@ -151,12 +157,20 @@ export const Route = createFileRoute("/api/public/bakong-webhook")({
           const age = (Date.now() - ts) / 1000;
           if (age > maxAgeS) {
             await logDelivery({
-              delivery_id: deliveryId, md5: payload.md5 ?? null, hash: payload.hash ?? null,
-              topup_request_id: payload.id ?? null, outcome: "stale_delivery", status_code: 408,
+              delivery_id: deliveryId,
+              md5: payload.md5 ?? null,
+              hash: payload.hash ?? null,
+              topup_request_id: payload.id ?? null,
+              outcome: "stale_delivery",
+              status_code: 408,
               payload,
             });
             return json(
-              { ok: false, code: "stale_delivery", message: `Delivery is ${Math.round(age)}s old, max ${maxAgeS}s.` },
+              {
+                ok: false,
+                code: "stale_delivery",
+                message: `Delivery is ${Math.round(age)}s old, max ${maxAgeS}s.`,
+              },
               408,
             );
           }
@@ -192,27 +206,39 @@ export const Route = createFileRoute("/api/public/bakong-webhook")({
 
         // Resolve topup_requests row.
         type Row = {
-          id: string; user_id: string; status: string; md5: string | null;
-          amount_usd: number; coins: number; expires_at: string | null;
+          id: string;
+          user_id: string;
+          status: string;
+          md5: string | null;
+          amount_usd: number;
+          coins: number;
+          expires_at: string | null;
         };
         let row: Row | null = null;
         if (payload.id) {
           const { data } = await supabaseAdmin
             .from("topup_requests")
             .select("id, user_id, status, md5, amount_usd, coins, expires_at")
-            .eq("id", payload.id).maybeSingle();
+            .eq("id", payload.id)
+            .maybeSingle();
           row = (data ?? null) as Row | null;
         } else if (payload.md5) {
           const { data } = await supabaseAdmin
             .from("topup_requests")
             .select("id, user_id, status, md5, amount_usd, coins, expires_at")
-            .eq("md5", payload.md5).maybeSingle();
+            .eq("md5", payload.md5)
+            .maybeSingle();
           row = (data ?? null) as Row | null;
         }
         if (!row) {
           await logDelivery({
-            delivery_id: deliveryId, md5: payload.md5 ?? null, hash: payload.hash ?? null,
-            topup_request_id: null, outcome: "not_found", status_code: 404, payload,
+            delivery_id: deliveryId,
+            md5: payload.md5 ?? null,
+            hash: payload.hash ?? null,
+            topup_request_id: null,
+            outcome: "not_found",
+            status_code: 404,
+            payload,
           });
           return json(
             { ok: false, code: "not_found", message: "No topup_request matched id/md5." },
@@ -222,49 +248,87 @@ export const Route = createFileRoute("/api/public/bakong-webhook")({
 
         // Terminal states — log + idempotent reply.
         if (row.status === "approved") {
-          const { data: w } = await supabaseAdmin.from("wallets").select("balance").eq("user_id", row.user_id).maybeSingle();
+          const { data: w } = await supabaseAdmin
+            .from("wallets")
+            .select("balance")
+            .eq("user_id", row.user_id)
+            .maybeSingle();
           await logDelivery({
-            delivery_id: deliveryId, md5: row.md5, hash: payload.hash ?? null,
-            topup_request_id: row.id, outcome: "already_approved", status_code: 200, payload,
+            delivery_id: deliveryId,
+            md5: row.md5,
+            hash: payload.hash ?? null,
+            topup_request_id: row.id,
+            outcome: "already_approved",
+            status_code: 200,
+            payload,
           });
           return json({
-            ok: true, code: "already_approved",
+            ok: true,
+            code: "already_approved",
             message: "Topup was already credited.",
-            status: "approved", credited: 0, new_balance: Number(w?.balance ?? 0),
+            status: "approved",
+            credited: 0,
+            new_balance: Number(w?.balance ?? 0),
             topup_request_id: row.id,
           });
         }
         if (row.status === "rejected" || row.status === "expired") {
           await logDelivery({
-            delivery_id: deliveryId, md5: row.md5, hash: payload.hash ?? null,
-            topup_request_id: row.id, outcome: `already_${row.status}`, status_code: 200, payload,
+            delivery_id: deliveryId,
+            md5: row.md5,
+            hash: payload.hash ?? null,
+            topup_request_id: row.id,
+            outcome: `already_${row.status}`,
+            status_code: 200,
+            payload,
           });
           return json({
-            ok: true, code: `already_${row.status}`,
+            ok: true,
+            code: `already_${row.status}`,
             message: `Topup is already ${row.status}; not credited.`,
-            status: row.status, credited: 0, new_balance: 0,
+            status: row.status,
+            credited: 0,
+            new_balance: 0,
             topup_request_id: row.id,
           });
         }
         if (row.expires_at && new Date(row.expires_at).getTime() < Date.now()) {
-          await supabaseAdmin.from("topup_requests")
+          await supabaseAdmin
+            .from("topup_requests")
             .update({ status: "expired", reviewed_at: new Date().toISOString() })
-            .eq("id", row.id).eq("status", "pending");
+            .eq("id", row.id)
+            .eq("status", "pending");
           await logDelivery({
-            delivery_id: deliveryId, md5: row.md5, hash: payload.hash ?? null,
-            topup_request_id: row.id, outcome: "expired_request", status_code: 410, payload,
-          });
-          return json({
-            ok: false, code: "expired_request",
-            message: "Topup expired before payment was confirmed.",
-            status: "expired", credited: 0, new_balance: 0,
+            delivery_id: deliveryId,
+            md5: row.md5,
+            hash: payload.hash ?? null,
             topup_request_id: row.id,
-          }, 410);
+            outcome: "expired_request",
+            status_code: 410,
+            payload,
+          });
+          return json(
+            {
+              ok: false,
+              code: "expired_request",
+              message: "Topup expired before payment was confirmed.",
+              status: "expired",
+              credited: 0,
+              new_balance: 0,
+              topup_request_id: row.id,
+            },
+            410,
+          );
         }
         if (!row.md5) {
           await logDelivery({
-            delivery_id: deliveryId, md5: null, hash: payload.hash ?? null,
-            topup_request_id: row.id, outcome: "missing_md5", status_code: 422, payload,
+            delivery_id: deliveryId,
+            md5: null,
+            hash: payload.hash ?? null,
+            topup_request_id: row.id,
+            outcome: "missing_md5",
+            status_code: 422,
+            payload,
           });
           return json(
             { ok: false, code: "missing_md5", message: "Topup row has no md5; cannot verify." },
@@ -280,8 +344,13 @@ export const Route = createFileRoute("/api/public/bakong-webhook")({
           const msg = e instanceof Error ? e.message : "unknown";
           console.error("[bakong-webhook] checkTransactionByMd5 failed", msg);
           await logDelivery({
-            delivery_id: deliveryId, md5: row.md5, hash: payload.hash ?? null,
-            topup_request_id: row.id, outcome: "upstream_error", status_code: 502, payload,
+            delivery_id: deliveryId,
+            md5: row.md5,
+            hash: payload.hash ?? null,
+            topup_request_id: row.id,
+            outcome: "upstream_error",
+            status_code: 502,
+            payload,
           });
           return json(
             { ok: false, code: "upstream_error", message: `Bakong API error: ${msg}` },
@@ -291,15 +360,26 @@ export const Route = createFileRoute("/api/public/bakong-webhook")({
 
         if (check.responseCode !== 0 || !check.data) {
           await logDelivery({
-            delivery_id: deliveryId, md5: row.md5, hash: payload.hash ?? null,
-            topup_request_id: row.id, outcome: "pending", status_code: 202, payload,
-          });
-          return json({
-            ok: false, code: "pending",
-            message: "Bakong has not yet confirmed this transaction. Retry later.",
-            status: "pending", credited: 0, new_balance: 0,
+            delivery_id: deliveryId,
+            md5: row.md5,
+            hash: payload.hash ?? null,
             topup_request_id: row.id,
-          }, 202);
+            outcome: "pending",
+            status_code: 202,
+            payload,
+          });
+          return json(
+            {
+              ok: false,
+              code: "pending",
+              message: "Bakong has not yet confirmed this transaction. Retry later.",
+              status: "pending",
+              credited: 0,
+              new_balance: 0,
+              topup_request_id: row.id,
+            },
+            202,
+          );
         }
 
         // Second-chance duplicate check using the *authoritative* hash from Bakong.
@@ -311,7 +391,8 @@ export const Route = createFileRoute("/api/public/bakong-webhook")({
           .maybeSingle();
         if (priorByRealHash) {
           return json({
-            ok: true, code: "duplicate",
+            ok: true,
+            code: "duplicate",
             message: "Bakong transaction hash already processed; ignoring replay.",
             prior_outcome: priorByRealHash.outcome,
             topup_request_id: priorByRealHash.topup_request_id,
@@ -320,7 +401,11 @@ export const Route = createFileRoute("/api/public/bakong-webhook")({
 
         const paid = Number(check.data.amount ?? 0);
         if (paid && Math.abs(paid - Number(row.amount_usd)) > 0.01) {
-          console.warn("[bakong-webhook] amount mismatch", { id: row.id, expected: row.amount_usd, paid });
+          console.warn("[bakong-webhook] amount mismatch", {
+            id: row.id,
+            expected: row.amount_usd,
+            paid,
+          });
         }
 
         const { data: credit, error: cErr } = await supabaseAdmin.rpc("credit_topup_atomic", {
@@ -330,13 +415,15 @@ export const Route = createFileRoute("/api/public/bakong-webhook")({
         if (cErr) {
           console.error("[bakong-webhook] credit_topup_atomic failed", cErr);
           await logDelivery({
-            delivery_id: deliveryId, md5: row.md5, hash: realHash,
-            topup_request_id: row.id, outcome: "server_error", status_code: 500, payload,
+            delivery_id: deliveryId,
+            md5: row.md5,
+            hash: realHash,
+            topup_request_id: row.id,
+            outcome: "server_error",
+            status_code: 500,
+            payload,
           });
-          return json(
-            { ok: false, code: "server_error", message: cErr.message },
-            500,
-          );
+          return json({ ok: false, code: "server_error", message: cErr.message }, 500);
         }
         const result = Array.isArray(credit) ? credit[0] : credit;
 
@@ -349,15 +436,21 @@ export const Route = createFileRoute("/api/public/bakong-webhook")({
         }
 
         await logDelivery({
-          delivery_id: deliveryId, md5: row.md5, hash: realHash,
+          delivery_id: deliveryId,
+          md5: row.md5,
+          hash: realHash,
           topup_request_id: row.id,
           outcome: result?.ok ? "credited" : (result?.status ?? "no_change"),
-          status_code: 200, payload,
+          status_code: 200,
+          payload,
         });
 
         return json({
-          ok: true, code: result?.ok ? "credited" : "no_change",
-          message: result?.ok ? "Topup credited successfully." : "Topup was not in a creditable state.",
+          ok: true,
+          code: result?.ok ? "credited" : "no_change",
+          message: result?.ok
+            ? "Topup credited successfully."
+            : "Topup was not in a creditable state.",
           status: result?.status ?? "approved",
           credited: Number(result?.credited ?? 0),
           new_balance: Number(result?.new_balance ?? 0),

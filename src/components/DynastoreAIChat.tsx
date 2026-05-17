@@ -28,7 +28,7 @@ function loadStored(): Msg[] {
     const parsed = JSON.parse(raw);
     if (!Array.isArray(parsed) || parsed.length === 0) return [WELCOME];
     return parsed.filter(
-      (m) => m && (m.role === "user" || m.role === "assistant") && typeof m.content === "string"
+      (m) => m && (m.role === "user" || m.role === "assistant") && typeof m.content === "string",
     );
   } catch {
     return [WELCOME];
@@ -66,9 +66,10 @@ export function DynastoreAIChat() {
     setMessages([WELCOME]);
     try {
       window.localStorage.removeItem(STORAGE_KEY);
-    } catch {}
+    } catch {
+      /* ignore */
+    }
   };
-
 
   const send = async (text: string) => {
     const t = text.trim();
@@ -79,7 +80,9 @@ export function DynastoreAIChat() {
     setInput("");
     setBusy(true);
     try {
-      const history = next.filter((m) => !(m.role === "assistant" && m.content === WELCOME.content)).slice(-12);
+      const history = next
+        .filter((m) => !(m.role === "assistant" && m.content === WELCOME.content))
+        .slice(-12);
       const r = await chatFn({ data: { messages: history } });
       if (r.ok) {
         setMessages((p) => [...p, { role: "assistant", content: r.reply || "…" }]);
@@ -128,13 +131,20 @@ export function DynastoreAIChat() {
               >
                 សម្អាត
               </button>
-              <button onClick={() => setOpen(false)} className="rounded-full p-1.5 hover:bg-accent" aria-label="Close">
+              <button
+                onClick={() => setOpen(false)}
+                className="rounded-full p-1.5 hover:bg-accent"
+                aria-label="Close"
+              >
                 <X className="h-4 w-4" />
               </button>
             </div>
           </div>
 
-          <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-3 space-y-3 max-h-[55vh] min-h-[280px]">
+          <div
+            ref={scrollRef}
+            className="flex-1 overflow-y-auto px-4 py-3 space-y-3 max-h-[55vh] min-h-[280px]"
+          >
             {messages.map((m, i) => (
               <div
                 key={i}

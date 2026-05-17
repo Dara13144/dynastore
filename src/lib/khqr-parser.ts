@@ -62,7 +62,7 @@ const ROOT_NAMES: Record<string, string> = {
 
 // Subtags inside tag 29 / 30 (Bakong account templates)
 const BAKONG_MAI_NAMES: Record<string, string> = {
-  "00": "Globally Unique Identifier (must be \"kh.gov.nbc.bakong\")",
+  "00": 'Globally Unique Identifier (must be "kh.gov.nbc.bakong")',
   "01": "Bakong Account ID (e.g. username@aclb)",
   "02": "Acquiring Bank",
   "03": "Merchant ID",
@@ -84,7 +84,10 @@ const ADDITIONAL_DATA_NAMES: Record<string, string> = {
   "99": "Merchant Tax ID / extra",
 };
 
-function parseTlvs(payload: string, nameMap: Record<string, string>): { tags: TlvTag[]; errors: string[] } {
+function parseTlvs(
+  payload: string,
+  nameMap: Record<string, string>,
+): { tags: TlvTag[]; errors: string[] } {
   const tags: TlvTag[] = [];
   const errors: string[] = [];
   let i = 0;
@@ -101,7 +104,9 @@ function parseTlvs(payload: string, nameMap: Record<string, string>): { tags: Tl
       break;
     }
     if (i + 4 + length > payload.length) {
-      errors.push(`Tag ${id} declares length ${length} but only ${payload.length - i - 4} chars remain`);
+      errors.push(
+        `Tag ${id} declares length ${length} but only ${payload.length - i - 4} chars remain`,
+      );
       break;
     }
     const value = payload.slice(i + 4, i + 4 + length);
@@ -125,7 +130,7 @@ function crc16(payload: string): string {
   for (let i = 0; i < payload.length; i++) {
     crc ^= payload.charCodeAt(i) << 8;
     for (let j = 0; j < 8; j++) {
-      crc = (crc & 0x8000) ? ((crc << 1) ^ 0x1021) & 0xffff : (crc << 1) & 0xffff;
+      crc = crc & 0x8000 ? ((crc << 1) ^ 0x1021) & 0xffff : (crc << 1) & 0xffff;
     }
   }
   return crc.toString(16).toUpperCase().padStart(4, "0");
@@ -137,7 +142,14 @@ export function parseKhqr(input: string): KhqrParseResult {
   const errors: string[] = [];
 
   if (!payload) {
-    return { ok: false, tags: [], crc: { declared: null, computed: "", valid: false }, warnings, errors: ["Empty payload"], recommendations: [] };
+    return {
+      ok: false,
+      tags: [],
+      crc: { declared: null, computed: "", valid: false },
+      warnings,
+      errors: ["Empty payload"],
+      recommendations: [],
+    };
   }
 
   // CRC is tag 6304 + 4-char hex at the end
@@ -152,7 +164,9 @@ export function parseKhqr(input: string): KhqrParseResult {
     computed = crc16(payload.slice(0, payload.length - 4));
     crcValid = declared.toUpperCase() === computed.toUpperCase();
     if (!crcValid) {
-      errors.push(`CRC mismatch: declared ${declared}, computed ${computed}. Recompute CRC over the entire payload incl. "6304".`);
+      errors.push(
+        `CRC mismatch: declared ${declared}, computed ${computed}. Recompute CRC over the entire payload incl. "6304".`,
+      );
     }
   }
 
@@ -165,7 +179,9 @@ export function parseKhqr(input: string): KhqrParseResult {
       tag.warnings.push(`Payload Format Indicator must be "01" — got "${tag.value}"`);
     }
     if (tag.id === "01" && tag.value !== "11" && tag.value !== "12") {
-      tag.warnings.push(`Point of Initiation must be "11" (static) or "12" (dynamic) — got "${tag.value}"`);
+      tag.warnings.push(
+        `Point of Initiation must be "11" (static) or "12" (dynamic) — got "${tag.value}"`,
+      );
     }
     if (tag.id === "58" && tag.value !== "KH") {
       tag.warnings.push(`Country code should be "KH" for KHQR — got "${tag.value}"`);
@@ -180,9 +196,13 @@ export function parseKhqr(input: string): KhqrParseResult {
       const guid = sub.tags.find((t) => t.id === "00");
       const accountId = sub.tags.find((t) => t.id === "01");
       if (!guid) {
-        tag.warnings.push("Missing subtag 00 (GUID) — must be \"kh.gov.nbc.bakong\" — banks will reject (Q0626)");
+        tag.warnings.push(
+          'Missing subtag 00 (GUID) — must be "kh.gov.nbc.bakong" — banks will reject (Q0626)',
+        );
       } else if (guid.value !== "kh.gov.nbc.bakong") {
-        tag.warnings.push(`Subtag 00 must be "kh.gov.nbc.bakong" — got "${guid.value}". This causes Q0626 on ABA/ACLEDA.`);
+        tag.warnings.push(
+          `Subtag 00 must be "kh.gov.nbc.bakong" — got "${guid.value}". This causes Q0626 on ABA/ACLEDA.`,
+        );
       }
       if (!accountId) {
         tag.warnings.push("Missing subtag 01 (Bakong account ID) — required");
@@ -200,13 +220,18 @@ export function parseKhqr(input: string): KhqrParseResult {
   // Required root tags
   const required = ["00", "01", "52", "53", "58", "59", "60", "63"];
   for (const id of required) {
-    if (!tags.find((t) => t.id === id)) errors.push(`Missing required root tag ${id} (${ROOT_NAMES[id]})`);
+    if (!tags.find((t) => t.id === id))
+      errors.push(`Missing required root tag ${id} (${ROOT_NAMES[id]})`);
   }
   if (!tags.find((t) => t.id === "29" || t.id === "30")) {
     errors.push("Missing merchant account info — need tag 29 (individual) or 30 (merchant)");
   }
 
-  const recommendations = buildRecommendations(tags, { declared, computed, valid: crcValid }, errors);
+  const recommendations = buildRecommendations(
+    tags,
+    { declared, computed, valid: crcValid },
+    errors,
+  );
 
   return {
     ok: errors.length === 0 && crcValid,
@@ -263,7 +288,7 @@ function buildRecommendations(
         code: "Q0626",
         severity: "critical",
         title: `Tag ${mai.id} subtag 00 has the wrong GUID`,
-        why: "ABA/ACLEDA only accept the literal string \"kh.gov.nbc.bakong\" as the Bakong scheme identifier. Any other value (including putting the account ID here) causes Q0626.",
+        why: 'ABA/ACLEDA only accept the literal string "kh.gov.nbc.bakong" as the Bakong scheme identifier. Any other value (including putting the account ID here) causes Q0626.',
         field: `tag ${mai.id} → subtag 00`,
         current: JSON.stringify(guid.value),
         expected: '"kh.gov.nbc.bakong"',
@@ -287,7 +312,7 @@ function buildRecommendations(
         code: "Q0626",
         severity: "high",
         title: `Tag ${mai.id} subtag 01 is not a valid Bakong account ID`,
-        why: "Bakong account IDs must look like \"username@bank\" (e.g. ben_sothida@aclb). Bare names, emails, or phone numbers fail directory lookup.",
+        why: 'Bakong account IDs must look like "username@bank" (e.g. ben_sothida@aclb). Bare names, emails, or phone numbers fail directory lookup.',
         field: `tag ${mai.id} → subtag 01`,
         current: JSON.stringify(acct.value),
         expected: '"<username>@<bank-suffix>"  e.g. "ben_sothida@aclb"',
@@ -302,23 +327,51 @@ function buildRecommendations(
       code: "CRC",
       severity: "critical",
       title: "CRC16 checksum is wrong",
-      why: "Every scanner recomputes CRC16-CCITT over the entire payload up to and including \"6304\". A mismatch is the first thing rejected — usually before Q0626 is even reached.",
+      why: 'Every scanner recomputes CRC16-CCITT over the entire payload up to and including "6304". A mismatch is the first thing rejected — usually before Q0626 is even reached.',
       field: 'tag 63 (last 4 hex chars after "6304")',
       current: crc.declared ?? "missing",
       expected: crc.computed || "(payload too short to compute)",
-      fix: "Recompute CRC16-CCITT (poly 0x1021, init 0xFFFF) on payload + \"6304\", uppercase, zero-pad to 4 hex chars, then append.",
+      fix: 'Recompute CRC16-CCITT (poly 0x1021, init 0xFFFF) on payload + "6304", uppercase, zero-pad to 4 hex chars, then append.',
     });
   }
 
   // --- Required root tags ---
   const requiredFixes: Record<string, { expected: string; fix: string; why: string }> = {
-    "00": { expected: '"01"', fix: 'Prepend tlv("00", "01") as the first tag.', why: "Payload Format Indicator is mandatory and must be 01." },
-    "01": { expected: '"11" (static) or "12" (dynamic)', fix: 'Add tlv("01", "12") for amount-bearing QRs, "11" for reusable QRs.', why: "Banks need to know whether the QR is reusable." },
-    "52": { expected: '4-digit MCC, e.g. "5999"', fix: 'Add tlv("52", "5999") before tag 53.', why: "Merchant Category Code is required by EMVCo." },
-    "53": { expected: '"840" (USD) or "116" (KHR)', fix: 'Add tlv("53", "840") for USD.', why: "Transaction currency is required." },
-    "58": { expected: '"KH"', fix: 'Add tlv("58", "KH").', why: "Country code must be KH for KHQR." },
-    "59": { expected: "merchant name (≤25 chars)", fix: 'Add tlv("59", BAKONG_MERCHANT_NAME).', why: "Merchant name shown in the payer's bank app." },
-    "60": { expected: "merchant city (≤15 chars)", fix: 'Add tlv("60", "Phnom Penh").', why: "Merchant city is required." },
+    "00": {
+      expected: '"01"',
+      fix: 'Prepend tlv("00", "01") as the first tag.',
+      why: "Payload Format Indicator is mandatory and must be 01.",
+    },
+    "01": {
+      expected: '"11" (static) or "12" (dynamic)',
+      fix: 'Add tlv("01", "12") for amount-bearing QRs, "11" for reusable QRs.',
+      why: "Banks need to know whether the QR is reusable.",
+    },
+    "52": {
+      expected: '4-digit MCC, e.g. "5999"',
+      fix: 'Add tlv("52", "5999") before tag 53.',
+      why: "Merchant Category Code is required by EMVCo.",
+    },
+    "53": {
+      expected: '"840" (USD) or "116" (KHR)',
+      fix: 'Add tlv("53", "840") for USD.',
+      why: "Transaction currency is required.",
+    },
+    "58": {
+      expected: '"KH"',
+      fix: 'Add tlv("58", "KH").',
+      why: "Country code must be KH for KHQR.",
+    },
+    "59": {
+      expected: "merchant name (≤25 chars)",
+      fix: 'Add tlv("59", BAKONG_MERCHANT_NAME).',
+      why: "Merchant name shown in the payer's bank app.",
+    },
+    "60": {
+      expected: "merchant city (≤15 chars)",
+      fix: 'Add tlv("60", "Phnom Penh").',
+      why: "Merchant city is required.",
+    },
   };
   for (const [id, spec] of Object.entries(requiredFixes)) {
     if (!find(id)) {
@@ -339,30 +392,39 @@ function buildRecommendations(
   const fmt = find("00");
   if (fmt && fmt.value !== "01") {
     recs.push({
-      code: "FORMAT", severity: "high",
-      title: "Payload Format Indicator must be \"01\"",
-      why: "EMVCo requires tag 00 = \"01\". Any other value is rejected before Bakong routing.",
-      field: "root tag 00", current: JSON.stringify(fmt.value), expected: '"01"',
+      code: "FORMAT",
+      severity: "high",
+      title: 'Payload Format Indicator must be "01"',
+      why: 'EMVCo requires tag 00 = "01". Any other value is rejected before Bakong routing.',
+      field: "root tag 00",
+      current: JSON.stringify(fmt.value),
+      expected: '"01"',
       fix: 'Use tlv("00", "01").',
     });
   }
   const country = find("58");
   if (country && country.value !== "KH") {
     recs.push({
-      code: "FORMAT", severity: "high",
-      title: "Country code must be \"KH\"",
+      code: "FORMAT",
+      severity: "high",
+      title: 'Country code must be "KH"',
       why: "KHQR is the Cambodian scheme; non-KH country codes route to non-Bakong rails and fail.",
-      field: "root tag 58", current: JSON.stringify(country.value), expected: '"KH"',
+      field: "root tag 58",
+      current: JSON.stringify(country.value),
+      expected: '"KH"',
       fix: 'Use tlv("58", "KH").',
     });
   }
   const ccy = find("53");
   if (ccy && ccy.value !== "840" && ccy.value !== "116") {
     recs.push({
-      code: "FORMAT", severity: "high",
+      code: "FORMAT",
+      severity: "high",
       title: "Currency must be USD (840) or KHR (116)",
       why: "Bakong only settles in USD or KHR. Other ISO 4217 codes are rejected.",
-      field: "root tag 53", current: JSON.stringify(ccy.value), expected: '"840" or "116"',
+      field: "root tag 53",
+      current: JSON.stringify(ccy.value),
+      expected: '"840" or "116"',
       fix: 'Use tlv("53", "840") for USD.',
     });
   }
@@ -370,7 +432,8 @@ function buildRecommendations(
   // --- Truncation / TLV parse errors ---
   if (errors.some((e) => e.startsWith("Truncated") || e.includes("declares length"))) {
     recs.push({
-      code: "STRUCTURE", severity: "critical",
+      code: "STRUCTURE",
+      severity: "critical",
       title: "Payload is truncated or has a wrong length byte",
       why: "EMVCo parsers walk the payload by reading id(2) + len(2) + value(len). One wrong length cascades and the rest of the QR is unreadable.",
       field: "see Errors list above",
