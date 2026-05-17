@@ -383,7 +383,7 @@ function GamesTab() {
   };
 
   // Map raw upload errors to friendlier Khmer messages.
-  const friendlyUploadError = (raw: string): string => {
+  const friendlyUploadError = (raw: string, ctx?: { fileSize?: number }): string => {
     const m = raw.toLowerCase();
     if (m.includes("network") || m.includes("failed to fetch") || m.includes("econnreset"))
       return "ការតភ្ជាប់បណ្ដាញដាច់ — សូមព្យាយាមម្ដងទៀត";
@@ -393,8 +393,19 @@ function GamesTab() {
       return "សិទ្ធិផុតកំណត់ — សូមចូលគណនីឡើងវិញ";
     if (m.includes("403") || m.includes("forbidden"))
       return "មិនមានសិទ្ធិ upload — ត្រូវការ admin role";
-    if (m.includes("413") || m.includes("payload too large") || m.includes("entity too large"))
-      return "ឯកសារធំពេក — ខាងម៉ាស៊ីនបដិសេធ";
+    if (
+      m.includes("413") ||
+      m.includes("payload too large") ||
+      m.includes("entity too large") ||
+      m.includes("maximum size exceeded")
+    ) {
+      const limit = bucketLimitBytes;
+      const sizePart = ctx?.fileSize ? `ឯកសារ ${formatBytes(ctx.fileSize)}` : "ឯកសារ";
+      const limitPart = limit
+        ? `លើសដែនកំណត់ bucket (${formatBytes(limit)})`
+        : "លើសដែនកំណត់ម៉ាស៊ីន";
+      return `${sizePart} ${limitPart} — សូមបង្កើនដែនកំណត់ bucket "game-files" នៅក្នុង Lovable Cloud → Storage, ឬបំបែកឯកសារជា part តូចជាង`;
+    }
     if (m.includes("507") || m.includes("storage") || m.includes("quota"))
       return "ទំហំផ្ទុកមិនគ្រប់ — សូមទាក់ទង admin";
     return raw;
