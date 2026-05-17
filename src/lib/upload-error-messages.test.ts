@@ -86,6 +86,7 @@ describe("friendlyUploadError — TUS flow failures with exact Khmer text", () =
     expect(out).toBe(
       'ឯកសារ 63.00GB លើសដែនកំណត់ platform per-upload (~50GB) — bucket "game-files" អនុញ្ញាត 1000.00GB ប៉ុន្តែ Supabase កំណត់ទំហំ upload តែម្ដងត្រឹម ~50GB។ សូមបំបែកឯកសារជា part តូចជាង ឬប្រើ external storage',
     );
+  });
 
   it('"failed to fetch" → connection-lost message', () => {
     expect(friendlyUploadError("TypeError: Failed to fetch")).toBe(
