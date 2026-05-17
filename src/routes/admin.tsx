@@ -2019,7 +2019,194 @@ function SettingsTab() {
         </button>
         {msg && <span className="text-xs text-muted-foreground">{msg}</span>}
       </div>
+      <KhqrSettings />
       <SettingsAuditLog refreshKey={msg === "រក្សាទុករួច" ? 1 : 0} />
+    </div>
+  );
+}
+
+function KhqrSettings() {
+  const get = useServerFn(getKhqrSettings);
+  const save = useServerFn(setKhqrAccountId);
+  const preview = useServerFn(previewKhqr);
+
+  const [loading, setLoading] = useState(true);
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState<string | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+  const [draft, setDraft] = useState("");
+  const [info, setInfo] = useState<{
+    dbValue: string | null;
+    envValue: string | null;
+    effective: string;
+    source: string;
+    updatedAt: string | null;
+  } | null>(null);
+  const [previewPayload, setPreviewPayload] = useState<string | null>(null);
+  const [previewing, setPreviewing] = useState(false);
+
+  const buildPreview = useCallback(
+    async (accountId: string) => {
+      setPreviewing(true);
+      try {
+        const r = await preview({ data: { accountId, amountUsd: 1 } });
+        setPreviewPayload(r.payload);
+      } catch (e) {
+        setPreviewPayload(null);
+        console.warn("[khqr preview]", e);
+      } finally {
+        setPreviewing(false);
+      }
+    },
+    [preview],
+  );
+
+  const refresh = useCallback(async () => {
+    setLoading(true);
+    setErr(null);
+    try {
+      const r = await get({});
+      setInfo(r);
+      setDraft(r.dbValue ?? "");
+      await buildPreview(r.effective);
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "បរាជ័យ");
+    } finally {
+      setLoading(false);
+    }
+  }, [get, buildPreview]);
+
+  useEffect(() => {
+    void refresh();
+  }, [refresh]);
+
+  const onSave = async () => {
+    setBusy(true);
+    setMsg(null);
+    setErr(null);
+    try {
+      const r = await save({ data: { accountId: draft } });
+      setMsg("រក្សាទុករួច");
+      await buildPreview(r.effective);
+      await refresh();
+    } catch (e) {
+      const m = e instanceof Error ? e.message : "បរាជ័យ";
+      setErr(m === "invalid_account_id_format" ? "ទម្រង់មិនត្រឹមត្រូវ (រូបមន្ត: handle@bank)" : m);
+    } finally {
+      setBusy(false);
+      setTimeout(() => setMsg(null), 2500);
+    }
+  };
+
+  const onClear = () => {
+    setDraft("");
+  };
+
+  return (
+    <div className="rounded-2xl glass p-5 space-y-4">
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <h3 className="font-semibold text-sm">KHQR — Bakong Account ID</h3>
+        {info && (
+          <span
+            className={`text-[10px] rounded-full px-2 py-0.5 ring-1 ${
+              info.source === "database"
+                ? "bg-emerald-500/10 text-emerald-400 ring-emerald-500/30"
+                : info.source === "environment"
+                  ? "bg-amber-500/10 text-amber-400 ring-amber-500/30"
+                  : "bg-muted/40 text-muted-foreground ring-border"
+            }`}
+            title="ប្រភពនៃ account id បច្ចុប្បន្ន"
+          >
+            ប្រភព: {info.source}
+          </span>
+        )}
+      </div>
+
+      {loading ? (
+        <div className="text-center py-6 text-muted-foreground">
+          <Loader2 className="h-4 w-4 animate-spin inline" />
+        </div>
+      ) : (
+        <>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-3">
+              <Field
+                label="Account ID (handle@bank)"
+                value={draft}
+                onChange={setDraft}
+              />
+              <p className="text-[10px] text-muted-foreground">
+                ឧ. <code>ben_sothida@bkrt</code> · ទុកឱ្យទទេនឹងប្រើតម្លៃពី env ({info?.envValue ?? "—"})
+              </p>
+
+              <div className="text-[11px] space-y-1 rounded-lg bg-muted/30 p-2 font-mono">
+                <div>
+                  <span className="text-muted-foreground">DB:</span> {info?.dbValue ?? "—"}
+                </div>
+                <div>
+                  <span className="text-muted-foreground">ENV:</span> {info?.envValue ?? "—"}
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Effective:</span>{" "}
+                  <span className="text-foreground font-semibold">{info?.effective}</span>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  disabled={busy}
+                  onClick={onSave}
+                  className="inline-flex items-center gap-1.5 rounded-full bg-primary px-4 py-1.5 text-xs font-semibold text-primary-foreground disabled:opacity-50"
+                >
+                  <Save className="h-3.5 w-3.5" /> {busy ? "កំពុងរក្សាទុក…" : "រក្សាទុក"}
+                </button>
+                <button
+                  type="button"
+                  disabled={busy || !draft}
+                  onClick={onClear}
+                  className="rounded-full bg-muted/60 px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground disabled:opacity-50"
+                  title="សម្អាត override · ត្រឡប់ទៅ env fallback"
+                >
+                  Clear
+                </button>
+                <button
+                  type="button"
+                  disabled={previewing}
+                  onClick={() => buildPreview(draft.trim() || info?.effective || "")}
+                  className="rounded-full bg-muted/60 px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground disabled:opacity-50"
+                >
+                  {previewing ? "កំពុង…" : "Preview"}
+                </button>
+                {msg && <span className="text-xs text-emerald-400">{msg}</span>}
+                {err && <span className="text-xs text-destructive">{err}</span>}
+              </div>
+            </div>
+
+            <div className="flex flex-col items-center justify-center gap-2 rounded-lg bg-background/40 p-3">
+              <span className="text-[10px] text-muted-foreground">Live preview (USD 1.00)</span>
+              {previewPayload ? (
+                <div className="bg-white p-2 rounded">
+                  <QRCode value={previewPayload} size={160} />
+                </div>
+              ) : (
+                <div className="h-[160px] w-[160px] grid place-items-center text-[10px] text-muted-foreground">
+                  no preview
+                </div>
+              )}
+              {previewPayload && (
+                <code className="text-[9px] text-muted-foreground/70 break-all max-w-full">
+                  {previewPayload.slice(0, 32)}…
+                </code>
+              )}
+            </div>
+          </div>
+          {info?.updatedAt && (
+            <p className="text-[10px] text-muted-foreground">
+              ធ្វើបច្ចុប្បន្នភាពចុងក្រោយ: {new Date(info.updatedAt).toLocaleString()}
+            </p>
+          )}
+        </>
+      )}
     </div>
   );
 }
