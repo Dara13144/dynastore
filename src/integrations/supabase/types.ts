@@ -62,6 +62,51 @@ export type Database = {
         }
         Relationships: []
       }
+      bakong_auth_failures: {
+        Row: {
+          context: Json | null
+          created_at: string
+          endpoint: string
+          http_status: number
+          id: string
+          renew_attempted: boolean
+          renew_succeeded: boolean | null
+          request_id: string
+          response_snippet: string | null
+          token_fingerprint: string
+          token_length: number
+          token_source: string
+        }
+        Insert: {
+          context?: Json | null
+          created_at?: string
+          endpoint: string
+          http_status: number
+          id?: string
+          renew_attempted?: boolean
+          renew_succeeded?: boolean | null
+          request_id: string
+          response_snippet?: string | null
+          token_fingerprint: string
+          token_length: number
+          token_source: string
+        }
+        Update: {
+          context?: Json | null
+          created_at?: string
+          endpoint?: string
+          http_status?: number
+          id?: string
+          renew_attempted?: boolean
+          renew_succeeded?: boolean | null
+          request_id?: string
+          response_snippet?: string | null
+          token_fingerprint?: string
+          token_length?: number
+          token_source?: string
+        }
+        Relationships: []
+      }
       bakong_token: {
         Row: {
           id: number
