@@ -16,6 +16,7 @@ import { useStore, StoreProvider, type Game } from "@/lib/store";
 import { purchaseGame } from "@/lib/payment.functions";
 import { getGameDownloadUrl } from "@/lib/games.functions";
 import { toast } from "sonner";
+import { TutorialVideo } from "@/components/TutorialVideo";
 
 export const Route = createFileRoute("/games/$id")({
   head: () => ({ meta: [{ title: "ផលិតផល — Dyna Store" }] }),
