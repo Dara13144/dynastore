@@ -43,22 +43,24 @@ export const Route = createFileRoute("/library")({
   ),
 });
 
-function DownloadBtn({ filePath }: { filePath: string | null }) {
+function DownloadBtn({ gameId, hasFile }: { gameId: string; hasFile: boolean }) {
   const [busy, setBusy] = useState(false);
-  if (!filePath) {
+  const fetchUrl = useServerFn(getGameDownloadUrl);
+  if (!hasFile) {
     return <span className="text-[11px] text-muted-foreground">មិនទាន់មានឯកសារ</span>;
   }
   const onClick = async () => {
     setBusy(true);
-    const result = await resolveDownloadUrl(filePath, (path, exp, opts) =>
-      supabase.storage.from("game-files").createSignedUrl(path, exp, opts),
-    );
-    setBusy(false);
-    if (!result.ok) {
-      toast.error("មិនអាចបង្កើតតំណទាញយកបាន", { description: result.error });
-      return;
+    try {
+      const result = await fetchUrl({ data: { gameId, via: "direct" } });
+      window.open(result.url, "_blank", "noopener,noreferrer");
+    } catch (e) {
+      toast.error("មិនអាចបង្កើតតំណទាញយកបាន", {
+        description: e instanceof Error ? e.message : "unknown",
+      });
+    } finally {
+      setBusy(false);
     }
-    window.open(result.url, "_blank", "noopener,noreferrer");
   };
   return (
     <button
