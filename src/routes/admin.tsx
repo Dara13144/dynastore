@@ -40,6 +40,11 @@ import {
 import { validateGameFile, validateGameFileUrl, MAX_GAME_FILE_BYTES } from "@/lib/validate-game-file";
 import { submitCreateGame } from "@/lib/create-game";
 import { getGameFilesBucketLimit } from "@/lib/bucket-limit.functions";
+import {
+  formatBytes,
+  friendlyUploadError as friendlyUploadErrorPure,
+  oversizeForBucketMessage,
+} from "@/lib/upload-error-messages";
 import { DownloadLogsTab } from "@/components/admin/DownloadLogsTab";
 import { DashboardTab } from "@/components/admin/DashboardTab";
 import { TutorialsTab } from "@/components/admin/TutorialsTab";
@@ -365,51 +370,17 @@ function GamesTab() {
       ? Math.min(MAX_GAME_FILE_BYTES, bucketLimitBytes)
       : MAX_GAME_FILE_BYTES;
 
-  const formatBytes = (n: number): string => {
-    if (n >= 1024 ** 3) return `${(n / 1024 ** 3).toFixed(2)}GB`;
-    if (n >= 1024 ** 2) return `${(n / 1024 ** 2).toFixed(1)}MB`;
-    if (n >= 1024) return `${(n / 1024).toFixed(1)}KB`;
-    return `${n}B`;
-  };
-
   const validateFile = (file: File): string | null => {
     const base = validateGameFile(file);
     if (base) return base;
     const max = effectiveMaxBytes();
-    if (file.size > max) {
-      return `ឯកសារធំជាងដែនកំណត់ម៉ាស៊ីន (${formatBytes(file.size)} > ${formatBytes(max)}) — សូមបំបែកជា part តូចជាង`;
-    }
+    if (file.size > max) return oversizeForBucketMessage(file.size, max);
     return null;
   };
 
   // Map raw upload errors to friendlier Khmer messages.
-  const friendlyUploadError = (raw: string, ctx?: { fileSize?: number }): string => {
-    const m = raw.toLowerCase();
-    if (m.includes("network") || m.includes("failed to fetch") || m.includes("econnreset"))
-      return "ការតភ្ជាប់បណ្ដាញដាច់ — សូមព្យាយាមម្ដងទៀត";
-    if (m.includes("timeout") || m.includes("etimedout"))
-      return "Upload អស់ពេល — សូមព្យាយាមម្ដងទៀតជាមួយបណ្ដាញលឿនជាង";
-    if (m.includes("401") || m.includes("unauthorized") || m.includes("jwt"))
-      return "សិទ្ធិផុតកំណត់ — សូមចូលគណនីឡើងវិញ";
-    if (m.includes("403") || m.includes("forbidden"))
-      return "មិនមានសិទ្ធិ upload — ត្រូវការ admin role";
-    if (
-      m.includes("413") ||
-      m.includes("payload too large") ||
-      m.includes("entity too large") ||
-      m.includes("maximum size exceeded")
-    ) {
-      const limit = bucketLimitBytes;
-      const sizePart = ctx?.fileSize ? `ឯកសារ ${formatBytes(ctx.fileSize)}` : "ឯកសារ";
-      const limitPart = limit
-        ? `លើសដែនកំណត់ bucket (${formatBytes(limit)})`
-        : "លើសដែនកំណត់ម៉ាស៊ីន";
-      return `${sizePart} ${limitPart} — សូមបង្កើនដែនកំណត់ bucket "game-files" នៅក្នុង Lovable Cloud → Storage, ឬបំបែកឯកសារជា part តូចជាង`;
-    }
-    if (m.includes("507") || m.includes("storage") || m.includes("quota"))
-      return "ទំហំផ្ទុកមិនគ្រប់ — សូមទាក់ទង admin";
-    return raw;
-  };
+  const friendlyUploadError = (raw: string, ctx?: { fileSize?: number }): string =>
+    friendlyUploadErrorPure(raw, { fileSize: ctx?.fileSize, bucketLimitBytes });
 
   // Warn before closing/refreshing tab while an upload is in flight.
   useEffect(() => {
