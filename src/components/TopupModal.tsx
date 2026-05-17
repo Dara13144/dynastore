@@ -21,6 +21,7 @@ import {
   createBakongTopup,
   verifyBakongTopup,
 } from "@/lib/topup.functions";
+import khqrSeal from "@/assets/khqr-seal.png";
 
 type Props = { onClose: () => void; onToast: (m: string) => void };
 type Mode = "auto" | "manual";
@@ -88,17 +89,14 @@ function KhqrCard({
           )}
           {/* Center KHQR seal */}
           {qrValue && (
-            <div
-              className="absolute inset-0 m-auto h-12 w-12 rounded-full grid place-items-center shadow ring-2 ring-white"
-              style={{ backgroundColor: KHQR_RED }}
-            >
-              <span
-                className="text-white font-extrabold italic leading-none"
-                style={{ fontSize: "11px", letterSpacing: "-0.5px" }}
-              >
-                khqr
-              </span>
-            </div>
+            <img
+              src={khqrSeal}
+              alt="KHQR"
+              width={56}
+              height={56}
+              loading="lazy"
+              className="absolute inset-0 m-auto h-14 w-14 rounded-full ring-2 ring-white shadow object-cover bg-white"
+            />
           )}
         </div>
       </div>
@@ -365,7 +363,7 @@ export function TopupModal({ onClose, onToast }: Props) {
     const svgBlob = new Blob([xml], { type: "image/svg+xml;charset=utf-8" });
     const url = URL.createObjectURL(svgBlob);
     const img = new Image();
-    img.onload = () => {
+    img.onload = async () => {
       try {
         // Card layout
         const W = 720;
@@ -428,24 +426,36 @@ export function TopupModal({ onClose, onToast }: Props) {
         const qrY = HEADER_H + TEXT_BLOCK_H + SEP_H;
         ctx.drawImage(img, qrX, qrY, QR_SIZE, QR_SIZE);
 
-        // Center KHQR seal with riel symbol
+        // Center KHQR seal (image)
         const cx = W / 2;
         const cy = qrY + QR_SIZE / 2;
-        const r = 48;
+        const r = 56;
         // White ring background
         ctx.fillStyle = "#ffffff";
         ctx.beginPath();
-        ctx.arc(cx, cy, r + 4, 0, Math.PI * 2);
+        ctx.arc(cx, cy, r + 5, 0, Math.PI * 2);
         ctx.fill();
-        ctx.fillStyle = KHQR_RED;
-        ctx.beginPath();
-        ctx.arc(cx, cy, r, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.fillStyle = "#ffffff";
-        ctx.font = "italic 800 36px system-ui, -apple-system, sans-serif";
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
-        ctx.fillText("khqr", cx, cy + 2);
+
+        const sealImg = new Image();
+        sealImg.crossOrigin = "anonymous";
+        await new Promise<void>((resolve) => {
+          sealImg.onload = () => resolve();
+          sealImg.onerror = () => resolve();
+          sealImg.src = khqrSeal;
+        });
+        if (sealImg.complete && sealImg.naturalWidth > 0) {
+          ctx.save();
+          ctx.beginPath();
+          ctx.arc(cx, cy, r, 0, Math.PI * 2);
+          ctx.clip();
+          ctx.drawImage(sealImg, cx - r, cy - r, r * 2, r * 2);
+          ctx.restore();
+        } else {
+          ctx.fillStyle = KHQR_RED;
+          ctx.beginPath();
+          ctx.arc(cx, cy, r, 0, Math.PI * 2);
+          ctx.fill();
+        }
 
         URL.revokeObjectURL(url);
         canvas.toBlob((blob) => {
