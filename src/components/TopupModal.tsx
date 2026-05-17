@@ -363,7 +363,7 @@ export function TopupModal({ onClose, onToast }: Props) {
     const svgBlob = new Blob([xml], { type: "image/svg+xml;charset=utf-8" });
     const url = URL.createObjectURL(svgBlob);
     const img = new Image();
-    img.onload = () => {
+    img.onload = async () => {
       try {
         // Card layout
         const W = 720;
