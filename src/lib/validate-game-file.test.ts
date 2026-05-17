@@ -124,7 +124,11 @@ function makeCreateGame() {
   }));
   const insert = vi.fn(async (_row: Record<string, unknown>) => ({ error: null }));
 
-  async function createGame(opts: { id: string; title: string; file: { name: string; size: number } | null }) {
+  async function createGame(opts: {
+    id: string;
+    title: string;
+    file: { name: string; size: number } | null;
+  }) {
     if (!opts.id.trim() || !opts.title.trim()) return { ok: false, error: "missing id/title" };
     if (opts.file) {
       const err = validateGameFile(opts.file);
@@ -134,7 +138,8 @@ function makeCreateGame() {
     let file_size_bytes: number | null = null;
     if (opts.file) {
       const up = await upload(opts.id, opts.file);
-      file_path = up.path; file_size_bytes = up.size;
+      file_path = up.path;
+      file_size_bytes = up.size;
     }
     await insert({ id: opts.id, title: opts.title, file_path, file_size_bytes });
     return { ok: true, error: null };
@@ -145,24 +150,38 @@ function makeCreateGame() {
 
 describe("createGame integration - boundary file sizes", () => {
   let h: ReturnType<typeof makeCreateGame>;
-  beforeEach(() => { h = makeCreateGame(); });
+  beforeEach(() => {
+    h = makeCreateGame();
+  });
 
   it("accepts a file at exactly 1000GB (uploads + inserts)", async () => {
-    const r = await h.createGame({ id: "g1", title: "G1", file: { name: "g.zip", size: MIN_GAME_FILE_BYTES } });
+    const r = await h.createGame({
+      id: "g1",
+      title: "G1",
+      file: { name: "g.zip", size: MIN_GAME_FILE_BYTES },
+    });
     expect(r).toEqual({ ok: true, error: null });
     expect(h.upload).toHaveBeenCalledTimes(1);
     expect(h.insert).toHaveBeenCalledTimes(1);
   });
 
   it("accepts a file at exactly the maximum (1e80 bytes) (uploads + inserts)", async () => {
-    const r = await h.createGame({ id: "g2", title: "G2", file: { name: "g.zip", size: MAX_GAME_FILE_BYTES } });
+    const r = await h.createGame({
+      id: "g2",
+      title: "G2",
+      file: { name: "g.zip", size: MAX_GAME_FILE_BYTES },
+    });
     expect(r).toEqual({ ok: true, error: null });
     expect(h.upload).toHaveBeenCalledTimes(1);
     expect(h.insert).toHaveBeenCalledTimes(1);
   });
 
   it("rejects 1 byte under 1000GB BEFORE uploading or inserting", async () => {
-    const r = await h.createGame({ id: "g3", title: "G3", file: { name: "g.zip", size: MIN_GAME_FILE_BYTES - 1 } });
+    const r = await h.createGame({
+      id: "g3",
+      title: "G3",
+      file: { name: "g.zip", size: MIN_GAME_FILE_BYTES - 1 },
+    });
     expect(r.ok).toBe(false);
     expect(r.error).toContain("តូចពេក");
     expect(h.upload).not.toHaveBeenCalled();
@@ -170,7 +189,11 @@ describe("createGame integration - boundary file sizes", () => {
   });
 
   it("rejects sizes above the maximum BEFORE uploading or inserting", async () => {
-    const r = await h.createGame({ id: "g4", title: "G4", file: { name: "g.zip", size: Number.POSITIVE_INFINITY } });
+    const r = await h.createGame({
+      id: "g4",
+      title: "G4",
+      file: { name: "g.zip", size: Number.POSITIVE_INFINITY },
+    });
     expect(r.ok).toBe(false);
     expect(r.error).toContain("ធំពេក");
     expect(h.upload).not.toHaveBeenCalled();
@@ -178,7 +201,11 @@ describe("createGame integration - boundary file sizes", () => {
   });
 
   it("rejects disallowed extensions BEFORE uploading or inserting", async () => {
-    const r = await h.createGame({ id: "g5", title: "G5", file: { name: "g.exe", size: MIN_GAME_FILE_BYTES } });
+    const r = await h.createGame({
+      id: "g5",
+      title: "G5",
+      file: { name: "g.exe", size: MIN_GAME_FILE_BYTES },
+    });
     expect(r.ok).toBe(false);
     expect(r.error).toContain("មិនអនុញ្ញាត");
     expect(h.upload).not.toHaveBeenCalled();
@@ -231,27 +258,35 @@ describe("validateGameFileUrl - exact error messages", () => {
   });
 
   it("rejects ftp:// with BAD_PROTOCOL message", () => {
-    expect(validateGameFileUrl("ftp://x.example.com/g.zip")).toBe(GAME_FILE_URL_ERRORS.BAD_PROTOCOL);
+    expect(validateGameFileUrl("ftp://x.example.com/g.zip")).toBe(
+      GAME_FILE_URL_ERRORS.BAD_PROTOCOL,
+    );
     expect(GAME_FILE_URL_ERRORS.BAD_PROTOCOL).toBe("តម្រូវ http ឬ https ប៉ុណ្ណោះ");
   });
   it("rejects javascript: with BAD_PROTOCOL message", () => {
     expect(validateGameFileUrl("javascript:alert(1)")).toBe(GAME_FILE_URL_ERRORS.BAD_PROTOCOL);
   });
   it("rejects data: with BAD_PROTOCOL message", () => {
-    expect(validateGameFileUrl("data:application/zip;base64,AAAA")).toBe(GAME_FILE_URL_ERRORS.BAD_PROTOCOL);
+    expect(validateGameFileUrl("data:application/zip;base64,AAAA")).toBe(
+      GAME_FILE_URL_ERRORS.BAD_PROTOCOL,
+    );
   });
   it("rejects file: with BAD_PROTOCOL message", () => {
     expect(validateGameFileUrl("file:///tmp/g.zip")).toBe(GAME_FILE_URL_ERRORS.BAD_PROTOCOL);
   });
 
   it("rejects http URL ending with .exe with BAD_EXTENSION message", () => {
-    expect(validateGameFileUrl("https://x.example.com/g.exe")).toBe(GAME_FILE_URL_ERRORS.BAD_EXTENSION);
+    expect(validateGameFileUrl("https://x.example.com/g.exe")).toBe(
+      GAME_FILE_URL_ERRORS.BAD_EXTENSION,
+    );
     expect(GAME_FILE_URL_ERRORS.BAD_EXTENSION).toBe(
       "តំណត្រូវបញ្ចប់ដោយ .zip, .rar, .7z, .tar, .gz, .tgz",
     );
   });
   it("rejects URL whose path has no extension", () => {
-    expect(validateGameFileUrl("https://x.example.com/games/")).toBe(GAME_FILE_URL_ERRORS.BAD_EXTENSION);
+    expect(validateGameFileUrl("https://x.example.com/games/")).toBe(
+      GAME_FILE_URL_ERRORS.BAD_EXTENSION,
+    );
   });
   it("ignores query string when checking extension (extension must be in pathname)", () => {
     expect(validateGameFileUrl("https://x.example.com/g.zip?token=abc")).toBeNull();

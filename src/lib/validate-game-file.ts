@@ -11,8 +11,10 @@ export function validateGameFile(file: { name: string; size: number }): string |
   const ok = ALLOWED_GAME_FILE_EXTS.some((ext) => name.endsWith(ext));
   if (!ok) return `ប្រភេទឯកសារមិនអនុញ្ញាត — តម្រូវ ${ALLOWED_GAME_FILE_EXTS.join(", ")}`;
   const gb = file.size / 1024 / 1024 / 1024;
-  if (file.size < MIN_GAME_FILE_BYTES) return `ឯកសារតូចពេក (${gb.toFixed(2)}GB) — តម្រូវយ៉ាងតិច ${MIN_GAME_FILE_GB}GB`;
-  if (file.size > MAX_GAME_FILE_BYTES) return `ឯកសារធំពេក (${file.size} bytes) — អតិបរមា ${MAX_GAME_FILE_BYTES} bytes`;
+  if (file.size < MIN_GAME_FILE_BYTES)
+    return `ឯកសារតូចពេក (${gb.toFixed(2)}GB) — តម្រូវយ៉ាងតិច ${MIN_GAME_FILE_GB}GB`;
+  if (file.size > MAX_GAME_FILE_BYTES)
+    return `ឯកសារធំពេក (${file.size} bytes) — អតិបរមា ${MAX_GAME_FILE_BYTES} bytes`;
   return null;
 }
 

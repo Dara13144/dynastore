@@ -15,19 +15,13 @@ async function findDownloadByLink(page: Page) {
   return page.getByRole("button", { name: /download by link/i }).first();
 }
 
-test("Download By Link opens external URL in a new tab", async ({
-  page,
-  context,
-}) => {
+test("Download By Link opens external URL in a new tab", async ({ page, context }) => {
   await page.goto(ENTRY);
 
   const btn = await findDownloadByLink(page);
   await expect(btn).toBeVisible({ timeout: 15_000 });
 
-  const [popup] = await Promise.all([
-    context.waitForEvent("page"),
-    btn.click(),
-  ]);
+  const [popup] = await Promise.all([context.waitForEvent("page"), btn.click()]);
 
   await popup.waitForLoadState("domcontentloaded").catch(() => {});
   const url = popup.url();

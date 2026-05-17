@@ -17,19 +17,32 @@ export type GameDraft = {
 };
 
 export type CreateGameDeps = {
-  uploadFile: (gameId: string, file: { name: string; size: number }) =>
-    Promise<{ path: string; size: number } | null>;
+  uploadFile: (
+    gameId: string,
+    file: { name: string; size: number },
+  ) => Promise<{ path: string; size: number } | null>;
   insertGame: (row: {
-    id: string; title: string; category: string; description: string;
-    badge: string | null; price_coins: number; visible: boolean;
-    image_url: string | null; file_path: string | null; file_size_bytes: number | null;
+    id: string;
+    title: string;
+    category: string;
+    description: string;
+    badge: string | null;
+    price_coins: number;
+    visible: boolean;
+    image_url: string | null;
+    file_path: string | null;
+    file_size_bytes: number | null;
   }) => Promise<{ error: { message: string } | null }>;
   onError?: (msg: string) => void;
 };
 
 export type CreateGameResult =
   | { ok: true }
-  | { ok: false; reason: "missing_fields" | "invalid_file" | "invalid_url" | "upload_failed" | "insert_failed"; message: string };
+  | {
+      ok: false;
+      reason: "missing_fields" | "invalid_file" | "invalid_url" | "upload_failed" | "insert_failed";
+      message: string;
+    };
 
 export async function submitCreateGame(
   draft: GameDraft,

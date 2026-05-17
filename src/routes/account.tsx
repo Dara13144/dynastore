@@ -1,6 +1,15 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { ArrowLeft, Save, LogOut, Copy, Check, User as UserIcon, Wallet, RefreshCw } from "lucide-react";
+import {
+  ArrowLeft,
+  Save,
+  LogOut,
+  Copy,
+  Check,
+  User as UserIcon,
+  Wallet,
+  RefreshCw,
+} from "lucide-react";
 import { StoreProvider, useStore } from "@/lib/store";
 import { useSession } from "@/hooks/use-session";
 import { TopupModal } from "@/components/TopupModal";
@@ -11,9 +20,16 @@ export const Route = createFileRoute("/account")({
   head: () => ({
     meta: [
       { title: "គណនី — Dyna Store" },
-      { name: "description", content: "មើល និងកែប្រែព័ត៌មានគណនី Dyna Store, គ្រប់គ្រង Balance, និងការកំណត់ផ្ទាល់ខ្លួនរបស់អ្នក។" },
+      {
+        name: "description",
+        content:
+          "មើល និងកែប្រែព័ត៌មានគណនី Dyna Store, គ្រប់គ្រង Balance, និងការកំណត់ផ្ទាល់ខ្លួនរបស់អ្នក។",
+      },
       { property: "og:title", content: "គណនី — Dyna Store" },
-      { property: "og:description", content: "គ្រប់គ្រងព័ត៌មានគណនី Dyna Store, Balance, និងការកំណត់ផ្ទាល់ខ្លួនរបស់អ្នក។" },
+      {
+        property: "og:description",
+        content: "គ្រប់គ្រងព័ត៌មានគណនី Dyna Store, Balance, និងការកំណត់ផ្ទាល់ខ្លួនរបស់អ្នក។",
+      },
       { property: "og:url", content: "https://dynastore.lovable.app/account" },
       { name: "robots", content: "noindex" },
     ],
@@ -36,9 +52,12 @@ function AccountPage() {
   const [avatarUrl, setAvatarUrl] = useState("");
   const [saving, setSaving] = useState(false);
   const [topupOpen, setTopupOpen] = useState(false);
-  
+
   const [toast, setToast] = useState<string | null>(null);
-  const showToast = (m: string) => { setToast(m); window.setTimeout(() => setToast(null), 2400); };
+  const showToast = (m: string) => {
+    setToast(m);
+    window.setTimeout(() => setToast(null), 2400);
+  };
   const [msg, setMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
 
@@ -53,7 +72,11 @@ function AccountPage() {
   }, [profile]);
 
   if (sessionLoading || !session) {
-    return <div className="min-h-screen grid place-items-center text-sm text-muted-foreground">កំពុងផ្ទុក…</div>;
+    return (
+      <div className="min-h-screen grid place-items-center text-sm text-muted-foreground">
+        កំពុងផ្ទុក…
+      </div>
+    );
   }
 
   const user = session.user;
@@ -63,7 +86,8 @@ function AccountPage() {
 
   const onSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSaving(true); setMsg(null);
+    setSaving(true);
+    setMsg(null);
     const { error } = await updateProfile({
       display_name: displayName.trim() || "Player",
       bio: bio.trim() || null,
@@ -91,7 +115,10 @@ function AccountPage() {
             <img src={logoD} alt="Dyna Store" className="h-9 w-9 rounded-xl" />
             <span className="font-display text-xl gradient-text">Dyna Store</span>
           </Link>
-          <Link to="/" className="inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-xs hover:bg-accent">
+          <Link
+            to="/"
+            className="inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-xs hover:bg-accent"
+          >
             <ArrowLeft className="h-3.5 w-3.5" /> ត្រឡប់
           </Link>
         </div>
@@ -100,7 +127,9 @@ function AccountPage() {
       <main className="container mx-auto px-4 py-10 max-w-3xl space-y-6">
         <div>
           <h1 className="font-display text-3xl">គណនីរបស់អ្នក</h1>
-          <p className="text-sm text-muted-foreground mt-1">មើល និងកែប្រែព័ត៌មានគណនីទាំងអស់នៅទីនេះ។</p>
+          <p className="text-sm text-muted-foreground mt-1">
+            មើល និងកែប្រែព័ត៌មានគណនីទាំងអស់នៅទីនេះ។
+          </p>
         </div>
 
         {/* Profile card */}
@@ -108,13 +137,20 @@ function AccountPage() {
           <div className="flex items-center gap-4">
             <div className="h-16 w-16 rounded-full overflow-hidden bg-primary/15 grid place-items-center text-primary text-xl font-semibold shrink-0">
               {avatarUrl ? (
-                <img src={avatarUrl} alt="" className="h-full w-full object-cover" onError={(e) => ((e.currentTarget as HTMLImageElement).style.display = "none")} />
+                <img
+                  src={avatarUrl}
+                  alt=""
+                  className="h-full w-full object-cover"
+                  onError={(e) => ((e.currentTarget as HTMLImageElement).style.display = "none")}
+                />
               ) : (
                 <UserIcon className="h-7 w-7" />
               )}
             </div>
             <div className="min-w-0">
-              <div className="font-display text-xl truncate">{profile.display_name || "Player"}</div>
+              <div className="font-display text-xl truncate">
+                {profile.display_name || "Player"}
+              </div>
               <div className="text-xs text-muted-foreground truncate">{user.email}</div>
             </div>
           </div>
@@ -162,7 +198,11 @@ function AccountPage() {
                 ផ្ទុកឡើងវិញ
               </button>
               {msg && (
-                <span className={`text-xs ${msg.type === "ok" ? "text-primary" : "text-destructive"}`}>{msg.text}</span>
+                <span
+                  className={`text-xs ${msg.type === "ok" ? "text-primary" : "text-destructive"}`}
+                >
+                  {msg.text}
+                </span>
               )}
             </div>
           </form>
@@ -175,15 +215,25 @@ function AccountPage() {
               <Wallet className="h-6 w-6" />
             </div>
             <div>
-              <div className="text-[11px] uppercase tracking-wider text-muted-foreground">Balance បច្ចុប្បន្ន</div>
+              <div className="text-[11px] uppercase tracking-wider text-muted-foreground">
+                Balance បច្ចុប្បន្ន
+              </div>
               <div className="font-display text-2xl">{balance.toLocaleString()}</div>
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <button onClick={() => setTopupOpen(true)} className="inline-flex items-center gap-1.5 rounded-full bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground hover:opacity-90">
+            <button
+              onClick={() => setTopupOpen(true)}
+              className="inline-flex items-center gap-1.5 rounded-full bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground hover:opacity-90"
+            >
               បញ្ចូល Balance
             </button>
-            <button onClick={() => { refreshWallet(); }} className="inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-xs hover:bg-accent">
+            <button
+              onClick={() => {
+                refreshWallet();
+              }}
+              className="inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-xs hover:bg-accent"
+            >
               <RefreshCw className="h-3.5 w-3.5" /> ផ្ទុកឡើងវិញ
             </button>
           </div>
@@ -193,14 +243,35 @@ function AccountPage() {
         <section className="glass rounded-2xl border border-border/60 p-6">
           <h2 className="font-semibold text-sm mb-4">ព័ត៌មានគណនី</h2>
           <dl className="grid sm:grid-cols-2 gap-4 text-sm">
-            <Info label="អ៊ីមែល" value={user.email ?? "—"} onCopy={() => copy("email", user.email ?? "")} copied={copied === "email"} />
-            <Info label="User ID" value={user.id} mono onCopy={() => copy("uid", user.id)} copied={copied === "uid"} />
+            <Info
+              label="អ៊ីមែល"
+              value={user.email ?? "—"}
+              onCopy={() => copy("email", user.email ?? "")}
+              copied={copied === "email"}
+            />
+            <Info
+              label="User ID"
+              value={user.id}
+              mono
+              onCopy={() => copy("uid", user.id)}
+              copied={copied === "uid"}
+            />
             <Info label="វិធីចូល" value={String(provider)} />
-            <Info label="អ៊ីមែលបានបញ្ជាក់" value={user.email_confirmed_at ? "បាទ/ចាស" : "មិនទាន់"} />
+            <Info
+              label="អ៊ីមែលបានបញ្ជាក់"
+              value={user.email_confirmed_at ? "បាទ/ចាស" : "មិនទាន់"}
+            />
             <Info label="បង្កើតគណនី" value={createdAt} />
             <Info label="ចូលចុងក្រោយ" value={lastSignIn} />
-            {profile.created_at && <Info label="Profile បង្កើត" value={new Date(profile.created_at).toLocaleString()} />}
-            {profile.updated_at && <Info label="Profile កែចុងក្រោយ" value={new Date(profile.updated_at).toLocaleString()} />}
+            {profile.created_at && (
+              <Info label="Profile បង្កើត" value={new Date(profile.created_at).toLocaleString()} />
+            )}
+            {profile.updated_at && (
+              <Info
+                label="Profile កែចុងក្រោយ"
+                value={new Date(profile.updated_at).toLocaleString()}
+              />
+            )}
           </dl>
         </section>
 
@@ -208,7 +279,10 @@ function AccountPage() {
         <section className="glass rounded-2xl border border-border/60 p-6">
           <h2 className="font-semibold text-sm mb-3">សកម្មភាព</h2>
           <button
-            onClick={async () => { await signOut(); navigate({ to: "/" }); }}
+            onClick={async () => {
+              await signOut();
+              navigate({ to: "/" });
+            }}
             className="inline-flex items-center gap-1.5 rounded-full border border-destructive/40 text-destructive px-4 py-2 text-xs hover:bg-destructive/10"
           >
             <LogOut className="h-3.5 w-3.5" /> ចាកចេញពីគណនី
@@ -234,19 +308,40 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   );
 }
 
-function Info({ label, value, mono, onCopy, copied }: { label: string; value: string; mono?: boolean; onCopy?: () => void; copied?: boolean }) {
+function Info({
+  label,
+  value,
+  mono,
+  onCopy,
+  copied,
+}: {
+  label: string;
+  value: string;
+  mono?: boolean;
+  onCopy?: () => void;
+  copied?: boolean;
+}) {
   return (
     <div className="rounded-xl border border-border/50 bg-background/40 px-3 py-2.5">
       <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</div>
       <div className="mt-0.5 flex items-center gap-2">
-        <div className={`flex-1 truncate text-sm ${mono ? "font-mono text-xs" : ""}`} title={value}>{value}</div>
+        <div className={`flex-1 truncate text-sm ${mono ? "font-mono text-xs" : ""}`} title={value}>
+          {value}
+        </div>
         {onCopy && (
-          <button onClick={onCopy} className="rounded-md p-1 hover:bg-accent text-muted-foreground" aria-label="Copy">
-            {copied ? <Check className="h-3.5 w-3.5 text-primary" /> : <Copy className="h-3.5 w-3.5" />}
+          <button
+            onClick={onCopy}
+            className="rounded-md p-1 hover:bg-accent text-muted-foreground"
+            aria-label="Copy"
+          >
+            {copied ? (
+              <Check className="h-3.5 w-3.5 text-primary" />
+            ) : (
+              <Copy className="h-3.5 w-3.5" />
+            )}
           </button>
         )}
       </div>
     </div>
   );
 }
-

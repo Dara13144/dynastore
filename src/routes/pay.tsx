@@ -120,9 +120,15 @@ export default function PayPage() {
         {payment && (
           <div className="rounded-lg border p-4 space-y-3">
             <div className="text-sm">
-              <div><strong>ID:</strong> {payment.paymentId}</div>
-              <div><strong>Amount:</strong> ${payment.amount}</div>
-              <div className="break-all"><strong>MD5:</strong> {payment.md5}</div>
+              <div>
+                <strong>ID:</strong> {payment.paymentId}
+              </div>
+              <div>
+                <strong>Amount:</strong> ${payment.amount}
+              </div>
+              <div className="break-all">
+                <strong>MD5:</strong> {payment.md5}
+              </div>
               <div>
                 <strong>Status:</strong>{" "}
                 <span className={status?.status === "paid" ? "text-green-600 font-semibold" : ""}>
@@ -150,7 +156,11 @@ export default function PayPage() {
           <div className="rounded-lg border p-3">
             <div className="text-xs font-semibold mb-1">Log</div>
             <ul className="text-xs space-y-0.5 max-h-56 overflow-auto">
-              {log.map((l, i) => <li key={i} className="font-mono">{l}</li>)}
+              {log.map((l, i) => (
+                <li key={i} className="font-mono">
+                  {l}
+                </li>
+              ))}
             </ul>
           </div>
         )}

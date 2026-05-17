@@ -47,15 +47,21 @@ export function DownloadLogsTab() {
         : Promise.resolve({ data: [] as Array<{ id: string; title: string }> }),
     ]);
     const pMap: Record<string, { display_name: string }> = {};
-    (profs ?? []).forEach((p) => { pMap[p.user_id] = { display_name: p.display_name }; });
+    (profs ?? []).forEach((p) => {
+      pMap[p.user_id] = { display_name: p.display_name };
+    });
     setProfiles(pMap);
     const gMap: Record<string, { title: string }> = {};
-    (gms ?? []).forEach((g) => { gMap[g.id] = { title: g.title }; });
+    (gms ?? []).forEach((g) => {
+      gMap[g.id] = { title: g.title };
+    });
     setGames(gMap);
     setLoading(false);
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    load();
+  }, [load]);
 
   const filtered = rows.filter((r) => {
     if (filter !== "all" && r.via !== filter) return false;
@@ -74,26 +80,46 @@ export function DownloadLogsTab() {
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div>
           <h2 className="font-display text-xl">កំណត់ហេតុការទាញយក</h2>
-          <p className="text-xs text-muted-foreground mt-0.5">តាមដានអ្នកប្រើដែលបានចុច Download / Download By Link និងតំណដែលត្រូវបានបើក។</p>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            តាមដានអ្នកប្រើដែលបានចុច Download / Download By Link និងតំណដែលត្រូវបានបើក។
+          </p>
         </div>
         <div className="flex items-center gap-2">
           <div className="relative">
             <Search className="h-3.5 w-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
-            <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="ស្វែងរក…" className="pl-8 pr-3 py-1.5 rounded-full bg-muted/30 border border-border text-xs outline-none focus:ring-1 focus:ring-primary" />
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="ស្វែងរក…"
+              className="pl-8 pr-3 py-1.5 rounded-full bg-muted/30 border border-border text-xs outline-none focus:ring-1 focus:ring-primary"
+            />
           </div>
-          <select value={filter} onChange={(e) => setFilter(e.target.value as typeof filter)} className="rounded-full bg-muted/30 border border-border text-xs px-3 py-1.5 outline-none">
+          <select
+            value={filter}
+            onChange={(e) => setFilter(e.target.value as typeof filter)}
+            className="rounded-full bg-muted/30 border border-border text-xs px-3 py-1.5 outline-none"
+          >
             <option value="all">ទាំងអស់</option>
             <option value="direct">Direct</option>
             <option value="link">Link</option>
           </select>
-          <button onClick={load} className="text-xs px-3 py-1.5 rounded-full border border-border hover:bg-accent">ធ្វើបច្ចុប្បន្នភាព</button>
+          <button
+            onClick={load}
+            className="text-xs px-3 py-1.5 rounded-full border border-border hover:bg-accent"
+          >
+            ធ្វើបច្ចុប្បន្នភាព
+          </button>
         </div>
       </div>
 
       {loading ? (
-        <div className="grid place-items-center py-16 text-muted-foreground"><Loader2 className="h-5 w-5 animate-spin" /></div>
+        <div className="grid place-items-center py-16 text-muted-foreground">
+          <Loader2 className="h-5 w-5 animate-spin" />
+        </div>
       ) : filtered.length === 0 ? (
-        <div className="rounded-2xl border border-border/60 p-10 text-center text-sm text-muted-foreground">មិនមានកំណត់ហេតុ</div>
+        <div className="rounded-2xl border border-border/60 p-10 text-center text-sm text-muted-foreground">
+          មិនមានកំណត់ហេតុ
+        </div>
       ) : (
         <div className="rounded-2xl border border-border/60 overflow-hidden">
           <table className="w-full text-sm">
@@ -110,10 +136,14 @@ export function DownloadLogsTab() {
             <tbody>
               {filtered.map((r) => (
                 <tr key={r.id} className="border-t border-border/60 hover:bg-muted/10 align-top">
-                  <td className="px-3 py-2 text-[11px] text-muted-foreground whitespace-nowrap">{new Date(r.created_at).toLocaleString()}</td>
+                  <td className="px-3 py-2 text-[11px] text-muted-foreground whitespace-nowrap">
+                    {new Date(r.created_at).toLocaleString()}
+                  </td>
                   <td className="px-3 py-2">
                     <div className="font-medium">{profiles[r.user_id]?.display_name ?? "—"}</div>
-                    <div className="text-[10px] font-mono text-muted-foreground">{r.user_id.slice(0, 8)}…</div>
+                    <div className="text-[10px] font-mono text-muted-foreground">
+                      {r.user_id.slice(0, 8)}…
+                    </div>
                   </td>
                   <td className="px-3 py-2">
                     <div>{games[r.game_id]?.title ?? r.game_id}</div>
@@ -121,16 +151,33 @@ export function DownloadLogsTab() {
                   </td>
                   <td className="px-3 py-2">
                     {r.via === "link" ? (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 text-emerald-300 px-2 py-0.5 text-[10px] font-semibold"><LinkIcon className="h-3 w-3" /> Link</span>
+                      <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 text-emerald-300 px-2 py-0.5 text-[10px] font-semibold">
+                        <LinkIcon className="h-3 w-3" /> Link
+                      </span>
                     ) : (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-primary/15 text-primary px-2 py-0.5 text-[10px] font-semibold"><Download className="h-3 w-3" /> Direct</span>
+                      <span className="inline-flex items-center gap-1 rounded-full bg-primary/15 text-primary px-2 py-0.5 text-[10px] font-semibold">
+                        <Download className="h-3 w-3" /> Direct
+                      </span>
                     )}
                   </td>
                   <td className="px-3 py-2 max-w-[360px]">
-                    <a href={r.url} target="_blank" rel="noopener noreferrer" className="text-[11px] text-primary hover:underline break-all">{r.url}</a>
-                    {r.file_path && <div className="text-[10px] text-muted-foreground mt-0.5 break-all">path: {r.file_path}</div>}
+                    <a
+                      href={r.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[11px] text-primary hover:underline break-all"
+                    >
+                      {r.url}
+                    </a>
+                    {r.file_path && (
+                      <div className="text-[10px] text-muted-foreground mt-0.5 break-all">
+                        path: {r.file_path}
+                      </div>
+                    )}
                   </td>
-                  <td className="px-3 py-2 text-[11px] font-mono text-muted-foreground whitespace-nowrap">{r.ip ?? "—"}</td>
+                  <td className="px-3 py-2 text-[11px] font-mono text-muted-foreground whitespace-nowrap">
+                    {r.ip ?? "—"}
+                  </td>
                 </tr>
               ))}
             </tbody>

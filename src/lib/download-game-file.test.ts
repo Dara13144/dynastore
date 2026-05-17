@@ -1,9 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import {
-  resolveDownloadUrl,
-  isExternalDownload,
-  type SignedUrlSigner,
-} from "./download-game-file";
+import { resolveDownloadUrl, isExternalDownload, type SignedUrlSigner } from "./download-game-file";
 import { GAME_FILE_URL_ERRORS } from "./validate-game-file";
 
 const okSigner = (url = "https://storage.example/signed?token=abc"): SignedUrlSigner =>

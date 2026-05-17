@@ -52,16 +52,15 @@ export const aiChat = createServerFn({ method: "POST" })
       },
       body: JSON.stringify({
         model: "google/gemini-3-flash-preview",
-        messages: [
-          { role: "system", content: SYSTEM_PROMPT },
-          ...data.messages,
-        ],
+        messages: [{ role: "system", content: SYSTEM_PROMPT }, ...data.messages],
       }),
     });
 
     if (!resp.ok) {
-      if (resp.status === 429) return { ok: false as const, error: "សំណើច្រើនពេក សូមព្យាយាមម្តងទៀតពេលក្រោយ" };
-      if (resp.status === 402) return { ok: false as const, error: "Credit AI អស់ហើយ សូមទាក់ទងអ្នកគ្រប់គ្រង" };
+      if (resp.status === 429)
+        return { ok: false as const, error: "សំណើច្រើនពេក សូមព្យាយាមម្តងទៀតពេលក្រោយ" };
+      if (resp.status === 402)
+        return { ok: false as const, error: "Credit AI អស់ហើយ សូមទាក់ទងអ្នកគ្រប់គ្រង" };
       const t = await resp.text().catch(() => "");
       console.error("[ai-chat] gateway error", resp.status, t);
       return { ok: false as const, error: "មានបញ្ហាបច្ចេកទេស សូមព្យាយាមម្តងទៀត" };

@@ -76,17 +76,37 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "viewport", content: "width=device-width, initial-scale=1" },
       { name: "google-site-verification", content: "8diCLufyhJnU_wOWfBHl8DvoEb3t8UxkPQ74uikgv74" },
       { title: "Dynastore Gaming" },
-      { name: "description", content: "Dyna Store — ហាងហ្គេម PC និង Console នៅកម្ពុជា ជាមួយការទូទាត់តាម Bakong KHQR និងការទាញយកហ្គេមភ្លាមៗ។" },
+      {
+        name: "description",
+        content:
+          "Dyna Store — ហាងហ្គេម PC និង Console នៅកម្ពុជា ជាមួយការទូទាត់តាម Bakong KHQR និងការទាញយកហ្គេមភ្លាមៗ។",
+      },
       { name: "author", content: "Dyna Store" },
       { property: "og:site_name", content: "Dyna Store" },
       { property: "og:title", content: "Dynastore Gaming" },
-      { property: "og:description", content: "Dyna Store — ហាងហ្គេម PC និង Console នៅកម្ពុជា ជាមួយការទូទាត់តាម Bakong KHQR និងការទាញយកហ្គេមភ្លាមៗ។" },
+      {
+        property: "og:description",
+        content:
+          "Dyna Store — ហាងហ្គេម PC និង Console នៅកម្ពុជា ជាមួយការទូទាត់តាម Bakong KHQR និងការទាញយកហ្គេមភ្លាមៗ។",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "twitter:title", content: "Dynastore Gaming" },
-      { name: "twitter:description", content: "Dyna Store — ហាងហ្គេម PC និង Console នៅកម្ពុជា ជាមួយការទូទាត់តាម Bakong KHQR និងការទាញយកហ្គេមភ្លាមៗ។" },
-      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/81765852-df1e-4307-8b6c-f764f338545e/id-preview-972c5967--c299877f-7af3-4cab-a4b4-973400b82e93.lovable.app-1778606757957.png" },
-      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/81765852-df1e-4307-8b6c-f764f338545e/id-preview-972c5967--c299877f-7af3-4cab-a4b4-973400b82e93.lovable.app-1778606757957.png" },
+      {
+        name: "twitter:description",
+        content:
+          "Dyna Store — ហាងហ្គេម PC និង Console នៅកម្ពុជា ជាមួយការទូទាត់តាម Bakong KHQR និងការទាញយកហ្គេមភ្លាមៗ។",
+      },
+      {
+        property: "og:image",
+        content:
+          "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/81765852-df1e-4307-8b6c-f764f338545e/id-preview-972c5967--c299877f-7af3-4cab-a4b4-973400b82e93.lovable.app-1778606757957.png",
+      },
+      {
+        name: "twitter:image",
+        content:
+          "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/81765852-df1e-4307-8b6c-f764f338545e/id-preview-972c5967--c299877f-7af3-4cab-a4b4-973400b82e93.lovable.app-1778606757957.png",
+      },
     ],
     links: [
       {
@@ -103,7 +123,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
           name: "Dyna Store",
           url: "https://dynastore.lovable.app",
           logo: "https://dynastore.lovable.app/favicon.ico",
-          description: "Dyna Store — ហាងហ្គេម PC និង Console នៅកម្ពុជា ជាមួយការទូទាត់តាម Bakong KHQR និងការទាញយកហ្គេមភ្លាមៗ។",
+          description:
+            "Dyna Store — ហាងហ្គេម PC និង Console នៅកម្ពុជា ជាមួយការទូទាត់តាម Bakong KHQR និងការទាញយកហ្គេមភ្លាមៗ។",
         }),
       },
       {
