@@ -240,7 +240,9 @@ export type Database = {
           file_size_bytes: number | null
           id: string
           image_url: string | null
+          preview_video_url: string | null
           price_coins: number
+          screenshots: string[]
           storage_provider: string
           title: string
           visible: boolean
@@ -254,7 +256,9 @@ export type Database = {
           file_size_bytes?: number | null
           id: string
           image_url?: string | null
+          preview_video_url?: string | null
           price_coins?: number
+          screenshots?: string[]
           storage_provider?: string
           title: string
           visible?: boolean
@@ -268,7 +272,9 @@ export type Database = {
           file_size_bytes?: number | null
           id?: string
           image_url?: string | null
+          preview_video_url?: string | null
           price_coins?: number
+          screenshots?: string[]
           storage_provider?: string
           title?: string
           visible?: boolean
