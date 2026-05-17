@@ -69,11 +69,15 @@ export async function submitCreateGame(
   }
   let file_path: string | null = null;
   let file_size_bytes: number | null = null;
-  if (draftFile) {
+  const provider: "supabase" | "s3" | "external_url" = draft.storage_provider ?? "supabase";
+  if (draftFile && provider === "supabase") {
     const up = await deps.uploadFile(draft.id.trim(), draftFile);
     if (!up) return { ok: false, reason: "upload_failed", message: "upload_failed" };
     file_path = up.path;
     file_size_bytes = up.size;
+  } else if (draft.external_file && (provider === "s3" || provider === "external_url")) {
+    file_path = draft.external_file.path;
+    file_size_bytes = draft.external_file.size;
   } else if (draft.file_url && draft.file_url.trim()) {
     // External link path: validate the URL BEFORE inserting.
     const urlErr = validateGameFileUrl(draft.file_url);
@@ -94,6 +98,7 @@ export async function submitCreateGame(
     image_url: draft.image_url || null,
     file_path,
     file_size_bytes,
+    storage_provider: provider,
   });
   if (error) {
     deps.onError?.(error.message);
