@@ -853,7 +853,13 @@ function GamesTab() {
 
       {creating && (
         <div className="rounded-2xl glass p-5 space-y-3 animate-scale-in origin-top">
-          <h3 className="font-semibold text-sm">បន្ថែមហ្គេមថ្មី</h3>
+          <div className="flex items-center justify-between gap-2 flex-wrap">
+            <h3 className="font-semibold text-sm">បន្ថែមហ្គេមថ្មី</h3>
+            <span className="text-[10px] text-muted-foreground">
+              អតិបរមាឯកសារ:{" "}
+              <span className="font-semibold text-foreground">{formatBytes(effectiveMaxBytes())}</span>
+            </span>
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <Field
               label="លេខសម្គាល់ (slug)"
