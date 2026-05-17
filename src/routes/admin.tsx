@@ -738,9 +738,15 @@ function GamesTab() {
         price_coins: Number(draft.price_coins) || 0,
         visible: draft.visible,
         image_url: draft.image_url ?? "",
-        file_url: draft.file_path ?? null,
+        file_url: sourceMode === "library" ? (draft.file_path ?? null) : null,
+        storage_provider:
+          sourceMode === "s3" ? "s3" : sourceMode === "library" ? "external_url" : "supabase",
+        external_file:
+          sourceMode === "s3" && s3UploadedKey
+            ? { path: s3UploadedKey, size: s3UploadedSize }
+            : null,
       },
-      draftFile,
+      sourceMode === "file" ? draftFile : null,
       {
         uploadFile: async (gameId, file) => {
           const up = await uploadFile(gameId, file as File);
