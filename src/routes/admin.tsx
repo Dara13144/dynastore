@@ -49,6 +49,8 @@ import { DownloadLogsTab } from "@/components/admin/DownloadLogsTab";
 import { DashboardTab } from "@/components/admin/DashboardTab";
 import { TutorialsTab } from "@/components/admin/TutorialsTab";
 import { adminListTopupRequests, adminApproveTopup, adminRejectTopup } from "@/lib/topup.functions";
+import { getKhqrSettings, setKhqrAccountId, previewKhqr } from "@/lib/khqr-settings.functions";
+import QRCode from "react-qr-code";
 import {
   AlertDialog,
   AlertDialogAction,
