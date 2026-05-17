@@ -9,14 +9,16 @@ import {
 import { Button } from "@/components/ui/button";
 import { computeChunkPlan, PLATFORM_PER_UPLOAD_CAP } from "@/lib/chunk-plan";
 import { formatBytes } from "@/lib/upload-error-messages";
-import { Scissors, Cloud, Terminal } from "lucide-react";
+import { Scissors, Cloud, Terminal, LinkIcon } from "lucide-react";
 
 interface Props {
   open: boolean;
   onClose: () => void;
   fileSize?: number | null;
-  /** Optional callback so admin can jump to the S3 / External URL tab. */
+  /** Optional callback so admin can jump to the S3 tab. */
   onSwitchToExternal?: () => void;
+  /** Optional callback so admin can jump to the External URL tab (no setup, no cap). */
+  onSwitchToLibrary?: () => void;
 }
 
 /**
@@ -24,7 +26,13 @@ interface Props {
  * cap ~50GB). Explains how to split the file into smaller parts and shows a
  * concrete chunk plan up to ~1000GB.
  */
-export function SplitFileGuideDialog({ open, onClose, fileSize, onSwitchToExternal }: Props) {
+export function SplitFileGuideDialog({
+  open,
+  onClose,
+  fileSize,
+  onSwitchToExternal,
+  onSwitchToLibrary,
+}: Props) {
   const cap = PLATFORM_PER_UPLOAD_CAP;
   const examples = [
     100 * 1024 ** 3,
