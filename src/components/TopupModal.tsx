@@ -21,6 +21,7 @@ import {
   createBakongTopup,
   verifyBakongTopup,
 } from "@/lib/topup.functions";
+import khqrSeal from "@/assets/khqr-seal.png";
 
 type Props = { onClose: () => void; onToast: (m: string) => void };
 type Mode = "auto" | "manual";
