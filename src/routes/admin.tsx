@@ -1119,6 +1119,7 @@ function GamesTab() {
                   validateFile={validateFile}
                   onValidationError={showToast}
                   onUploadCover={uploadCoverImage}
+                  maxUploadLabel={formatBytes(effectiveMaxBytes())}
                 />
               ))}
               {filtered.length === 0 && (
