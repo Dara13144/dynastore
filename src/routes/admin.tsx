@@ -25,6 +25,7 @@ import {
   X,
   Download,
   Link as LinkIcon,
+  LayoutDashboard,
 } from "lucide-react";
 import { StoreProvider } from "@/lib/store";
 import {
@@ -38,6 +39,7 @@ import {
 import { validateGameFile, validateGameFileUrl } from "@/lib/validate-game-file";
 import { submitCreateGame } from "@/lib/create-game";
 import { DownloadLogsTab } from "@/components/admin/DownloadLogsTab";
+import { DashboardTab } from "@/components/admin/DashboardTab";
 import { adminListTopupRequests, adminApproveTopup, adminRejectTopup } from "@/lib/topup.functions";
 import {
   AlertDialog,
@@ -105,8 +107,8 @@ function AdminPage() {
   const { authed, loading } = useStore();
   const navigate = useNavigate();
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
-  const [tab, setTab] = useState<"games" | "users" | "topups" | "content" | "settings" | "logs">(
-    "games",
+  const [tab, setTab] = useState<"dashboard" | "games" | "users" | "topups" | "content" | "settings" | "logs">(
+    "dashboard",
   );
 
   useEffect(() => {
@@ -169,6 +171,12 @@ function AdminPage() {
           </div>
           <nav className="flex gap-1 rounded-full bg-muted/30 p-1 overflow-x-auto">
             <TabBtn
+              active={tab === "dashboard"}
+              onClick={() => setTab("dashboard")}
+              icon={<LayoutDashboard className="h-3.5 w-3.5" />}
+              label="Dashboard"
+            />
+            <TabBtn
               active={tab === "games"}
               onClick={() => setTab("games")}
               icon={<Gamepad2 className="h-3.5 w-3.5" />}
@@ -209,6 +217,7 @@ function AdminPage() {
       </header>
 
       <main className="container mx-auto px-4 py-6">
+        {tab === "dashboard" && <DashboardTab />}
         {tab === "games" && <GamesTab />}
         {tab === "users" && <UsersTab />}
         {tab === "topups" && <TopupsTab />}

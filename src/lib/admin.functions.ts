@@ -131,6 +131,92 @@ export const listBalanceChanges = createServerFn({ method: "POST" })
     }));
   });
 
+export const getAdminDashboard = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await assertAdmin(context.userId);
+
+    // System totals
+    const [walletsRes, usersRes, gamesRes, topupsAggRes] = await Promise.all([
+      supabaseAdmin.from("wallets").select("balance"),
+      supabaseAdmin.from("profiles").select("user_id", { count: "exact", head: true }),
+      supabaseAdmin.from("games").select("id", { count: "exact", head: true }),
+      supabaseAdmin
+        .from("topup_requests")
+        .select("amount_usd, coins")
+        .eq("status", "approved"),
+    ]);
+
+    const totalCoins = (walletsRes.data ?? []).reduce((s, w) => s + (w.balance ?? 0), 0);
+    const totalUsers = usersRes.count ?? 0;
+    const totalGames = gamesRes.count ?? 0;
+    const topupsApproved = topupsAggRes.data ?? [];
+    const totalToppedUsd = topupsApproved.reduce((s, t) => s + Number(t.amount_usd ?? 0), 0);
+    const totalToppedCoins = topupsApproved.reduce((s, t) => s + (t.coins ?? 0), 0);
+
+    // Recent approved top-ups (balance added)
+    const { data: recentTopups } = await supabaseAdmin
+      .from("topup_requests")
+      .select("id, user_id, amount_usd, coins, status, created_at, reviewed_at")
+      .eq("status", "approved")
+      .order("reviewed_at", { ascending: false, nullsFirst: false })
+      .limit(20);
+
+    // Recent purchases
+    const { data: recentPurchases } = await supabaseAdmin
+      .from("library")
+      .select("id, user_id, game_id, created_at")
+      .eq("kind", "owned")
+      .order("created_at", { ascending: false })
+      .limit(20);
+
+    const userIds = Array.from(
+      new Set([
+        ...(recentTopups ?? []).map((r) => r.user_id),
+        ...(recentPurchases ?? []).map((r) => r.user_id),
+      ]),
+    );
+    const gameIds = Array.from(new Set((recentPurchases ?? []).map((r) => r.game_id)));
+
+    const [{ data: profs }, { data: gms }] = await Promise.all([
+      userIds.length
+        ? supabaseAdmin.from("profiles").select("user_id, display_name").in("user_id", userIds)
+        : Promise.resolve({ data: [] as { user_id: string; display_name: string }[] }),
+      gameIds.length
+        ? supabaseAdmin.from("games").select("id, title, price_coins").in("id", gameIds)
+        : Promise.resolve({ data: [] as { id: string; title: string; price_coins: number }[] }),
+    ]);
+    const nameMap = new Map((profs ?? []).map((p) => [p.user_id, p.display_name]));
+    const gameMap = new Map((gms ?? []).map((g) => [g.id, g]));
+
+    const totalRevenueCoins = (recentPurchases ?? []).reduce(
+      (s, p) => s + (gameMap.get(p.game_id)?.price_coins ?? 0),
+      0,
+    );
+
+    return {
+      totals: {
+        totalCoins,
+        totalUsers,
+        totalGames,
+        totalToppedUsd,
+        totalToppedCoins,
+        totalPurchases: (recentPurchases ?? []).length,
+      },
+      recentTopups: (recentTopups ?? []).map((r) => ({
+        ...r,
+        user_name: nameMap.get(r.user_id) ?? "User",
+      })),
+      recentPurchases: (recentPurchases ?? []).map((p) => ({
+        ...p,
+        user_name: nameMap.get(p.user_id) ?? "User",
+        game_title: gameMap.get(p.game_id)?.title ?? p.game_id,
+        price_coins: gameMap.get(p.game_id)?.price_coins ?? 0,
+      })),
+      recentPurchasesRevenueCoins: totalRevenueCoins,
+    };
+  });
+
 export const adminSetUserRole = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) =>
