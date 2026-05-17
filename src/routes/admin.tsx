@@ -1292,7 +1292,7 @@ function GameRowEditor({
               ទាញយក
             </button>
           )}
-          <label title="ផ្ទុកឯកសារគ្រប់ប្រភេទ • គ្មានកំណត់ទំហំ">
+          <label title={`ផ្ទុកឯកសារ zip/rar/7z/tar/gz · អតិបរមា ${maxUploadLabel}`}>
             <span className="text-[10px] text-primary cursor-pointer hover:underline">
               {game.file_path ? "ប្តូរ" : "ផ្ទុកឡើង"}
             </span>
