@@ -41,6 +41,8 @@ export type CreateGameDeps = {
     file_path: string | null;
     file_size_bytes: number | null;
     storage_provider?: "supabase" | "s3" | "external_url";
+    screenshots?: string[];
+    preview_video_url?: string | null;
   }) => Promise<{ error: { message: string } | null }>;
   onError?: (msg: string) => void;
 };
