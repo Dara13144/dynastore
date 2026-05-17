@@ -70,6 +70,22 @@ export function md5Of(payload: string): string {
   return crypto.createHash("md5").update(payload, "utf8").digest("hex");
 }
 
+// Alias kept for legacy callers.
+export const md5Hex = md5Of;
+
+export class BakongApiError extends Error {
+  kind: "auth_error" | "upstream_error" | "network_error";
+  code: string;
+  status?: number;
+  constructor(kind: "auth_error" | "upstream_error" | "network_error", message: string, status?: number) {
+    super(message);
+    this.name = "BakongApiError";
+    this.kind = kind;
+    this.code = kind;
+    this.status = status;
+  }
+}
+
 export async function checkTransactionByMd5(md5: string) {
   const token = process.env.BAKONG_DEVELOPER_TOKEN;
 
