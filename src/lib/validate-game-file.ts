@@ -1,8 +1,8 @@
 // Game archive upload validation — shared between admin UI and tests.
 export const ALLOWED_GAME_FILE_EXTS = [".zip", ".rar", ".7z", ".tar", ".gz", ".tgz"] as const;
-export const MIN_GAME_FILE_GB = 1;
-export const MAX_GAME_FILE_GB = 5000;
-export const MIN_GAME_FILE_BYTES = MIN_GAME_FILE_GB * 1024 * 1024 * 1024;
+export const MIN_GAME_FILE_MB = 1;
+export const MAX_GAME_FILE_GB = 1000;
+export const MIN_GAME_FILE_BYTES = MIN_GAME_FILE_MB * 1024 * 1024;
 export const MAX_GAME_FILE_BYTES = MAX_GAME_FILE_GB * 1024 * 1024 * 1024;
 
 export function validateGameFile(file: { name: string; size: number }): string | null {
@@ -10,11 +10,11 @@ export function validateGameFile(file: { name: string; size: number }): string |
   const name = file.name.toLowerCase();
   const ok = ALLOWED_GAME_FILE_EXTS.some((ext) => name.endsWith(ext));
   if (!ok) return `ប្រភេទឯកសារមិនអនុញ្ញាត — តម្រូវ ${ALLOWED_GAME_FILE_EXTS.join(", ")}`;
-  const gb = file.size / 1024 / 1024 / 1024;
+  const mb = file.size / 1024 / 1024;
   if (file.size < MIN_GAME_FILE_BYTES)
-    return `ឯកសារតូចពេក (${gb.toFixed(2)}GB) — តម្រូវយ៉ាងតិច ${MIN_GAME_FILE_GB}GB`;
+    return `ឯកសារតូចពេក (${mb.toFixed(2)}MB) — តម្រូវយ៉ាងតិច ${MIN_GAME_FILE_MB}MB`;
   if (file.size > MAX_GAME_FILE_BYTES)
-    return `ឯកសារធំពេក (${file.size} bytes) — អតិបរមា ${MAX_GAME_FILE_BYTES} bytes`;
+    return `ឯកសារធំពេក — អតិបរមា ${MAX_GAME_FILE_GB}GB`;
   return null;
 }
 
