@@ -37,8 +37,9 @@ import {
   listSettingsAudit,
   adminSetUserRole,
 } from "@/lib/admin.functions";
-import { validateGameFile, validateGameFileUrl } from "@/lib/validate-game-file";
+import { validateGameFile, validateGameFileUrl, MAX_GAME_FILE_BYTES } from "@/lib/validate-game-file";
 import { submitCreateGame } from "@/lib/create-game";
+import { getGameFilesBucketLimit } from "@/lib/bucket-limit.functions";
 import { DownloadLogsTab } from "@/components/admin/DownloadLogsTab";
 import { DashboardTab } from "@/components/admin/DashboardTab";
 import { TutorialsTab } from "@/components/admin/TutorialsTab";
@@ -317,7 +318,69 @@ function GamesTab() {
   const [uploadStage, setUploadStage] = useState<UploadStage>("idle");
   const [uploadError, setUploadError] = useState<string | null>(null);
   const uploadRef = useRef<{ abort: () => void } | null>(null);
-  const validateFile = (file: File): string | null => validateGameFile(file);
+
+  // Startup check: read game-files bucket's file_size_limit so we can block
+  // oversize uploads BEFORE starting TUS (which would otherwise fail with 413
+  // after wasting bandwidth on the create-upload request).
+  const BUCKET_LIMIT_CACHE_KEY = "admin:game-files:limitBytes";
+  const BUCKET_LIMIT_CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24h
+  const [bucketLimitBytes, setBucketLimitBytes] = useState<number | null>(() => {
+    if (typeof window === "undefined") return null;
+    try {
+      const raw = window.localStorage.getItem(BUCKET_LIMIT_CACHE_KEY);
+      if (!raw) return null;
+      const parsed = JSON.parse(raw) as { limitBytes: number | null; at: number };
+      if (Date.now() - parsed.at > BUCKET_LIMIT_CACHE_TTL_MS) return null;
+      return parsed.limitBytes;
+    } catch {
+      return null;
+    }
+  });
+  const fetchBucketLimit = useServerFn(getGameFilesBucketLimit);
+  useEffect(() => {
+    let alive = true;
+    fetchBucketLimit()
+      .then((r) => {
+        if (!alive) return;
+        setBucketLimitBytes(r.limitBytes);
+        try {
+          window.localStorage.setItem(
+            BUCKET_LIMIT_CACHE_KEY,
+            JSON.stringify({ limitBytes: r.limitBytes, at: Date.now() }),
+          );
+        } catch {
+          /* ignore quota */
+        }
+      })
+      .catch(() => {
+        /* keep cached or null; upload will fall back to static MAX */
+      });
+    return () => {
+      alive = false;
+    };
+  }, [fetchBucketLimit]);
+
+  const effectiveMaxBytes = (): number =>
+    bucketLimitBytes && bucketLimitBytes > 0
+      ? Math.min(MAX_GAME_FILE_BYTES, bucketLimitBytes)
+      : MAX_GAME_FILE_BYTES;
+
+  const formatBytes = (n: number): string => {
+    if (n >= 1024 ** 3) return `${(n / 1024 ** 3).toFixed(2)}GB`;
+    if (n >= 1024 ** 2) return `${(n / 1024 ** 2).toFixed(1)}MB`;
+    if (n >= 1024) return `${(n / 1024).toFixed(1)}KB`;
+    return `${n}B`;
+  };
+
+  const validateFile = (file: File): string | null => {
+    const base = validateGameFile(file);
+    if (base) return base;
+    const max = effectiveMaxBytes();
+    if (file.size > max) {
+      return `ឯកសារធំជាងដែនកំណត់ម៉ាស៊ីន (${formatBytes(file.size)} > ${formatBytes(max)}) — សូមបំបែកជា part តូចជាង`;
+    }
+    return null;
+  };
 
   // Map raw upload errors to friendlier Khmer messages.
   const friendlyUploadError = (raw: string): string => {
