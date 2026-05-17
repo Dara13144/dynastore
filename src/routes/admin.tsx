@@ -766,9 +766,22 @@ function GamesTab() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-3 flex-wrap">
-        <h2 className="font-display text-xl">
-          ហ្គេមទាំងអស់ ({filtered.length}/{games.length})
-        </h2>
+        <div className="flex items-center gap-2 flex-wrap">
+          <h2 className="font-display text-xl">
+            ហ្គេមទាំងអស់ ({filtered.length}/{games.length})
+          </h2>
+          <span
+            className="inline-flex items-center gap-1 rounded-full bg-muted/40 px-2.5 py-1 text-[10px] font-semibold text-muted-foreground ring-1 ring-border"
+            title={
+              bucketLimitBytes && bucketLimitBytes < MAX_GAME_FILE_BYTES
+                ? "ដែនកំណត់ bucket បច្ចុប្បន្ន"
+                : "ដែនកំណត់អតិបរមា"
+            }
+          >
+            <FileArchive className="h-3 w-3" />
+            អតិបរមា Upload: {formatBytes(effectiveMaxBytes())}
+          </span>
+        </div>
         <button
           onClick={() => setCreating((v) => !v)}
           className="inline-flex items-center gap-1.5 rounded-full bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground"
@@ -840,7 +853,13 @@ function GamesTab() {
 
       {creating && (
         <div className="rounded-2xl glass p-5 space-y-3 animate-scale-in origin-top">
-          <h3 className="font-semibold text-sm">បន្ថែមហ្គេមថ្មី</h3>
+          <div className="flex items-center justify-between gap-2 flex-wrap">
+            <h3 className="font-semibold text-sm">បន្ថែមហ្គេមថ្មី</h3>
+            <span className="text-[10px] text-muted-foreground">
+              អតិបរមាឯកសារ:{" "}
+              <span className="font-semibold text-foreground">{formatBytes(effectiveMaxBytes())}</span>
+            </span>
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <Field
               label="លេខសម្គាល់ (slug)"
