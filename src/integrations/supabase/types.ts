@@ -16,18 +16,21 @@ export type Database = {
     Tables: {
       app_settings: {
         Row: {
+          bakong_account_id: string | null
           coins_per_usd: number
           id: number
           tx_ttl_min: number
           updated_at: string
         }
         Insert: {
+          bakong_account_id?: string | null
           coins_per_usd?: number
           id?: number
           tx_ttl_min?: number
           updated_at?: string
         }
         Update: {
+          bakong_account_id?: string | null
           coins_per_usd?: number
           id?: number
           tx_ttl_min?: number
