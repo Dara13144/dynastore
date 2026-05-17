@@ -377,6 +377,24 @@ function GamesTab() {
       ? Math.min(MAX_GAME_FILE_BYTES, bucketLimitBytes)
       : MAX_GAME_FILE_BYTES;
 
+  // Diagnostics: log limit values to console whenever they change.
+  useEffect(() => {
+    const eff =
+      bucketLimitBytes && bucketLimitBytes > 0
+        ? Math.min(MAX_GAME_FILE_BYTES, bucketLimitBytes)
+        : MAX_GAME_FILE_BYTES;
+    // eslint-disable-next-line no-console
+    console.log("[admin/upload-limits]", {
+      MAX_GAME_FILE_BYTES,
+      bucketLimitBytes,
+      effectiveMaxBytes: eff,
+      constrainedByBucket:
+        bucketLimitBytes != null && bucketLimitBytes < MAX_GAME_FILE_BYTES,
+      lastLimitFetchAt,
+      lastLimitFetchError,
+    });
+  }, [bucketLimitBytes, lastLimitFetchAt, lastLimitFetchError]);
+
   const validateFile = (file: File): string | null => {
     const base = validateGameFile(file);
     if (base) return base;
