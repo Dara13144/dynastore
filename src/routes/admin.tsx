@@ -1083,17 +1083,30 @@ function GamesTab() {
               <span className="block text-[10px] uppercase tracking-wider text-muted-foreground mb-1">
                 ប្រភពឯកសារហ្គេម
               </span>
-              <div className="inline-flex rounded-full bg-muted/30 p-1 mb-2">
+              <div className="inline-flex rounded-full bg-muted/30 p-1 mb-2 flex-wrap">
                 <button
                   type="button"
                   onClick={() => {
                     setSourceMode("file");
                     setDraft({ ...draft, file_path: null });
                     setDraftUrlError(null);
+                    setS3UploadedKey(null);
                   }}
                   className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-semibold transition ${sourceMode === "file" ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}
                 >
-                  <Plus className="h-3 w-3" /> Add File
+                  <HardDrive className="h-3 w-3" /> Supabase
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSourceMode("s3");
+                    setDraft({ ...draft, file_path: null });
+                    setDraftFile(null);
+                    setDraftFileError(null);
+                  }}
+                  className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-semibold transition ${sourceMode === "s3" ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}
+                >
+                  <Cloud className="h-3 w-3" /> AWS S3
                 </button>
                 <button
                   type="button"
@@ -1101,10 +1114,11 @@ function GamesTab() {
                     setSourceMode("library");
                     setDraftFile(null);
                     setDraftFileError(null);
+                    setS3UploadedKey(null);
                   }}
                   className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-semibold transition ${sourceMode === "library" ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}
                 >
-                  <LinkIcon className="h-3 w-3" /> Add Library
+                  <LinkIcon className="h-3 w-3" /> External URL
                 </button>
               </div>
 
