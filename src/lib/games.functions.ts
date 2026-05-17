@@ -3,6 +3,7 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { getRequestHeader, getRequestIP } from "@tanstack/react-start/server";
+import { signS3ReadUrl } from "./external-storage.functions";
 
 export const getGameDownloadUrl = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
