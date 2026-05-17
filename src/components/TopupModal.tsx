@@ -333,19 +333,19 @@ export function TopupModal({ onClose, onToast }: Props) {
   }
 
   function downloadQrPng() {
-    downloadQrFromRef(qrBoxRef, qrName.trim() || "dynastore-khqr", "DYNASTORE • KHQR");
+    downloadKhqrCard(qrBoxRef, qrName.trim() || "dynastore-khqr", amount);
   }
 
   function downloadAutoQrPng() {
     if (!autoSession) return;
     const fname = `dynastore-khqr-$${autoSession.amount.toFixed(2)}-${autoSession.id.slice(0, 8)}`;
-    downloadQrFromRef(autoQrBoxRef, fname, `DYNASTORE • KHQR • $${autoSession.amount.toFixed(2)}`);
+    downloadKhqrCard(autoQrBoxRef, fname, autoSession.amount);
   }
 
-  function downloadQrFromRef(
+  function downloadKhqrCard(
     ref: React.RefObject<HTMLDivElement | null>,
     filename: string,
-    label: string,
+    amountUsd: number,
   ) {
     const svg = ref.current?.querySelector("svg");
     if (!svg) {
@@ -360,19 +360,78 @@ export function TopupModal({ onClose, onToast }: Props) {
     const img = new Image();
     img.onload = () => {
       try {
-        const SIZE = 1024,
-          PAD = 64;
+        // Card layout
+        const W = 720;
+        const HEADER_H = 80;
+        const BODY_PAD = 40;
+        const QR_SIZE = 560;
+        const TEXT_BLOCK_H = 110;
+        const SEP_H = 30;
+        const QR_PAD_BOTTOM = 40;
+        const H = HEADER_H + TEXT_BLOCK_H + SEP_H + QR_SIZE + QR_PAD_BOTTOM;
+
         const canvas = document.createElement("canvas");
-        canvas.width = SIZE;
-        canvas.height = SIZE + 80;
+        canvas.width = W;
+        canvas.height = H;
         const ctx = canvas.getContext("2d")!;
-        ctx.fillStyle = "#fff";
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.drawImage(img, PAD, PAD, SIZE - PAD * 2, SIZE - PAD * 2);
-        ctx.fillStyle = "#000";
-        ctx.font = "bold 28px system-ui, sans-serif";
+
+        // White background
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(0, 0, W, H);
+
+        // Red header
+        ctx.fillStyle = KHQR_RED;
+        ctx.fillRect(0, 0, W, HEADER_H);
+        ctx.fillStyle = "#ffffff";
+        ctx.font = "900 42px system-ui, -apple-system, sans-serif";
         ctx.textAlign = "center";
-        ctx.fillText(label, SIZE / 2, SIZE + 40);
+        ctx.textBaseline = "middle";
+        ctx.fillText("KHQR", W / 2, HEADER_H / 2);
+
+        // Merchant + amount
+        ctx.textAlign = "left";
+        ctx.textBaseline = "alphabetic";
+        ctx.fillStyle = "#111111";
+        ctx.font = "600 22px system-ui, -apple-system, sans-serif";
+        ctx.fillText(MERCHANT_NAME, BODY_PAD, HEADER_H + 44);
+        ctx.font = "800 44px system-ui, -apple-system, sans-serif";
+        const amtText = amountUsd > 0 ? amountUsd.toFixed(2) : "0";
+        ctx.fillText(amtText, BODY_PAD, HEADER_H + 96);
+        const amtWidth = ctx.measureText(amtText).width;
+        ctx.font = "700 18px system-ui, -apple-system, sans-serif";
+        ctx.fillStyle = "#666666";
+        ctx.fillText("USD", BODY_PAD + amtWidth + 8, HEADER_H + 96);
+
+        // Dashed separator
+        const sepY = HEADER_H + TEXT_BLOCK_H + SEP_H / 2;
+        ctx.strokeStyle = "#bbbbbb";
+        ctx.lineWidth = 2;
+        ctx.setLineDash([8, 6]);
+        ctx.beginPath();
+        ctx.moveTo(BODY_PAD, sepY);
+        ctx.lineTo(W - BODY_PAD, sepY);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // QR code (centered)
+        const qrX = (W - QR_SIZE) / 2;
+        const qrY = HEADER_H + TEXT_BLOCK_H + SEP_H;
+        ctx.drawImage(img, qrX, qrY, QR_SIZE, QR_SIZE);
+
+        // Center logo circle
+        const cx = W / 2;
+        const cy = qrY + QR_SIZE / 2;
+        const r = 48;
+        ctx.fillStyle = KHQR_RED;
+        ctx.beginPath();
+        ctx.arc(cx, cy, r, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = "#ffffff";
+        ctx.font = "900 44px system-ui, -apple-system, sans-serif";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText("C", cx, cy + 2);
+
         URL.revokeObjectURL(url);
         canvas.toBlob((blob) => {
           if (!blob) {
