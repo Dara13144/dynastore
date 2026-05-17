@@ -41,29 +41,24 @@ function KhqrCard({
   return (
     <div
       ref={innerRef}
-      className="w-full overflow-hidden rounded-2xl bg-white shadow-md ring-1 ring-black/5"
+      className="relative w-full overflow-hidden rounded-2xl bg-white shadow-md ring-1 ring-black/5"
     >
-      {/* Red header with notched bottom-right corner */}
-      <div className="relative">
-        <div
-          className="flex items-center justify-center py-2.5"
-          style={{
-            backgroundColor: KHQR_RED,
-            clipPath: "polygon(0 0, 100% 0, 100% 60%, 88% 100%, 0 100%)",
-          }}
-        >
-          <span className="text-white font-black tracking-wider text-lg leading-none">
-            KHQR
-          </span>
-        </div>
-      </div>
+      {/* Red triangular corner notch in top-right */}
+      <div
+        aria-hidden
+        className="absolute top-0 right-0 h-10 w-10"
+        style={{
+          backgroundColor: KHQR_RED,
+          clipPath: "polygon(100% 0, 0 0, 100% 100%)",
+        }}
+      />
 
       {/* Merchant + amount */}
-      <div className="px-5 pt-4">
-        <div className="text-[11px] font-semibold uppercase tracking-wider text-black/90">
+      <div className="px-5 pt-5">
+        <div className="text-[13px] font-semibold uppercase tracking-wider text-black">
           {MERCHANT_NAME}
         </div>
-        <div className="mt-1 text-2xl font-bold text-black tabular-nums">
+        <div className="mt-1 text-3xl font-bold text-black tabular-nums">
           {amount > 0 ? amount.toFixed(2) : "0"}
         </div>
       </div>
