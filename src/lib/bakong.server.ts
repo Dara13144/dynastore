@@ -174,7 +174,7 @@ async function logAuthFailure(row: {
       response_snippet: row.response_snippet.slice(0, 1000),
       renew_attempted: row.renew_attempted,
       renew_succeeded: row.renew_succeeded,
-      context: row.context ?? null,
+      context: (row.context ?? null) as never,
     });
   } catch (e) {
     console.error("[bakong] failed to persist auth failure log:", e);
