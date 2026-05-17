@@ -456,7 +456,7 @@ function GamesTab() {
         .from("game-files")
         .upload(path, file, { upsert: true, contentType: file.type || "application/octet-stream" });
       if (error) {
-        const friendly = friendlyUploadError(error.message);
+        const friendly = friendlyUploadError(error.message, { fileSize: file.size });
         setUploadStage("error");
         setUploadError(friendly);
         setUploadPct(null);
