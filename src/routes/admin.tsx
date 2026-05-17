@@ -522,7 +522,7 @@ function GamesTab() {
         parallelUploads: 1,
         // Refresh the bearer token on auth failures so multi-hour uploads
         // survive Supabase's 1-hour access-token TTL.
-        onShouldRetry: (err: Error & { originalResponse?: { getStatus(): number } }) => {
+        onShouldRetry: (err: import("tus-js-client").DetailedError) => {
           const status = err.originalResponse?.getStatus?.() ?? 0;
           if (status === 401 || status === 403) {
             // fire-and-forget refresh; tus retries with updated headers.
