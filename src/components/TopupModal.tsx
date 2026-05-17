@@ -326,7 +326,7 @@ export function TopupModal({ onClose, onToast }: Props) {
               )}
               {autoStatus === "waiting" && autoSession && (
                 <div className="mx-auto w-full max-w-[320px] flex flex-col items-center gap-3">
-                  <div className="rounded-2xl bg-white p-5 w-full flex flex-col items-center">
+                  <div ref={autoQrBoxRef} className="rounded-2xl bg-white p-5 w-full flex flex-col items-center">
                     <QRCode value={autoSession.qr} size={260} style={{ height: "auto", maxWidth: "100%", width: "100%" }} viewBox="0 0 256 256" />
                     <div className="mt-3 text-center">
                       <div className="text-[10px] font-semibold tracking-wider text-black">DYNASTORE • KHQR</div>
@@ -341,6 +341,11 @@ export function TopupModal({ onClose, onToast }: Props) {
                     <div className="mt-1 text-2xl font-mono font-bold tabular-nums">{mm}:{ss}</div>
                     <div className="text-[10px] text-muted-foreground">ស្គេន QR តាម Bakong/ABA/Wing → coins នឹងបញ្ចូលដោយស្វ័យប្រវត្តិ</div>
                   </div>
+                  <button onClick={downloadAutoQrPng} disabled={exporting}
+                    className="inline-flex items-center gap-2 rounded-full bg-primary text-primary-foreground px-4 py-2 text-xs font-semibold disabled:opacity-50">
+                    {exporting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
+                    {exporting ? "កំពុង Export…" : "ទាញយក QR (PNG)"}
+                  </button>
                   <button onClick={resetAuto} className="text-xs text-muted-foreground hover:text-foreground underline">បោះបង់</button>
                 </div>
               )}
