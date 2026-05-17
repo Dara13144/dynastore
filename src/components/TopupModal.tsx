@@ -101,10 +101,10 @@ export function TopupModal({ onClose, onToast }: Props) {
           if (!warnedFailure && failures >= 2) {
             warnedFailure = true;
             const msg =
-              r.error === "rate_limited"
-                ? "ប្រព័ន្ធ Bakong កំពុងរវល់ — កំពុងព្យាយាមម្តងទៀត…"
-                : r.error === "upstream_error"
+              r.error === "upstream_error"
                 ? "ប្រព័ន្ធ Bakong មិនទាន់ឆ្លើយតប — កំពុងព្យាយាមម្តងទៀត…"
+                : r.error === "auth_error"
+                ? "ការតភ្ជាប់ទៅ Bakong មានបញ្ហា — សូមរង់ចាំ…"
                 : "បណ្តាញមិនល្អ — កំពុងព្យាយាមម្តងទៀត…";
             onToast(msg);
           }
