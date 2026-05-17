@@ -137,7 +137,7 @@ export function parseKhqr(input: string): KhqrParseResult {
   const errors: string[] = [];
 
   if (!payload) {
-    return { ok: false, tags: [], crc: { declared: null, computed: "", valid: false }, warnings, errors: ["Empty payload"] };
+    return { ok: false, tags: [], crc: { declared: null, computed: "", valid: false }, warnings, errors: ["Empty payload"], recommendations: [] };
   }
 
   // CRC is tag 6304 + 4-char hex at the end
