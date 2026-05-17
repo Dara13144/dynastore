@@ -347,8 +347,12 @@ export const verifyBakongTopup = createServerFn({ method: "POST" })
       );
     }
 
+    const status = (result?.status ?? "approved") as "approved" | "pending";
+    if (status === "pending") {
+      return { status: "pending", new_balance: 0, credited: 0 } satisfies Out;
+    }
     return {
-      status: (result?.status ?? "approved") as "approved" | "pending",
+      status: "approved",
       new_balance: Number(result?.new_balance ?? 0),
       credited: Number(result?.credited ?? 0),
     } satisfies Out;
