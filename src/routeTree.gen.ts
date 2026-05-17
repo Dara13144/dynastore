@@ -16,6 +16,7 @@ import { Route as AdminRouteImport } from './routes/admin'
 import { Route as AccountRouteImport } from './routes/account'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as GamesIdRouteImport } from './routes/games.$id'
+import { Route as AdminKhqrDebugRouteImport } from './routes/admin.khqr-debug'
 import { Route as ApiPublicBakongWebhookRouteImport } from './routes/api/public/bakong-webhook'
 import { Route as ApiPublicHooksExpireBakongTopupsRouteImport } from './routes/api/public/hooks/expire-bakong-topups'
 
@@ -54,6 +55,11 @@ const GamesIdRoute = GamesIdRouteImport.update({
   path: '/games/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminKhqrDebugRoute = AdminKhqrDebugRouteImport.update({
+  id: '/khqr-debug',
+  path: '/khqr-debug',
+  getParentRoute: () => AdminRoute,
+} as any)
 const ApiPublicBakongWebhookRoute = ApiPublicBakongWebhookRouteImport.update({
   id: '/api/public/bakong-webhook',
   path: '/api/public/bakong-webhook',
@@ -69,10 +75,11 @@ const ApiPublicHooksExpireBakongTopupsRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/account': typeof AccountRoute
-  '/admin': typeof AdminRoute
+  '/admin': typeof AdminRouteWithChildren
   '/library': typeof LibraryRoute
   '/login': typeof LoginRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/admin/khqr-debug': typeof AdminKhqrDebugRoute
   '/games/$id': typeof GamesIdRoute
   '/api/public/bakong-webhook': typeof ApiPublicBakongWebhookRoute
   '/api/public/hooks/expire-bakong-topups': typeof ApiPublicHooksExpireBakongTopupsRoute
@@ -80,10 +87,11 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/account': typeof AccountRoute
-  '/admin': typeof AdminRoute
+  '/admin': typeof AdminRouteWithChildren
   '/library': typeof LibraryRoute
   '/login': typeof LoginRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/admin/khqr-debug': typeof AdminKhqrDebugRoute
   '/games/$id': typeof GamesIdRoute
   '/api/public/bakong-webhook': typeof ApiPublicBakongWebhookRoute
   '/api/public/hooks/expire-bakong-topups': typeof ApiPublicHooksExpireBakongTopupsRoute
@@ -92,10 +100,11 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/account': typeof AccountRoute
-  '/admin': typeof AdminRoute
+  '/admin': typeof AdminRouteWithChildren
   '/library': typeof LibraryRoute
   '/login': typeof LoginRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/admin/khqr-debug': typeof AdminKhqrDebugRoute
   '/games/$id': typeof GamesIdRoute
   '/api/public/bakong-webhook': typeof ApiPublicBakongWebhookRoute
   '/api/public/hooks/expire-bakong-topups': typeof ApiPublicHooksExpireBakongTopupsRoute
@@ -109,6 +118,7 @@ export interface FileRouteTypes {
     | '/library'
     | '/login'
     | '/sitemap.xml'
+    | '/admin/khqr-debug'
     | '/games/$id'
     | '/api/public/bakong-webhook'
     | '/api/public/hooks/expire-bakong-topups'
@@ -120,6 +130,7 @@ export interface FileRouteTypes {
     | '/library'
     | '/login'
     | '/sitemap.xml'
+    | '/admin/khqr-debug'
     | '/games/$id'
     | '/api/public/bakong-webhook'
     | '/api/public/hooks/expire-bakong-topups'
@@ -131,6 +142,7 @@ export interface FileRouteTypes {
     | '/library'
     | '/login'
     | '/sitemap.xml'
+    | '/admin/khqr-debug'
     | '/games/$id'
     | '/api/public/bakong-webhook'
     | '/api/public/hooks/expire-bakong-topups'
@@ -139,7 +151,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AccountRoute: typeof AccountRoute
-  AdminRoute: typeof AdminRoute
+  AdminRoute: typeof AdminRouteWithChildren
   LibraryRoute: typeof LibraryRoute
   LoginRoute: typeof LoginRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
@@ -199,6 +211,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof GamesIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/khqr-debug': {
+      id: '/admin/khqr-debug'
+      path: '/khqr-debug'
+      fullPath: '/admin/khqr-debug'
+      preLoaderRoute: typeof AdminKhqrDebugRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/api/public/bakong-webhook': {
       id: '/api/public/bakong-webhook'
       path: '/api/public/bakong-webhook'
@@ -216,10 +235,20 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AdminRouteChildren {
+  AdminKhqrDebugRoute: typeof AdminKhqrDebugRoute
+}
+
+const AdminRouteChildren: AdminRouteChildren = {
+  AdminKhqrDebugRoute: AdminKhqrDebugRoute,
+}
+
+const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AccountRoute: AccountRoute,
-  AdminRoute: AdminRoute,
+  AdminRoute: AdminRouteWithChildren,
   LibraryRoute: LibraryRoute,
   LoginRoute: LoginRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
