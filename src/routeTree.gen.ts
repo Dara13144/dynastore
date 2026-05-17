@@ -18,6 +18,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as GamesIdRouteImport } from './routes/games.$id'
 import { Route as AdminKhqrDebugRouteImport } from './routes/admin.khqr-debug'
 import { Route as ApiPublicBakongWebhookRouteImport } from './routes/api/public/bakong-webhook'
+import { Route as ApiPaymentCreateRouteImport } from './routes/api/payment/create'
 import { Route as ApiPublicHooksExpireBakongTopupsRouteImport } from './routes/api/public/hooks/expire-bakong-topups'
 
 const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
@@ -65,6 +66,11 @@ const ApiPublicBakongWebhookRoute = ApiPublicBakongWebhookRouteImport.update({
   path: '/api/public/bakong-webhook',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPaymentCreateRoute = ApiPaymentCreateRouteImport.update({
+  id: '/api/payment/create',
+  path: '/api/payment/create',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicHooksExpireBakongTopupsRoute =
   ApiPublicHooksExpireBakongTopupsRouteImport.update({
     id: '/api/public/hooks/expire-bakong-topups',
@@ -81,6 +87,7 @@ export interface FileRoutesByFullPath {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/admin/khqr-debug': typeof AdminKhqrDebugRoute
   '/games/$id': typeof GamesIdRoute
+  '/api/payment/create': typeof ApiPaymentCreateRoute
   '/api/public/bakong-webhook': typeof ApiPublicBakongWebhookRoute
   '/api/public/hooks/expire-bakong-topups': typeof ApiPublicHooksExpireBakongTopupsRoute
 }
@@ -93,6 +100,7 @@ export interface FileRoutesByTo {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/admin/khqr-debug': typeof AdminKhqrDebugRoute
   '/games/$id': typeof GamesIdRoute
+  '/api/payment/create': typeof ApiPaymentCreateRoute
   '/api/public/bakong-webhook': typeof ApiPublicBakongWebhookRoute
   '/api/public/hooks/expire-bakong-topups': typeof ApiPublicHooksExpireBakongTopupsRoute
 }
@@ -106,6 +114,7 @@ export interface FileRoutesById {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/admin/khqr-debug': typeof AdminKhqrDebugRoute
   '/games/$id': typeof GamesIdRoute
+  '/api/payment/create': typeof ApiPaymentCreateRoute
   '/api/public/bakong-webhook': typeof ApiPublicBakongWebhookRoute
   '/api/public/hooks/expire-bakong-topups': typeof ApiPublicHooksExpireBakongTopupsRoute
 }
@@ -120,6 +129,7 @@ export interface FileRouteTypes {
     | '/sitemap.xml'
     | '/admin/khqr-debug'
     | '/games/$id'
+    | '/api/payment/create'
     | '/api/public/bakong-webhook'
     | '/api/public/hooks/expire-bakong-topups'
   fileRoutesByTo: FileRoutesByTo
@@ -132,6 +142,7 @@ export interface FileRouteTypes {
     | '/sitemap.xml'
     | '/admin/khqr-debug'
     | '/games/$id'
+    | '/api/payment/create'
     | '/api/public/bakong-webhook'
     | '/api/public/hooks/expire-bakong-topups'
   id:
@@ -144,6 +155,7 @@ export interface FileRouteTypes {
     | '/sitemap.xml'
     | '/admin/khqr-debug'
     | '/games/$id'
+    | '/api/payment/create'
     | '/api/public/bakong-webhook'
     | '/api/public/hooks/expire-bakong-topups'
   fileRoutesById: FileRoutesById
@@ -156,6 +168,7 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   GamesIdRoute: typeof GamesIdRoute
+  ApiPaymentCreateRoute: typeof ApiPaymentCreateRoute
   ApiPublicBakongWebhookRoute: typeof ApiPublicBakongWebhookRoute
   ApiPublicHooksExpireBakongTopupsRoute: typeof ApiPublicHooksExpireBakongTopupsRoute
 }
@@ -225,6 +238,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicBakongWebhookRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/payment/create': {
+      id: '/api/payment/create'
+      path: '/api/payment/create'
+      fullPath: '/api/payment/create'
+      preLoaderRoute: typeof ApiPaymentCreateRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/hooks/expire-bakong-topups': {
       id: '/api/public/hooks/expire-bakong-topups'
       path: '/api/public/hooks/expire-bakong-topups'
@@ -253,9 +273,20 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   GamesIdRoute: GamesIdRoute,
+  ApiPaymentCreateRoute: ApiPaymentCreateRoute,
   ApiPublicBakongWebhookRoute: ApiPublicBakongWebhookRoute,
   ApiPublicHooksExpireBakongTopupsRoute: ApiPublicHooksExpireBakongTopupsRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
