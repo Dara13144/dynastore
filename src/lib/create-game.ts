@@ -12,6 +12,10 @@ export type GameDraft = {
   price_coins: number;
   visible: boolean;
   image_url: string;
+  /** Optional list of screenshot/gallery image URLs. */
+  screenshots?: string[];
+  /** Optional short preview/trailer video URL. */
+  preview_video_url?: string | null;
   /** Optional external link to the game archive (alternative to uploading a file). */
   file_url?: string | null;
   /** Which storage backend holds the file: supabase (default), s3, external_url. */
@@ -37,6 +41,8 @@ export type CreateGameDeps = {
     file_path: string | null;
     file_size_bytes: number | null;
     storage_provider?: "supabase" | "s3" | "external_url";
+    screenshots?: string[];
+    preview_video_url?: string | null;
   }) => Promise<{ error: { message: string } | null }>;
   onError?: (msg: string) => void;
 };
@@ -99,6 +105,8 @@ export async function submitCreateGame(
     file_path,
     file_size_bytes,
     storage_provider: provider,
+    screenshots: (draft.screenshots ?? []).filter((u) => u && u.trim()),
+    preview_video_url: (draft.preview_video_url ?? "").trim() || null,
   });
   if (error) {
     deps.onError?.(error.message);

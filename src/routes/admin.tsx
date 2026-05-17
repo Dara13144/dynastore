@@ -102,6 +102,8 @@ type GameRow = {
   price_coins: number;
   visible: boolean;
   image_url: string | null;
+  screenshots: string[];
+  preview_video_url: string | null;
   file_path: string | null;
   file_size_bytes: number | null;
   created_at?: string;
@@ -293,6 +295,8 @@ function GamesTab() {
     price_coins: 0,
     visible: true,
     image_url: "",
+    screenshots: [],
+    preview_video_url: null,
     file_path: null,
     file_size_bytes: null,
   });
@@ -697,6 +701,50 @@ function GamesTab() {
     return data.publicUrl;
   };
 
+  /** Upload a screenshot/gallery image (same bucket as cover, separate folder). */
+  const uploadScreenshot = async (file: File): Promise<string | null> => {
+    if (!file.type.startsWith("image/")) {
+      showToast("សូមជ្រើសរូបភាព");
+      return null;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      showToast("រូបភាពធំជាង 10MB");
+      return null;
+    }
+    const safe = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+    const path = `screenshots/${Date.now()}_${Math.random().toString(36).slice(2, 8)}_${safe}`;
+    const { error } = await supabase.storage
+      .from("game-images")
+      .upload(path, file, { upsert: true, contentType: file.type });
+    if (error) {
+      showToast(`Upload: ${error.message}`);
+      return null;
+    }
+    return supabase.storage.from("game-images").getPublicUrl(path).data.publicUrl;
+  };
+
+  /** Upload a short preview/trailer video (capped to keep page fast). */
+  const uploadPreviewVideo = async (file: File): Promise<string | null> => {
+    if (!file.type.startsWith("video/")) {
+      showToast("សូមជ្រើសវីដេអូ");
+      return null;
+    }
+    if (file.size > 50 * 1024 * 1024) {
+      showToast("វីដេអូធំជាង 50MB — សូមបង្ហាប់សិន");
+      return null;
+    }
+    const safe = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+    const path = `videos/${Date.now()}_${Math.random().toString(36).slice(2, 8)}_${safe}`;
+    const { error } = await supabase.storage
+      .from("game-images")
+      .upload(path, file, { upsert: true, contentType: file.type });
+    if (error) {
+      showToast(`Upload: ${error.message}`);
+      return null;
+    }
+    return supabase.storage.from("game-images").getPublicUrl(path).data.publicUrl;
+  };
+
   const updateGame = async (id: string, patch: Partial<GameRow>) => {
     setBusy(true);
     const { error } = await supabase.from("games").update(patch).eq("id", id);
@@ -749,6 +797,8 @@ function GamesTab() {
         price_coins: Number(draft.price_coins) || 0,
         visible: draft.visible,
         image_url: draft.image_url ?? "",
+        screenshots: draft.screenshots ?? [],
+        preview_video_url: draft.preview_video_url ?? null,
         file_url: sourceMode === "library" ? (draft.file_path ?? null) : null,
         storage_provider:
           sourceMode === "s3" ? "s3" : sourceMode === "library" ? "external_url" : "supabase",
@@ -794,6 +844,8 @@ function GamesTab() {
       price_coins: 0,
       visible: true,
       image_url: "",
+      screenshots: [],
+      preview_video_url: null,
       file_path: null,
       file_size_bytes: null,
     });
@@ -1090,6 +1142,113 @@ function GamesTab() {
                 />
               )}
             </div>
+
+            {/* Screenshots gallery (multi-image) */}
+            <div className="block md:col-span-2">
+              <span className="block text-[10px] uppercase tracking-wider text-muted-foreground mb-1">
+                Screenshots (gallery)
+              </span>
+              <div className="flex flex-wrap items-start gap-2">
+                {draft.screenshots.map((url, i) => (
+                  <div key={url + i} className="relative group">
+                    <img
+                      src={url}
+                      alt={`shot-${i}`}
+                      className="h-20 w-32 rounded-lg object-cover ring-1 ring-border"
+                    />
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setDraft({
+                          ...draft,
+                          screenshots: draft.screenshots.filter((_, j) => j !== i),
+                        })
+                      }
+                      className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-destructive text-destructive-foreground text-[10px] grid place-items-center opacity-0 group-hover:opacity-100 transition"
+                      title="Remove"
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+                <label className="h-20 w-32 cursor-pointer rounded-lg border-2 border-dashed border-border grid place-items-center text-[10px] text-muted-foreground hover:border-primary hover:text-primary">
+                  + បន្ថែម
+                  <input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    className="hidden"
+                    onChange={async (e) => {
+                      const files = Array.from(e.target.files ?? []);
+                      e.target.value = "";
+                      const uploaded: string[] = [];
+                      for (const f of files) {
+                        const u = await uploadScreenshot(f);
+                        if (u) uploaded.push(u);
+                      }
+                      if (uploaded.length) {
+                        setDraft((d) => ({
+                          ...d,
+                          screenshots: [...d.screenshots, ...uploaded],
+                        }));
+                      }
+                    }}
+                  />
+                </label>
+              </div>
+              <p className="mt-1 text-[10px] text-muted-foreground">
+                អាចជ្រើសរើសច្រើនដង · max 10MB / រូប
+              </p>
+            </div>
+
+            {/* Preview video (short trailer) */}
+            <div className="block md:col-span-2">
+              <span className="block text-[10px] uppercase tracking-wider text-muted-foreground mb-1">
+                Preview video (trailer ~50MB)
+              </span>
+              <div className="flex items-center gap-2">
+                <input
+                  value={draft.preview_video_url ?? ""}
+                  placeholder="https://… ឬ ផ្ទុកវីដេអូឡើង"
+                  onChange={(e) =>
+                    setDraft({ ...draft, preview_video_url: e.target.value || null })
+                  }
+                  className="flex-1 rounded-lg bg-input px-3 py-2 text-xs outline-none ring-1 ring-border focus:ring-primary"
+                />
+                <label className="shrink-0 cursor-pointer rounded-full bg-primary/10 text-primary px-3 py-2 text-[11px] font-semibold hover:bg-primary/20">
+                  ផ្ទុកវីដេអូ
+                  <input
+                    type="file"
+                    accept="video/*"
+                    className="hidden"
+                    onChange={async (e) => {
+                      const f = e.target.files?.[0];
+                      if (!f) return;
+                      const url = await uploadPreviewVideo(f);
+                      if (url) setDraft({ ...draft, preview_video_url: url });
+                      e.target.value = "";
+                    }}
+                  />
+                </label>
+                {draft.preview_video_url && (
+                  <button
+                    type="button"
+                    onClick={() => setDraft({ ...draft, preview_video_url: null })}
+                    className="rounded-full bg-muted/60 px-3 py-2 text-[11px] text-muted-foreground hover:text-foreground"
+                  >
+                    Clear
+                  </button>
+                )}
+              </div>
+              {draft.preview_video_url && (
+                <video
+                  src={draft.preview_video_url}
+                  controls
+                  className="mt-2 h-40 rounded-lg ring-1 ring-border"
+                />
+              )}
+            </div>
+
             <div className="block">
               <span className="block text-[10px] uppercase tracking-wider text-muted-foreground mb-1">
                 ប្រភពឯកសារហ្គេម
