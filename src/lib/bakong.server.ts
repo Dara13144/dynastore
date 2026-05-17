@@ -78,11 +78,14 @@ export function buildKhqr(amountUsd: number, billNumber: string): string {
 export class BakongApiError extends Error {
   status: number;
   code: string;
+  /** Alias of `code` kept for legacy callers (topup.functions.ts). */
+  kind: string;
   snippet: string;
   constructor(code: string, status: number, message: string, snippet = "") {
     super(message);
     this.name = "BakongApiError";
     this.code = code;
+    this.kind = code;
     this.status = status;
     this.snippet = snippet;
   }
