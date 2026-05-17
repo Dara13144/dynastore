@@ -1277,7 +1277,18 @@ function GamesTab() {
                       )}
 
                       {uploadStage === "error" && uploadError && (
-                        <p className="text-[10px] text-destructive">{uploadError}</p>
+                        <div className="space-y-1.5">
+                          <p className="text-[10px] text-destructive">{uploadError}</p>
+                          {isPlatformCapError(uploadError) && (
+                            <button
+                              type="button"
+                              onClick={() => setSplitGuideOpen(true)}
+                              className="inline-flex items-center gap-1 rounded-full bg-destructive/15 px-2 py-0.5 text-[10px] font-semibold text-destructive hover:bg-destructive/25"
+                            >
+                              មើលវិធីបំបែកឯកសារ →
+                            </button>
+                          )}
+                        </div>
                       )}
                     </div>
                   )}
