@@ -794,6 +794,81 @@ function GamesTab() {
         </button>
       </div>
 
+      {showDiagnostics && (
+        <div className="rounded-2xl glass p-3 text-[11px] font-mono space-y-2 border border-amber-500/30 bg-amber-500/5">
+          <div className="flex items-center justify-between">
+            <span className="font-semibold text-amber-400">Upload Limit Diagnostics</span>
+            <button
+              type="button"
+              onClick={() => {
+                try {
+                  window.localStorage.removeItem(BUCKET_LIMIT_CACHE_KEY);
+                } catch {
+                  /* ignore */
+                }
+                setBucketLimitBytes(null);
+                setLastLimitFetchAt(null);
+                setLastLimitFetchError(null);
+                fetchBucketLimit()
+                  .then((r) => {
+                    setBucketLimitBytes(r.limitBytes);
+                    setLastLimitFetchAt(Date.now());
+                    try {
+                      window.localStorage.setItem(
+                        BUCKET_LIMIT_CACHE_KEY,
+                        JSON.stringify({ limitBytes: r.limitBytes, at: Date.now() }),
+                      );
+                    } catch {
+                      /* ignore */
+                    }
+                  })
+                  .catch((e: unknown) =>
+                    setLastLimitFetchError(e instanceof Error ? e.message : String(e)),
+                  );
+              }}
+              className="rounded-full bg-muted/60 px-2 py-0.5 text-[10px] text-muted-foreground hover:text-foreground"
+            >
+              Refetch
+            </button>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1 text-muted-foreground">
+            <div>
+              <span className="text-foreground/70">MAX_GAME_FILE_BYTES:</span>{" "}
+              {MAX_GAME_FILE_BYTES.toLocaleString()} ({formatBytes(MAX_GAME_FILE_BYTES)})
+            </div>
+            <div>
+              <span className="text-foreground/70">bucketLimitBytes:</span>{" "}
+              {bucketLimitBytes == null
+                ? "null"
+                : `${bucketLimitBytes.toLocaleString()} (${formatBytes(bucketLimitBytes)})`}
+            </div>
+            <div>
+              <span className="text-foreground/70">effectiveMaxBytes:</span>{" "}
+              {effectiveMaxBytes().toLocaleString()} ({formatBytes(effectiveMaxBytes())})
+            </div>
+            <div>
+              <span className="text-foreground/70">constrainedByBucket:</span>{" "}
+              {String(
+                bucketLimitBytes != null && bucketLimitBytes < MAX_GAME_FILE_BYTES,
+              )}
+            </div>
+            <div>
+              <span className="text-foreground/70">lastFetchAt:</span>{" "}
+              {lastLimitFetchAt ? new Date(lastLimitFetchAt).toLocaleTimeString() : "—"}
+            </div>
+            <div>
+              <span className="text-foreground/70">lastFetchError:</span>{" "}
+              <span className={lastLimitFetchError ? "text-destructive" : ""}>
+                {lastLimitFetchError ?? "none"}
+              </span>
+            </div>
+          </div>
+          <div className="text-[10px] text-muted-foreground/70">
+            ក៏ logged ទៅ console ផងដែរ (key: <code>[admin/upload-limits]</code>)
+          </div>
+        </div>
+      )}
+
       <div className="rounded-2xl glass p-3 flex flex-wrap items-center gap-2">
         <div className="relative flex-1 min-w-[200px]">
           <Search className="h-3.5 w-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
