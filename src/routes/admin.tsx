@@ -1475,6 +1475,43 @@ function GamesTab() {
                         </p>
                       )}
 
+                      {uploadStage === "done" && uploadedInfo && (
+                        <div className="rounded-md border border-emerald-500/30 bg-emerald-500/5 p-2.5 space-y-1.5">
+                          <div className="text-[10px] font-semibold uppercase tracking-wide text-emerald-600 dark:text-emerald-400">
+                            ឯកសារបានរក្សាទុក
+                          </div>
+                          <dl className="grid grid-cols-[80px_1fr] gap-x-2 gap-y-1 text-[11px]">
+                            <dt className="text-muted-foreground">Provider</dt>
+                            <dd className="font-mono">{uploadedInfo.provider}{uploadedInfo.bucket ? ` · ${uploadedInfo.bucket}` : ""}</dd>
+                            <dt className="text-muted-foreground">Path</dt>
+                            <dd className="flex items-center gap-1.5 min-w-0">
+                              <code className="truncate font-mono text-[10.5px]" title={uploadedInfo.path}>{uploadedInfo.path}</code>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  navigator.clipboard?.writeText(uploadedInfo.path);
+                                  showToast("បានចម្លងតំណ");
+                                }}
+                                className="shrink-0 rounded bg-muted px-1.5 py-0.5 text-[9.5px] font-semibold hover:bg-muted/70"
+                              >
+                                Copy
+                              </button>
+                            </dd>
+                            {uploadedInfo.size > 0 && (
+                              <>
+                                <dt className="text-muted-foreground">Size</dt>
+                                <dd className="font-mono">
+                                  {(uploadedInfo.size / 1024 / 1024).toFixed(2)} MB
+                                  <span className="text-muted-foreground"> ({uploadedInfo.size.toLocaleString()} B)</span>
+                                </dd>
+                              </>
+                            )}
+                            <dt className="text-muted-foreground">MIME</dt>
+                            <dd className="font-mono">{uploadedInfo.mime}</dd>
+                          </dl>
+                        </div>
+                      )}
+
                       {uploadStage === "error" && uploadError && (
                         <div className="space-y-1.5">
                           <p className="text-[10px] text-destructive">{uploadError}</p>
