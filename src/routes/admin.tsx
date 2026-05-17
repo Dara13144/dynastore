@@ -202,6 +202,12 @@ function AdminPage() {
               label="មាតិកា"
             />
             <TabBtn
+              active={tab === "tutorials"}
+              onClick={() => setTab("tutorials")}
+              icon={<Play className="h-3.5 w-3.5" />}
+              label="វីដេអូ"
+            />
+            <TabBtn
               active={tab === "settings"}
               onClick={() => setTab("settings")}
               icon={<SettingsIcon className="h-3.5 w-3.5" />}
