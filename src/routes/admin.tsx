@@ -1485,6 +1485,16 @@ function GamesTab() {
           {toast}
         </div>
       )}
+
+      <SplitFileGuideDialog
+        open={splitGuideOpen}
+        onClose={() => setSplitGuideOpen(false)}
+        fileSize={draftFile?.size ?? null}
+        onSwitchToExternal={() => {
+          setSourceMode("s3");
+          setSplitGuideOpen(false);
+        }}
+      />
     </div>
   );
 }
