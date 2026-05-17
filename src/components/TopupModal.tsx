@@ -426,24 +426,36 @@ export function TopupModal({ onClose, onToast }: Props) {
         const qrY = HEADER_H + TEXT_BLOCK_H + SEP_H;
         ctx.drawImage(img, qrX, qrY, QR_SIZE, QR_SIZE);
 
-        // Center KHQR seal with riel symbol
+        // Center KHQR seal (image)
         const cx = W / 2;
         const cy = qrY + QR_SIZE / 2;
-        const r = 48;
+        const r = 56;
         // White ring background
         ctx.fillStyle = "#ffffff";
         ctx.beginPath();
-        ctx.arc(cx, cy, r + 4, 0, Math.PI * 2);
+        ctx.arc(cx, cy, r + 5, 0, Math.PI * 2);
         ctx.fill();
-        ctx.fillStyle = KHQR_RED;
-        ctx.beginPath();
-        ctx.arc(cx, cy, r, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.fillStyle = "#ffffff";
-        ctx.font = "italic 800 36px system-ui, -apple-system, sans-serif";
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
-        ctx.fillText("khqr", cx, cy + 2);
+
+        const sealImg = new Image();
+        sealImg.crossOrigin = "anonymous";
+        await new Promise<void>((resolve) => {
+          sealImg.onload = () => resolve();
+          sealImg.onerror = () => resolve();
+          sealImg.src = khqrSeal;
+        });
+        if (sealImg.complete && sealImg.naturalWidth > 0) {
+          ctx.save();
+          ctx.beginPath();
+          ctx.arc(cx, cy, r, 0, Math.PI * 2);
+          ctx.clip();
+          ctx.drawImage(sealImg, cx - r, cy - r, r * 2, r * 2);
+          ctx.restore();
+        } else {
+          ctx.fillStyle = KHQR_RED;
+          ctx.beginPath();
+          ctx.arc(cx, cy, r, 0, Math.PI * 2);
+          ctx.fill();
+        }
 
         URL.revokeObjectURL(url);
         canvas.toBlob((blob) => {
