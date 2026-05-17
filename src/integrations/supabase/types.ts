@@ -241,6 +241,7 @@ export type Database = {
           id: string
           image_url: string | null
           price_coins: number
+          storage_provider: string
           title: string
           visible: boolean
         }
@@ -254,6 +255,7 @@ export type Database = {
           id: string
           image_url?: string | null
           price_coins?: number
+          storage_provider?: string
           title: string
           visible?: boolean
         }
@@ -267,6 +269,7 @@ export type Database = {
           id?: string
           image_url?: string | null
           price_coins?: number
+          storage_provider?: string
           title?: string
           visible?: boolean
         }
