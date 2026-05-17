@@ -297,7 +297,65 @@ function GamesTab() {
   const [draftFile, setDraftFile] = useState<File | null>(null);
   const [draftFileError, setDraftFileError] = useState<string | null>(null);
   const [draftUrlError, setDraftUrlError] = useState<string | null>(null);
-  const [sourceMode, setSourceMode] = useState<"file" | "library">("file");
+  const [sourceMode, setSourceMode] = useState<"file" | "s3" | "library">("file");
+  const [s3Connected, setS3Connected] = useState<boolean | null>(null);
+  const [s3UploadedKey, setS3UploadedKey] = useState<string | null>(null);
+  const [s3UploadedSize, setS3UploadedSize] = useState<number | null>(null);
+  const [s3Pct, setS3Pct] = useState<number | null>(null);
+  const [s3Error, setS3Error] = useState<string | null>(null);
+  const [s3Busy, setS3Busy] = useState(false);
+  const s3XhrRef = useRef<XMLHttpRequest | null>(null);
+  const getS3SignedUploadUrlFn = useServerFn(getS3SignedUploadUrl);
+  const getS3StatusFn = useServerFn(getS3Status);
+  useEffect(() => {
+    getS3StatusFn({})
+      .then((r) => setS3Connected(r.connected))
+      .catch(() => setS3Connected(false));
+  }, [getS3StatusFn]);
+
+  const uploadToS3 = async (gameId: string, file: File) => {
+    setS3Busy(true);
+    setS3Error(null);
+    setS3Pct(0);
+    try {
+      const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+      const key = `games/${gameId}/${Date.now()}_${safeName}`;
+      const signed = await getS3SignedUploadUrlFn({
+        data: { key, contentType: file.type || "application/octet-stream" },
+      });
+      await new Promise<void>((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        s3XhrRef.current = xhr;
+        xhr.open(signed.method || "PUT", signed.uploadUrl);
+        if (file.type) xhr.setRequestHeader("Content-Type", file.type);
+        xhr.upload.onprogress = (e) => {
+          if (e.lengthComputable) setS3Pct(Math.round((e.loaded / e.total) * 100));
+        };
+        xhr.onload = () => {
+          s3XhrRef.current = null;
+          if (xhr.status >= 200 && xhr.status < 300) resolve();
+          else reject(new Error(`S3 PUT ${xhr.status}: ${xhr.responseText.slice(0, 200)}`));
+        };
+        xhr.onerror = () => {
+          s3XhrRef.current = null;
+          reject(new Error("network error"));
+        };
+        xhr.onabort = () => {
+          s3XhrRef.current = null;
+          reject(new Error("aborted"));
+        };
+        xhr.send(file);
+      });
+      setS3UploadedKey(signed.key);
+      setS3UploadedSize(file.size);
+      setS3Pct(100);
+      setDraft((d) => ({ ...d, file_path: signed.key, file_size_bytes: file.size }));
+    } catch (e) {
+      setS3Error(e instanceof Error ? e.message : "unknown");
+    } finally {
+      setS3Busy(false);
+    }
+  };
 
   const showToast = (m: string) => {
     setToast(m);
