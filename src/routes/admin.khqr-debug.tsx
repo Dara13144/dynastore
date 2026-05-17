@@ -76,6 +76,14 @@ function KhqrDebugPage() {
               </Section>
             )}
 
+            {result.recommendations.length > 0 && (
+              <Section title={`How to fix (${result.recommendations.length})`} tone="fix">
+                <div className="space-y-3">
+                  {result.recommendations.map((r, i) => <RecommendationCard key={i} rec={r} />)}
+                </div>
+              </Section>
+            )}
+
             <Section title={`Parsed Tags (${result.tags.length})`}>
               <div className="space-y-2">
                 {result.tags.map((t, i) => <TagRow key={i} tag={t} />)}
