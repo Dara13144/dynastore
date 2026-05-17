@@ -592,7 +592,7 @@ function GamesTab() {
       </div>
 
       {creating && (
-        <div className="rounded-2xl glass p-5 space-y-3">
+        <div className="rounded-2xl glass p-5 space-y-3 animate-scale-in origin-top">
           <h3 className="font-semibold text-sm">បន្ថែមហ្គេមថ្មី</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <Field
