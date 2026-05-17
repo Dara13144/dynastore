@@ -845,47 +845,93 @@ function GamesTab() {
                   {draftFileError && (
                     <span className="text-[10px] text-destructive mt-1 block">{draftFileError}</span>
                   )}
-                  {uploadPct !== null && (
-                    <div className="mt-2 space-y-1">
-                      <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
-                        <div
-                          className="h-full bg-primary transition-all"
-                          style={{ width: `${uploadPct}%` }}
-                        />
+                  {uploadStage !== "idle" && (
+                    <div
+                      className={`mt-2 space-y-1 rounded-lg border p-2 ${
+                        uploadStage === "error"
+                          ? "border-destructive/40 bg-destructive/5"
+                          : uploadStage === "done"
+                            ? "border-emerald-500/40 bg-emerald-500/5"
+                            : "border-border bg-muted/30"
+                      }`}
+                      role="status"
+                      aria-live="polite"
+                    >
+                      <div className="flex items-center gap-1.5 text-[11px] font-semibold">
+                        {uploadStage === "preparing" && (
+                          <>
+                            <Loader2 className="h-3 w-3 animate-spin" /> Preparing…
+                          </>
+                        )}
+                        {uploadStage === "uploading" && (
+                          <>
+                            <Loader2 className="h-3 w-3 animate-spin" /> Uploading…
+                          </>
+                        )}
+                        {uploadStage === "processing" && (
+                          <>
+                            <Loader2 className="h-3 w-3 animate-spin" /> Processing…
+                          </>
+                        )}
+                        {uploadStage === "done" && (
+                          <span className="text-emerald-500 inline-flex items-center gap-1.5">
+                            <Check className="h-3 w-3" /> Done
+                          </span>
+                        )}
+                        {uploadStage === "error" && (
+                          <span className="text-destructive inline-flex items-center gap-1.5">
+                            <X className="h-3 w-3" /> Error
+                          </span>
+                        )}
                       </div>
-                      <div className="flex items-center justify-between text-[10px] text-muted-foreground">
-                        <span>
-                          {uploadPct}%
-                          {uploadStats && uploadStats.total > 0 && (
-                            <>
-                              {" · "}
-                              {(uploadStats.sent / 1024 / 1024).toFixed(1)}/
-                              {(uploadStats.total / 1024 / 1024).toFixed(1)} MB
-                              {uploadStats.speedBps > 0 && (
-                                <>
-                                  {" · "}
-                                  {(uploadStats.speedBps / 1024 / 1024).toFixed(2)} MB/s
-                                </>
-                              )}
-                              {uploadStats.etaSec > 0 && uploadStats.etaSec < 86400 && (
-                                <>
-                                  {" · ETA "}
-                                  {uploadStats.etaSec >= 60
-                                    ? `${Math.round(uploadStats.etaSec / 60)}m`
-                                    : `${Math.round(uploadStats.etaSec)}s`}
-                                </>
-                              )}
-                            </>
-                          )}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={cancelUpload}
-                          className="rounded-full bg-destructive/15 px-2 py-0.5 text-[10px] font-semibold text-destructive hover:bg-destructive/25"
-                        >
-                          បោះបង់
-                        </button>
-                      </div>
+
+                      {(uploadStage === "uploading" || uploadStage === "processing" || uploadStage === "done") &&
+                        uploadPct !== null && (
+                          <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
+                            <div
+                              className={`h-full transition-all ${uploadStage === "done" ? "bg-emerald-500" : "bg-primary"}`}
+                              style={{ width: `${uploadPct}%` }}
+                            />
+                          </div>
+                        )}
+
+                      {uploadStage === "uploading" && uploadStats && (
+                        <div className="flex items-center justify-between text-[10px] text-muted-foreground">
+                          <span>
+                            {uploadPct ?? 0}% ·{" "}
+                            {(uploadStats.sent / 1024 / 1024).toFixed(1)}/
+                            {(uploadStats.total / 1024 / 1024).toFixed(1)} MB
+                            {uploadStats.speedBps > 0 && (
+                              <> · {(uploadStats.speedBps / 1024 / 1024).toFixed(2)} MB/s</>
+                            )}
+                            {uploadStats.etaSec > 0 && uploadStats.etaSec < 86400 && (
+                              <>
+                                {" · ETA "}
+                                {uploadStats.etaSec >= 60
+                                  ? `${Math.round(uploadStats.etaSec / 60)}m`
+                                  : `${Math.round(uploadStats.etaSec)}s`}
+                              </>
+                            )}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={cancelUpload}
+                            className="rounded-full bg-destructive/15 px-2 py-0.5 text-[10px] font-semibold text-destructive hover:bg-destructive/25"
+                          >
+                            បោះបង់
+                          </button>
+                        </div>
+                      )}
+
+                      {uploadStage === "processing" && (
+                        <p className="text-[10px] text-muted-foreground">
+                          កំពុងរក្សាទុកព័ត៌មានហ្គេមទៅមូលដ្ឋានទិន្នន័យ…
+                        </p>
+                      )}
+
+                      {uploadStage === "error" && uploadError && (
+                        <p className="text-[10px] text-destructive">{uploadError}</p>
+                      )}
                     </div>
                   )}
                 </div>
