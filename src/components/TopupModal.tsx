@@ -26,6 +26,78 @@ type Props = { onClose: () => void; onToast: (m: string) => void };
 type Mode = "auto" | "manual";
 
 const PRESETS = [1, 2, 5, 10, 20, 50];
+const MERCHANT_NAME = "DYNA STORE";
+const KHQR_RED = "#E21A23";
+
+function KhqrCard({
+  qrValue,
+  amount,
+  innerRef,
+}: {
+  qrValue: string | null;
+  amount: number;
+  innerRef?: React.RefObject<HTMLDivElement | null>;
+}) {
+  return (
+    <div
+      ref={innerRef}
+      className="w-full overflow-hidden rounded-2xl bg-white shadow-md ring-1 ring-black/5"
+    >
+      {/* Red header */}
+      <div
+        className="flex items-center justify-center py-2"
+        style={{ backgroundColor: KHQR_RED }}
+      >
+        <span className="text-white font-black tracking-wider text-lg leading-none">
+          KH<span className="inline-block -translate-y-[1px]">Q</span>R
+        </span>
+      </div>
+
+      {/* Merchant + amount */}
+      <div className="px-5 pt-4">
+        <div className="text-[11px] font-semibold uppercase tracking-wider text-black/90">
+          {MERCHANT_NAME}
+        </div>
+        <div className="mt-1 text-2xl font-bold text-black tabular-nums">
+          {amount > 0 ? amount.toFixed(2) : "0"}
+          <span className="ml-1 text-xs font-semibold text-black/60">USD</span>
+        </div>
+      </div>
+
+      {/* Dashed separator */}
+      <div className="px-5 py-3">
+        <div className="border-t border-dashed border-black/30" />
+      </div>
+
+      {/* QR */}
+      <div className="px-5 pb-5 flex justify-center">
+        <div className="relative">
+          {qrValue ? (
+            <QRCode
+              value={qrValue}
+              size={240}
+              style={{ height: "auto", maxWidth: "100%", width: "100%" }}
+              viewBox="0 0 256 256"
+            />
+          ) : (
+            <div className="h-[240px] w-[240px] grid place-items-center text-muted-foreground">
+              <Loader2 className="h-5 w-5 animate-spin" />
+            </div>
+          )}
+          {/* Center logo */}
+          {qrValue && (
+            <div
+              className="absolute inset-0 m-auto h-12 w-12 rounded-full grid place-items-center text-white font-black text-base shadow"
+              style={{ backgroundColor: KHQR_RED }}
+            >
+              C
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export function TopupModal({ onClose, onToast }: Props) {
   const cfgFn = useServerFn(getTopupConfig);
