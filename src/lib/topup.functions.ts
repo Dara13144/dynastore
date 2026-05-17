@@ -331,7 +331,8 @@ export const createBakongTopup = createServerFn({ method: "POST" })
         `[createBakongTopup] md5Hex is ${typeof md5Hex} — export missing from "@/lib/bakong.server" (src/lib/bakong.server.ts).`,
       );
     }
-    const qr = buildKhqr(data.amount_usd, billNumber);
+    const accountId = await getEffectiveBakongAccountId();
+    const qr = buildKhqr(data.amount_usd, billNumber, accountId);
     const md5 = md5Hex(qr);
     const expiresAt = new Date(Date.now() + BAKONG_TTL_SEC * 1000).toISOString();
 
