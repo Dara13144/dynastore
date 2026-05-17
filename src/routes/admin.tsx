@@ -313,25 +313,48 @@ function GamesTab() {
     speedBps: number;
     etaSec: number;
   } | null>(null);
+  type UploadStage = "idle" | "preparing" | "uploading" | "processing" | "done" | "error";
+  const [uploadStage, setUploadStage] = useState<UploadStage>("idle");
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const uploadRef = useRef<{ abort: () => void } | null>(null);
   const validateFile = (file: File): string | null => validateGameFile(file);
 
+  // Map raw upload errors to friendlier Khmer messages.
+  const friendlyUploadError = (raw: string): string => {
+    const m = raw.toLowerCase();
+    if (m.includes("network") || m.includes("failed to fetch") || m.includes("econnreset"))
+      return "ការតភ្ជាប់បណ្ដាញដាច់ — សូមព្យាយាមម្ដងទៀត";
+    if (m.includes("timeout") || m.includes("etimedout"))
+      return "Upload អស់ពេល — សូមព្យាយាមម្ដងទៀតជាមួយបណ្ដាញលឿនជាង";
+    if (m.includes("401") || m.includes("unauthorized") || m.includes("jwt"))
+      return "សិទ្ធិផុតកំណត់ — សូមចូលគណនីឡើងវិញ";
+    if (m.includes("403") || m.includes("forbidden"))
+      return "មិនមានសិទ្ធិ upload — ត្រូវការ admin role";
+    if (m.includes("413") || m.includes("payload too large") || m.includes("entity too large"))
+      return "ឯកសារធំពេក — ខាងម៉ាស៊ីនបដិសេធ";
+    if (m.includes("507") || m.includes("storage") || m.includes("quota"))
+      return "ទំហំផ្ទុកមិនគ្រប់ — សូមទាក់ទង admin";
+    return raw;
+  };
+
   // Warn before closing/refreshing tab while an upload is in flight.
   useEffect(() => {
-    if (uploadPct === null) return;
+    if (uploadStage !== "uploading" && uploadStage !== "processing") return;
     const handler = (e: BeforeUnloadEvent) => {
       e.preventDefault();
       e.returnValue = "";
     };
     window.addEventListener("beforeunload", handler);
     return () => window.removeEventListener("beforeunload", handler);
-  }, [uploadPct]);
+  }, [uploadStage]);
 
   const cancelUpload = () => {
     uploadRef.current?.abort();
     uploadRef.current = null;
     setUploadPct(null);
     setUploadStats(null);
+    setUploadStage("idle");
+    setUploadError(null);
     showToast("Upload បានបោះបង់");
   };
 
@@ -341,46 +364,57 @@ function GamesTab() {
   ): Promise<{ path: string; size: number } | null> => {
     const err = validateFile(file);
     if (err) {
+      setUploadStage("error");
+      setUploadError(err);
       showToast(err);
       return null;
     }
+    setUploadStage("preparing");
+    setUploadError(null);
     const safe = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
     const path = `${gameId}/${Date.now()}_${safe}`;
-    // Use single PUT only for very small files (<=2MB). Anything larger
-    // goes through TUS so we get resumable, chunked, abortable streaming
-    // that keeps the UI responsive and never blocks on a single huge PUT.
     const RESUMABLE_THRESHOLD = 2 * 1024 * 1024; // 2MB
     if (file.size <= RESUMABLE_THRESHOLD) {
+      setUploadStage("uploading");
+      setUploadPct(0);
+      setUploadStats({ sent: 0, total: file.size, speedBps: 0, etaSec: 0 });
       const { error } = await supabase.storage
         .from("game-files")
         .upload(path, file, { upsert: true, contentType: file.type || "application/octet-stream" });
       if (error) {
-        showToast(`Upload: ${error.message}`);
+        const friendly = friendlyUploadError(error.message);
+        setUploadStage("error");
+        setUploadError(friendly);
+        setUploadPct(null);
+        setUploadStats(null);
+        showToast(`Upload: ${friendly}`);
         return null;
       }
+      setUploadPct(100);
+      setUploadStats({ sent: file.size, total: file.size, speedBps: 0, etaSec: 0 });
       return { path, size: file.size };
     }
-    // Resumable upload via TUS for large files
     const tus = await import("tus-js-client");
     const { data: sess } = await supabase.auth.getSession();
     const token = sess.session?.access_token;
     if (!token) {
+      setUploadStage("error");
+      setUploadError("សិទ្ធិផុតកំណត់ — សូមចូលគណនីឡើងវិញ");
       showToast("Upload: not authenticated");
       return null;
     }
     const projectUrl = import.meta.env.VITE_SUPABASE_URL as string;
-    // Adaptive chunk size: bigger chunks for big files cut request overhead,
-    // but stay bounded so we don't pin memory at multi-GB scale.
     const GB = 1024 * 1024 * 1024;
     const chunkSize =
       file.size >= 50 * GB
-        ? 64 * 1024 * 1024 // 64MB for >=50GB
+        ? 64 * 1024 * 1024
         : file.size >= 5 * GB
-          ? 32 * 1024 * 1024 // 32MB for >=5GB
+          ? 32 * 1024 * 1024
           : file.size >= 200 * 1024 * 1024
-            ? 16 * 1024 * 1024 // 16MB for >=200MB
-            : 8 * 1024 * 1024; // 8MB default
+            ? 16 * 1024 * 1024
+            : 8 * 1024 * 1024;
     return await new Promise((resolve) => {
+      setUploadStage("uploading");
       setUploadPct(0);
       setUploadStats({ sent: 0, total: file.size, speedBps: 0, etaSec: 0 });
       let lastTs = performance.now();
@@ -402,20 +436,21 @@ function GamesTab() {
           cacheControl: "3600",
         },
         chunkSize,
-        // parallelUploads: 1 keeps memory bounded for huge files.
         parallelUploads: 1,
         onError: (err: Error) => {
           if (aborted) return;
+          const friendly = friendlyUploadError(err.message);
+          setUploadStage("error");
+          setUploadError(friendly);
           setUploadPct(null);
           setUploadStats(null);
           uploadRef.current = null;
-          showToast(`Upload: ${err.message}`);
+          showToast(`Upload: ${friendly}`);
           resolve(null);
         },
         onProgress: (sent: number, total: number) => {
           const now = performance.now();
           const dt = (now - lastTs) / 1000;
-          // Throttle React updates to ~4/s to keep the UI smooth on huge files.
           if (dt >= 0.25 || sent === total) {
             const speedBps = dt > 0 ? (sent - lastSent) / dt : 0;
             const remaining = Math.max(total - sent, 0);
@@ -427,8 +462,8 @@ function GamesTab() {
           }
         },
         onSuccess: () => {
-          setUploadPct(null);
-          setUploadStats(null);
+          setUploadPct(100);
+          setUploadStats({ sent: file.size, total: file.size, speedBps: 0, etaSec: 0 });
           uploadRef.current = null;
           resolve({ path, size: file.size });
         },
@@ -449,7 +484,6 @@ function GamesTab() {
         if (prev.length) upload.resumeFromPreviousUpload(prev[0]);
         upload.start();
       }).catch(() => {
-        // localStorage unavailable — start fresh rather than blocking.
         if (!aborted) upload.start();
       });
     });
@@ -517,6 +551,8 @@ function GamesTab() {
       if (preErr) setDraftFileError(preErr);
     }
     setBusy(true);
+    setUploadError(null);
+    if (!draftFile) setUploadStage("processing");
     const result = await submitCreateGame(
       {
         id: draft.id,
@@ -531,16 +567,31 @@ function GamesTab() {
       },
       draftFile,
       {
-        uploadFile: (gameId, file) => uploadFile(gameId, file as File),
+        uploadFile: async (gameId, file) => {
+          const up = await uploadFile(gameId, file as File);
+          if (up) setUploadStage("processing");
+          return up;
+        },
         insertGame: async (row) => {
           const { error } = await supabase.from("games").insert(row);
           return { error: error ? { message: error.message } : null };
         },
-        onError: showToast,
+        onError: (msg) => {
+          setUploadStage("error");
+          setUploadError(msg);
+          showToast(msg);
+        },
       },
     );
     setBusy(false);
-    if (!result.ok) return;
+    if (!result.ok) {
+      // uploadFile / onError already populated stage. If they didn't, set error here.
+      setUploadStage((s) => (s === "processing" || s === "uploading" ? "error" : s));
+      return;
+    }
+    setUploadStage("done");
+    setUploadPct(null);
+    setUploadStats(null);
     setCreating(false);
     setDraft({
       id: "",
@@ -559,6 +610,7 @@ function GamesTab() {
     setDraftUrlError(null);
     loadGames();
     showToast("បន្ថែមរួច");
+    setTimeout(() => setUploadStage("idle"), 1500);
   };
 
   const categories = Array.from(new Set(games.map((g) => g.category).filter(Boolean))).sort();
@@ -793,47 +845,93 @@ function GamesTab() {
                   {draftFileError && (
                     <span className="text-[10px] text-destructive mt-1 block">{draftFileError}</span>
                   )}
-                  {uploadPct !== null && (
-                    <div className="mt-2 space-y-1">
-                      <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
-                        <div
-                          className="h-full bg-primary transition-all"
-                          style={{ width: `${uploadPct}%` }}
-                        />
+                  {uploadStage !== "idle" && (
+                    <div
+                      className={`mt-2 space-y-1 rounded-lg border p-2 ${
+                        uploadStage === "error"
+                          ? "border-destructive/40 bg-destructive/5"
+                          : uploadStage === "done"
+                            ? "border-emerald-500/40 bg-emerald-500/5"
+                            : "border-border bg-muted/30"
+                      }`}
+                      role="status"
+                      aria-live="polite"
+                    >
+                      <div className="flex items-center gap-1.5 text-[11px] font-semibold">
+                        {uploadStage === "preparing" && (
+                          <>
+                            <Loader2 className="h-3 w-3 animate-spin" /> Preparing…
+                          </>
+                        )}
+                        {uploadStage === "uploading" && (
+                          <>
+                            <Loader2 className="h-3 w-3 animate-spin" /> Uploading…
+                          </>
+                        )}
+                        {uploadStage === "processing" && (
+                          <>
+                            <Loader2 className="h-3 w-3 animate-spin" /> Processing…
+                          </>
+                        )}
+                        {uploadStage === "done" && (
+                          <span className="text-emerald-500 inline-flex items-center gap-1.5">
+                            <Check className="h-3 w-3" /> Done
+                          </span>
+                        )}
+                        {uploadStage === "error" && (
+                          <span className="text-destructive inline-flex items-center gap-1.5">
+                            <X className="h-3 w-3" /> Error
+                          </span>
+                        )}
                       </div>
-                      <div className="flex items-center justify-between text-[10px] text-muted-foreground">
-                        <span>
-                          {uploadPct}%
-                          {uploadStats && uploadStats.total > 0 && (
-                            <>
-                              {" · "}
-                              {(uploadStats.sent / 1024 / 1024).toFixed(1)}/
-                              {(uploadStats.total / 1024 / 1024).toFixed(1)} MB
-                              {uploadStats.speedBps > 0 && (
-                                <>
-                                  {" · "}
-                                  {(uploadStats.speedBps / 1024 / 1024).toFixed(2)} MB/s
-                                </>
-                              )}
-                              {uploadStats.etaSec > 0 && uploadStats.etaSec < 86400 && (
-                                <>
-                                  {" · ETA "}
-                                  {uploadStats.etaSec >= 60
-                                    ? `${Math.round(uploadStats.etaSec / 60)}m`
-                                    : `${Math.round(uploadStats.etaSec)}s`}
-                                </>
-                              )}
-                            </>
-                          )}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={cancelUpload}
-                          className="rounded-full bg-destructive/15 px-2 py-0.5 text-[10px] font-semibold text-destructive hover:bg-destructive/25"
-                        >
-                          បោះបង់
-                        </button>
-                      </div>
+
+                      {(uploadStage === "uploading" || uploadStage === "processing" || uploadStage === "done") &&
+                        uploadPct !== null && (
+                          <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
+                            <div
+                              className={`h-full transition-all ${uploadStage === "done" ? "bg-emerald-500" : "bg-primary"}`}
+                              style={{ width: `${uploadPct}%` }}
+                            />
+                          </div>
+                        )}
+
+                      {uploadStage === "uploading" && uploadStats && (
+                        <div className="flex items-center justify-between text-[10px] text-muted-foreground">
+                          <span>
+                            {uploadPct ?? 0}% ·{" "}
+                            {(uploadStats.sent / 1024 / 1024).toFixed(1)}/
+                            {(uploadStats.total / 1024 / 1024).toFixed(1)} MB
+                            {uploadStats.speedBps > 0 && (
+                              <> · {(uploadStats.speedBps / 1024 / 1024).toFixed(2)} MB/s</>
+                            )}
+                            {uploadStats.etaSec > 0 && uploadStats.etaSec < 86400 && (
+                              <>
+                                {" · ETA "}
+                                {uploadStats.etaSec >= 60
+                                  ? `${Math.round(uploadStats.etaSec / 60)}m`
+                                  : `${Math.round(uploadStats.etaSec)}s`}
+                              </>
+                            )}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={cancelUpload}
+                            className="rounded-full bg-destructive/15 px-2 py-0.5 text-[10px] font-semibold text-destructive hover:bg-destructive/25"
+                          >
+                            បោះបង់
+                          </button>
+                        </div>
+                      )}
+
+                      {uploadStage === "processing" && (
+                        <p className="text-[10px] text-muted-foreground">
+                          កំពុងរក្សាទុកព័ត៌មានហ្គេមទៅមូលដ្ឋានទិន្នន័យ…
+                        </p>
+                      )}
+
+                      {uploadStage === "error" && uploadError && (
+                        <p className="text-[10px] text-destructive">{uploadError}</p>
+                      )}
                     </div>
                   )}
                 </div>
