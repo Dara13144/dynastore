@@ -386,6 +386,7 @@ function GamesTab() {
   type UploadStage = "idle" | "preparing" | "uploading" | "processing" | "done" | "error";
   const [uploadStage, setUploadStage] = useState<UploadStage>("idle");
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [splitGuideOpen, setSplitGuideOpen] = useState(false);
   const uploadRef = useRef<{ abort: () => void } | null>(null);
 
   // Startup check: read game-files bucket's file_size_limit so we can block
