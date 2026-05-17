@@ -295,6 +295,8 @@ function GamesTab() {
     price_coins: 0,
     visible: true,
     image_url: "",
+    screenshots: [],
+    preview_video_url: null,
     file_path: null,
     file_size_bytes: null,
   });
