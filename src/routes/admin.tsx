@@ -909,7 +909,11 @@ function GamesTab() {
                     className="w-full text-xs file:mr-2 file:rounded-full file:border-0 file:bg-primary file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-primary-foreground"
                   />
                   <p className="text-[10px] text-muted-foreground mt-1">
-                    អនុញ្ញាត zip, rar, 7z, tar, gz · ទំហំ 1MB ដល់ 1000GB
+                    អនុញ្ញាត zip, rar, 7z, tar, gz · ទំហំ 1MB ដល់{" "}
+                    <span className="font-semibold text-foreground">{formatBytes(effectiveMaxBytes())}</span>
+                    {bucketLimitBytes && bucketLimitBytes < MAX_GAME_FILE_BYTES ? (
+                      <span className="text-muted-foreground/70"> (ដែនកំណត់ bucket បច្ចុប្បន្ន)</span>
+                    ) : null}
                   </p>
                   {draftFile && !draftFileError && (
                     <span className="text-[10px] text-emerald-400 mt-1 block">
@@ -1115,6 +1119,7 @@ function GamesTab() {
                   validateFile={validateFile}
                   onValidationError={showToast}
                   onUploadCover={uploadCoverImage}
+                  maxUploadLabel={formatBytes(effectiveMaxBytes())}
                 />
               ))}
               {filtered.length === 0 && (
@@ -1176,6 +1181,7 @@ function GameRowEditor({
   validateFile,
   onValidationError,
   onUploadCover,
+  maxUploadLabel,
 }: {
   game: GameRow;
   busy: boolean;
@@ -1185,6 +1191,7 @@ function GameRowEditor({
   validateFile: (f: File) => string | null;
   onValidationError: (m: string) => void;
   onUploadCover: (f: File) => Promise<string | null>;
+  maxUploadLabel: string;
 }) {
   const [edit, setEdit] = useState<GameRow>(game);
   useEffect(() => setEdit(game), [game]);
@@ -1285,7 +1292,7 @@ function GameRowEditor({
               ទាញយក
             </button>
           )}
-          <label title="ផ្ទុកឯកសារគ្រប់ប្រភេទ • គ្មានកំណត់ទំហំ">
+          <label title={`ផ្ទុកឯកសារ zip/rar/7z/tar/gz · អតិបរមា ${maxUploadLabel}`}>
             <span className="text-[10px] text-primary cursor-pointer hover:underline">
               {game.file_path ? "ប្តូរ" : "ផ្ទុកឡើង"}
             </span>
