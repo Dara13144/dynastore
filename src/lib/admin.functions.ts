@@ -194,6 +194,72 @@ export const getAdminDashboard = createServerFn({ method: "GET" })
       0,
     );
 
+    // Monthly sales (last 6 months) — sum approved topups USD per month
+    const sixMonthsAgo = new Date();
+    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 5);
+    sixMonthsAgo.setDate(1);
+    sixMonthsAgo.setHours(0, 0, 0, 0);
+    const { data: monthlyTopups } = await supabaseAdmin
+      .from("topup_requests")
+      .select("amount_usd, reviewed_at, created_at")
+      .eq("status", "approved")
+      .gte("created_at", sixMonthsAgo.toISOString());
+    const monthBuckets: { key: string; label: string; usd: number }[] = [];
+    for (let i = 0; i < 6; i++) {
+      const d = new Date(sixMonthsAgo);
+      d.setMonth(d.getMonth() + i);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+      monthBuckets.push({
+        key,
+        label: d.toLocaleString("en", { month: "short" }),
+        usd: 0,
+      });
+    }
+    for (const t of monthlyTopups ?? []) {
+      const when = new Date(t.reviewed_at ?? t.created_at);
+      const k = `${when.getFullYear()}-${String(when.getMonth() + 1).padStart(2, "0")}`;
+      const b = monthBuckets.find((x) => x.key === k);
+      if (b) b.usd += Number(t.amount_usd ?? 0);
+    }
+
+    // Category breakdown — count of purchases by game category
+    const { data: allLib } = await supabaseAdmin
+      .from("library")
+      .select("game_id")
+      .eq("kind", "owned");
+    const libGameIds = Array.from(new Set((allLib ?? []).map((l) => l.game_id)));
+    const { data: catGames } = libGameIds.length
+      ? await supabaseAdmin.from("games").select("id, category").in("id", libGameIds)
+      : { data: [] as { id: string; category: string }[] };
+    const catMap = new Map((catGames ?? []).map((g) => [g.id, g.category]));
+    const categoryCounts: Record<string, number> = {};
+    for (const l of allLib ?? []) {
+      const c = catMap.get(l.game_id) ?? "other";
+      categoryCounts[c] = (categoryCounts[c] ?? 0) + 1;
+    }
+    const totalCatCount = Object.values(categoryCounts).reduce((s, n) => s + n, 0) || 1;
+    const categories = Object.entries(categoryCounts)
+      .map(([name, count]) => ({ name, count, pct: Math.round((count / totalCatCount) * 100) }))
+      .sort((a, b) => b.count - a.count);
+
+    // 30-day stats
+    const thirtyAgo = new Date(Date.now() - 30 * 86400000).toISOString();
+    const [{ count: newUsers30 }, { count: newPurchases30 }] = await Promise.all([
+      supabaseAdmin
+        .from("profiles")
+        .select("user_id", { count: "exact", head: true })
+        .gte("created_at", thirtyAgo),
+      supabaseAdmin
+        .from("library")
+        .select("id", { count: "exact", head: true })
+        .eq("kind", "owned")
+        .gte("created_at", thirtyAgo),
+    ]);
+    const totalPurchasesAllRes = await supabaseAdmin
+      .from("library")
+      .select("id", { count: "exact", head: true })
+      .eq("kind", "owned");
+
     return {
       totals: {
         totalCoins,
@@ -201,8 +267,12 @@ export const getAdminDashboard = createServerFn({ method: "GET" })
         totalGames,
         totalToppedUsd,
         totalToppedCoins,
-        totalPurchases: (recentPurchases ?? []).length,
+        totalPurchases: totalPurchasesAllRes.count ?? 0,
+        newUsers30: newUsers30 ?? 0,
+        newPurchases30: newPurchases30 ?? 0,
       },
+      monthlySales: monthBuckets.map((b) => ({ month: b.label, usd: Math.round(b.usd * 100) / 100 })),
+      categories,
       recentTopups: (recentTopups ?? []).map((r) => ({
         ...r,
         user_name: nameMap.get(r.user_id) ?? "User",
