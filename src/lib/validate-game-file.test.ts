@@ -153,7 +153,7 @@ describe("createGame integration - boundary file sizes", () => {
     h = makeCreateGame();
   });
 
-  it("accepts a file at exactly 1000GB (uploads + inserts)", async () => {
+  it("accepts a file at exactly 1MB (uploads + inserts)", async () => {
     const r = await h.createGame({
       id: "g1",
       title: "G1",
@@ -164,7 +164,7 @@ describe("createGame integration - boundary file sizes", () => {
     expect(h.insert).toHaveBeenCalledTimes(1);
   });
 
-  it("accepts a file at exactly the maximum (1e80 bytes) (uploads + inserts)", async () => {
+  it("accepts a file at exactly the maximum (1000GB) (uploads + inserts)", async () => {
     const r = await h.createGame({
       id: "g2",
       title: "G2",
@@ -175,7 +175,7 @@ describe("createGame integration - boundary file sizes", () => {
     expect(h.insert).toHaveBeenCalledTimes(1);
   });
 
-  it("rejects 1 byte under 1000GB BEFORE uploading or inserting", async () => {
+  it("rejects 1 byte under 1MB BEFORE uploading or inserting", async () => {
     const r = await h.createGame({
       id: "g3",
       title: "G3",
