@@ -355,7 +355,7 @@ function GamesTab() {
     setUploadStats(null);
     setUploadStage("idle");
     setUploadError(null);
-    toast("Upload បានបោះបង់");
+    showToast("Upload បានបោះបង់");
   };
 
   const uploadFile = async (
