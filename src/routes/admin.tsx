@@ -230,6 +230,7 @@ function AdminPage() {
         {tab === "users" && <UsersTab />}
         {tab === "topups" && <TopupsTab />}
         {tab === "content" && <ContentTab />}
+        {tab === "tutorials" && <TutorialsTab />}
         {tab === "settings" && <SettingsTab />}
         {tab === "logs" && <DownloadLogsTab />}
       </main>
