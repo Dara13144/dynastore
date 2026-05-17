@@ -105,8 +105,8 @@ export class BakongApiError extends Error {
 }
 
 // ---- Token store: DB-backed, falls back to env ----
-// We cannot rewrite the BAKONG_DEVELOPER_TOKEN secret at runtime, so a renewed
-// token is persisted in public.bakong_token (singleton row id=1).
+export type TokenSource = "db" | "env";
+
 async function loadStoredToken(): Promise<string | null> {
   try {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -128,99 +128,204 @@ async function saveStoredToken(token: string): Promise<void> {
     .upsert({ id: 1, token, updated_at: new Date().toISOString() });
 }
 
-async function getActiveToken(): Promise<string> {
+async function getActiveTokenWithSource(): Promise<{ token: string; source: TokenSource }> {
   const stored = await loadStoredToken();
-  if (stored) return stored;
-  return env("BAKONG_DEVELOPER_TOKEN");
+  if (stored) return { token: stored, source: "db" };
+  return { token: env("BAKONG_DEVELOPER_TOKEN"), source: "env" };
+}
+
+function fingerprint(token: string): string {
+  // Never log the full token. Show only last 4 chars + length to identify it.
+  if (token.length <= 4) return "****";
+  return `…${token.slice(-4)}`;
+}
+
+function newRequestId(): string {
+  return `bk_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+}
+
+async function logAuthFailure(row: {
+  request_id: string;
+  endpoint: string;
+  token_source: TokenSource;
+  token: string;
+  http_status: number;
+  response_snippet: string;
+  renew_attempted: boolean;
+  renew_succeeded: boolean | null;
+  context?: Record<string, unknown>;
+}): Promise<void> {
+  // Always emit to console first — DB write may fail.
+  console.error(
+    `[bakong][auth_failure] reqId=${row.request_id} endpoint=${row.endpoint} ` +
+      `status=${row.http_status} tokenSource=${row.token_source} tokenFp=${fingerprint(row.token)} ` +
+      `tokenLen=${row.token.length} renewAttempted=${row.renew_attempted} renewSucceeded=${row.renew_succeeded} ` +
+      `snippet=${row.response_snippet.slice(0, 200)}`,
+  );
+  try {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    await supabaseAdmin.from("bakong_auth_failures").insert({
+      request_id: row.request_id,
+      endpoint: row.endpoint,
+      token_source: row.token_source,
+      token_fingerprint: fingerprint(row.token),
+      token_length: row.token.length,
+      http_status: row.http_status,
+      response_snippet: row.response_snippet.slice(0, 1000),
+      renew_attempted: row.renew_attempted,
+      renew_succeeded: row.renew_succeeded,
+      context: row.context ?? null,
+    });
+  } catch (e) {
+    console.error("[bakong] failed to persist auth failure log:", e);
+  }
 }
 
 /**
  * Exchange the current token for a fresh one via Bakong's /v1/renew_token.
- * Works even if expired, as long as it was issued for the same email.
- * Persists the new token to the DB.
  */
-export async function renewBakongToken(): Promise<string> {
-  const current = await getActiveToken();
-  const res = await fetch(`${BAKONG_API}/v1/renew_token`, {
+export async function renewBakongToken(parentRequestId?: string): Promise<string> {
+  const { token: current, source } = await getActiveTokenWithSource();
+  const requestId = parentRequestId ?? newRequestId();
+  const endpoint = "/v1/renew_token";
+  console.log(
+    `[bakong][renew] reqId=${requestId} tokenSource=${source} tokenFp=${fingerprint(current)} tokenLen=${current.length}`,
+  );
+  const res = await fetch(`${BAKONG_API}${endpoint}`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${current}`,
-    },
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${current}` },
     body: JSON.stringify({}),
   });
+  const bodyText = await res.text().catch(() => "");
   if (!res.ok) {
+    await logAuthFailure({
+      request_id: requestId,
+      endpoint,
+      token_source: source,
+      token: current,
+      http_status: res.status,
+      response_snippet: bodyText,
+      renew_attempted: true,
+      renew_succeeded: false,
+    });
     throw new BakongApiError(
       "auth_error",
       res.status,
-      `Bakong renew_token failed (${res.status}). Re-register at https://api-bakong.nbc.gov.kh/register.`,
+      `[reqId=${requestId}] Bakong renew_token failed (${res.status}) using ${source} token ${fingerprint(current)}. Re-register at https://api-bakong.nbc.gov.kh/register.`,
     );
   }
-  const json = (await res.json()) as { data?: { token?: string } };
-  const newToken = json?.data?.token;
+  let newToken: string | undefined;
+  try {
+    newToken = (JSON.parse(bodyText) as { data?: { token?: string } })?.data?.token;
+  } catch { /* fall through */ }
   if (!newToken) {
-    throw new BakongApiError("auth_error", res.status, `Bakong renew_token: no token in response`);
+    throw new BakongApiError(
+      "auth_error",
+      res.status,
+      `[reqId=${requestId}] Bakong renew_token returned no token. Body: ${bodyText.slice(0, 200)}`,
+    );
   }
   await saveStoredToken(newToken);
-  console.log("[bakong] developer token auto-renewed");
+  console.log(`[bakong][renew] reqId=${requestId} ok — new token ${fingerprint(newToken)} stored in db`);
   return newToken;
 }
 
 export async function checkTransactionByMd5(
   md5: string,
-  opts: { retries?: number; _renewed?: boolean } = {},
+  opts: { retries?: number; _renewed?: boolean; requestId?: string } = {},
 ): Promise<BakongCheckResult> {
-  const token = await getActiveToken();
+  const requestId = opts.requestId ?? newRequestId();
+  const { token, source } = await getActiveTokenWithSource();
   const retries = opts.retries ?? 2;
+  const endpoint = "/v1/check_transaction_by_md5";
   let lastErr: unknown;
 
   for (let attempt = 0; attempt <= retries; attempt++) {
     try {
-      const res = await fetch(`${BAKONG_API}/v1/check_transaction_by_md5`, {
+      const res = await fetch(`${BAKONG_API}${endpoint}`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({ md5 }),
       });
 
-      // Hard auth errors — try one auto-renew, then give up.
       if (res.status === 401 || res.status === 403) {
+        const snippet = await res.text().catch(() => "");
         if (!opts._renewed) {
+          let renewSucceeded = false;
           try {
-            await renewBakongToken();
-            return await checkTransactionByMd5(md5, { ...opts, _renewed: true });
+            await renewBakongToken(requestId);
+            renewSucceeded = true;
           } catch (renewErr) {
-            throw renewErr instanceof BakongApiError
-              ? renewErr
-              : new BakongApiError("auth_error", res.status, `Bakong auth failed and renew failed (${res.status})`);
+            await logAuthFailure({
+              request_id: requestId,
+              endpoint,
+              token_source: source,
+              token,
+              http_status: res.status,
+              response_snippet: snippet,
+              renew_attempted: true,
+              renew_succeeded: false,
+              context: { md5, attempt, renewError: renewErr instanceof Error ? renewErr.message : String(renewErr) },
+            });
+            throw renewErr instanceof BakongApiError ? renewErr : new BakongApiError(
+              "auth_error", res.status,
+              `[reqId=${requestId}] Bakong auth failed and renew failed (${res.status})`,
+            );
           }
+          await logAuthFailure({
+            request_id: requestId,
+            endpoint,
+            token_source: source,
+            token,
+            http_status: res.status,
+            response_snippet: snippet,
+            renew_attempted: true,
+            renew_succeeded: renewSucceeded,
+            context: { md5, attempt, action: "retrying_with_new_token" },
+          });
+          return await checkTransactionByMd5(md5, { ...opts, _renewed: true, requestId });
         }
-        throw new BakongApiError("auth_error", res.status, `Bakong auth failed after renew (${res.status})`);
+        await logAuthFailure({
+          request_id: requestId,
+          endpoint,
+          token_source: source,
+          token,
+          http_status: res.status,
+          response_snippet: snippet,
+          renew_attempted: true,
+          renew_succeeded: true,
+          context: { md5, attempt, action: "auth_failed_after_renew" },
+        });
+        throw new BakongApiError(
+          "auth_error", res.status,
+          `[reqId=${requestId}] Bakong auth failed after renew (${res.status}) using ${source} token ${fingerprint(token)}`,
+        );
       }
       if (res.status === 429) {
-        lastErr = new BakongApiError("rate_limited", 429, "Bakong rate-limited");
+        lastErr = new BakongApiError("rate_limited", 429, `[reqId=${requestId}] Bakong rate-limited`);
       } else if (res.status >= 500) {
-        lastErr = new BakongApiError("upstream_error", res.status, `Bakong ${res.status}`);
+        lastErr = new BakongApiError("upstream_error", res.status, `[reqId=${requestId}] Bakong ${res.status}`);
       } else {
         const text = await res.text();
         try {
           return JSON.parse(text) as BakongCheckResult;
         } catch {
-          throw new BakongApiError("upstream_error", res.status, `Non-JSON response: ${text.slice(0, 200)}`);
+          throw new BakongApiError(
+            "upstream_error", res.status,
+            `[reqId=${requestId}] Non-JSON response: ${text.slice(0, 200)}`,
+          );
         }
       }
     } catch (e) {
       if (e instanceof BakongApiError && e.kind === "auth_error") throw e;
       lastErr = e instanceof BakongApiError ? e : new BakongApiError(
         "network_error", 0,
-        e instanceof Error ? e.message : "Bakong fetch failed",
+        `[reqId=${requestId}] ${e instanceof Error ? e.message : "Bakong fetch failed"}`,
       );
     }
     if (attempt < retries) {
       await new Promise((r) => setTimeout(r, 300 * Math.pow(3, attempt)));
     }
   }
-  throw lastErr instanceof Error ? lastErr : new BakongApiError("network_error", 0, "unknown");
+  throw lastErr instanceof Error ? lastErr : new BakongApiError("network_error", 0, `[reqId=${requestId}] unknown`);
 }
