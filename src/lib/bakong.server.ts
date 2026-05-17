@@ -150,7 +150,7 @@ async function logAuthFailure(entry: {
   context?: Record<string, unknown>;
 }) {
   try {
-    await supabaseAdmin.from("bakong_auth_failures").insert(entry);
+    await supabaseAdmin.from("bakong_auth_failures").insert(entry as any);
   } catch (e) {
     console.error("[bakong] failed to log auth failure", e);
   }
