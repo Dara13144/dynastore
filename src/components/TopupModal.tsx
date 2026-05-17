@@ -479,25 +479,11 @@ export function TopupModal({ onClose, onToast }: Props) {
               )}
               {autoStatus === "waiting" && autoSession && (
                 <div className="mx-auto w-full max-w-[320px] flex flex-col items-center gap-3">
-                  <div
-                    ref={autoQrBoxRef}
-                    className="rounded-2xl bg-white p-5 w-full flex flex-col items-center"
-                  >
-                    <QRCode
-                      value={autoSession.qr}
-                      size={260}
-                      style={{ height: "auto", maxWidth: "100%", width: "100%" }}
-                      viewBox="0 0 256 256"
-                    />
-                    <div className="mt-3 text-center">
-                      <div className="text-[10px] font-semibold tracking-wider text-black">
-                        DYNASTORE • KHQR
-                      </div>
-                      <div className="mt-1 text-sm font-bold text-black">
-                        ${autoSession.amount.toFixed(2)} USD
-                      </div>
-                    </div>
-                  </div>
+                  <KhqrCard
+                    innerRef={autoQrBoxRef}
+                    qrValue={autoSession.qr}
+                    amount={autoSession.amount}
+                  />
                   <div className="w-full rounded-xl bg-muted/30 p-3 text-center">
                     <div className="inline-flex items-center gap-2 text-xs">
                       <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
