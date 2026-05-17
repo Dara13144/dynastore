@@ -286,7 +286,7 @@ export const verifyBakongTopup = createServerFn({ method: "POST" })
 
     type Out =
       | { status: "approved"; new_balance: number; credited: number; error?: undefined }
-      | { status: "pending"; new_balance: 0; credited: 0; error?: "rate_limited" | "upstream_error" | "network_error" }
+      | { status: "pending"; new_balance: 0; credited: 0; error?: "rate_limited" | "upstream_error" | "network_error" | "auth_error" }
       | { status: "rejected" | "expired"; new_balance: 0; credited: 0; error?: undefined };
 
     // Already final?
@@ -313,8 +313,11 @@ export const verifyBakongTopup = createServerFn({ method: "POST" })
       check = await checkTransactionByMd5(row.md5);
     } catch (e) {
       if (e instanceof BakongApiError) {
-        if (e.kind === "auth_error") throw e; // hard — let client surface it
-        console.warn("[verifyBakongTopup] transient Bakong error", { id: row.id, kind: e.kind, status: e.status });
+        if (e.kind === "auth_error") {
+          console.error("[verifyBakongTopup] Bakong auth_error — token invalid/expired", { id: row.id, status: e.status });
+        } else {
+          console.warn("[verifyBakongTopup] transient Bakong error", { id: row.id, kind: e.kind, status: e.status });
+        }
         return { status: "pending", new_balance: 0, credited: 0, error: e.kind } satisfies Out;
       }
       console.error("[verifyBakongTopup] unexpected error", e);
