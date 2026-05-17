@@ -37,8 +37,9 @@ import {
   listSettingsAudit,
   adminSetUserRole,
 } from "@/lib/admin.functions";
-import { validateGameFile, validateGameFileUrl } from "@/lib/validate-game-file";
+import { validateGameFile, validateGameFileUrl, MAX_GAME_FILE_BYTES } from "@/lib/validate-game-file";
 import { submitCreateGame } from "@/lib/create-game";
+import { getGameFilesBucketLimit } from "@/lib/bucket-limit.functions";
 import { DownloadLogsTab } from "@/components/admin/DownloadLogsTab";
 import { DashboardTab } from "@/components/admin/DashboardTab";
 import { TutorialsTab } from "@/components/admin/TutorialsTab";
