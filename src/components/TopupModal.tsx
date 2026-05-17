@@ -63,30 +63,97 @@ export function TopupModal({ onClose, onToast }: Props) {
     return () => clearInterval(t);
   }, [autoStatus]);
 
-  // Auto-poll Bakong every 3s while waiting
+  // Auto-poll Bakong while waiting. Self-scheduling timeout (not setInterval)
+  // lets us back off when the server reports transient upstream issues and
+  // stop hard when it reports unrecoverable ones.
   useEffect(() => {
     if (autoStatus !== "waiting" || !autoSession) return;
     let cancelled = false;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    let failures = 0;          // consecutive transient/network failures
+    let warnedFailure = false; // throttle the "still trying" toast
+
+    const schedule = (ms: number) => {
+      if (cancelled) return;
+      timer = setTimeout(poll, ms);
+    };
+
     const poll = async () => {
       try {
         const r = await verifyAutoFn({ data: { id: autoSession.id } });
         if (cancelled) return;
+
         if (r.status === "approved") {
           setAutoStatus("paid");
           onToast(`✅ បានបញ្ចូល ${autoSession.coins.toLocaleString()} coins`);
           const h = await listFn(); setHistory(h);
           window.dispatchEvent(new Event("wallet:refresh"));
-        } else if (r.status === "expired" || r.status === "rejected") {
-          setAutoStatus("expired");
+          return; // stop polling
         }
+        if (r.status === "expired" || r.status === "rejected") {
+          setAutoStatus("expired");
+          return; // stop polling
+        }
+
+        // pending — check for transient upstream signal
+        if ("error" in r && r.error) {
+          failures += 1;
+          if (!warnedFailure && failures >= 2) {
+            warnedFailure = true;
+            const msg =
+              r.error === "rate_limited"
+                ? "ប្រព័ន្ធ Bakong កំពុងរវល់ — កំពុងព្យាយាមម្តងទៀត…"
+                : r.error === "upstream_error"
+                ? "ប្រព័ន្ធ Bakong មិនទាន់ឆ្លើយតប — កំពុងព្យាយាមម្តងទៀត…"
+                : "បណ្តាញមិនល្អ — កំពុងព្យាយាមម្តងទៀត…";
+            onToast(msg);
+          }
+          // Backoff: 6s → 10s → 15s (cap)
+          schedule(Math.min(15000, 3000 + failures * 3000));
+          return;
+        }
+
+        // pending, healthy — reset counter and continue at 3s
+        if (failures > 0) {
+          failures = 0;
+          warnedFailure = false;
+        }
+        schedule(3000);
       } catch (e) {
-        console.warn("verify poll error", e);
+        if (cancelled) return;
+        // Hard errors from the server — message contains "not_found",
+        // "forbidden", "missing_md5", or BakongApiError("auth_error").
+        const raw = e instanceof Error ? e.message : String(e);
+        console.warn("verify poll error", raw);
+
+        if (/not_found|forbidden|missing_md5/i.test(raw)) {
+          setAutoStatus("expired");
+          onToast("មិនអាចតាមដានបញ្ជរនេះបានទេ — សូមបង្កើតថ្មី");
+          return; // stop polling
+        }
+        if (/auth_error/i.test(raw)) {
+          setAutoStatus("expired");
+          onToast("ការតភ្ជាប់ Bakong ខូច — សូមទាក់ទងផ្នែកជំនួយ");
+          return; // stop polling
+        }
+
+        // Treat unknown thrown errors as transient network issues.
+        failures += 1;
+        if (!warnedFailure && failures >= 2) {
+          warnedFailure = true;
+          onToast("បណ្តាញមិនល្អ — កំពុងព្យាយាមម្តងទៀត…");
+        }
+        schedule(Math.min(15000, 3000 + failures * 3000));
       }
     };
-    const iv = setInterval(poll, 3000);
-    poll();
-    return () => { cancelled = true; clearInterval(iv); };
+
+    poll(); // fire immediately
+    return () => {
+      cancelled = true;
+      if (timer) clearTimeout(timer);
+    };
   }, [autoStatus, autoSession, verifyAutoFn, listFn, onToast]);
+
 
   // Auto-expire client-side
   useEffect(() => {
