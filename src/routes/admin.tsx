@@ -390,6 +390,13 @@ function GamesTab() {
   type UploadStage = "idle" | "preparing" | "uploading" | "processing" | "done" | "error";
   const [uploadStage, setUploadStage] = useState<UploadStage>("idle");
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [uploadedInfo, setUploadedInfo] = useState<{
+    path: string;
+    size: number;
+    mime: string;
+    provider: "supabase" | "s3" | "external_url";
+    bucket?: string;
+  } | null>(null);
   const [splitGuideOpen, setSplitGuideOpen] = useState(false);
   const uploadRef = useRef<{ abort: () => void } | null>(null);
 
