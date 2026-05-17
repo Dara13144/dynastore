@@ -318,7 +318,8 @@ export const verifyBakongTopup = createServerFn({ method: "POST" })
         } else {
           console.warn("[verifyBakongTopup] transient Bakong error", { id: row.id, kind: e.kind, status: e.status });
         }
-        return { status: "pending", new_balance: 0, credited: 0, error: e.kind } satisfies Out;
+        const errKind = e.kind === "auth_error" ? "auth_error" : "upstream_error";
+        return { status: "pending", new_balance: 0, credited: 0, error: errKind } satisfies Out;
       }
       console.error("[verifyBakongTopup] unexpected error", e);
       return { status: "pending", new_balance: 0, credited: 0, error: "network_error" } satisfies Out;
