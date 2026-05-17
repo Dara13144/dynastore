@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
+import { Route as PayRouteImport } from './routes/pay'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as LibraryRouteImport } from './routes/library'
 import { Route as AdminRouteImport } from './routes/admin'
@@ -25,6 +26,11 @@ import { Route as ApiPaymentStatusIdRouteImport } from './routes/api/payment/sta
 const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
   id: '/sitemap.xml',
   path: '/sitemap.xml',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PayRoute = PayRouteImport.update({
+  id: '/pay',
+  path: '/pay',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginRoute = LoginRouteImport.update({
@@ -90,6 +96,7 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AdminRouteWithChildren
   '/library': typeof LibraryRoute
   '/login': typeof LoginRoute
+  '/pay': typeof PayRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/admin/khqr-debug': typeof AdminKhqrDebugRoute
   '/games/$id': typeof GamesIdRoute
@@ -104,6 +111,7 @@ export interface FileRoutesByTo {
   '/admin': typeof AdminRouteWithChildren
   '/library': typeof LibraryRoute
   '/login': typeof LoginRoute
+  '/pay': typeof PayRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/admin/khqr-debug': typeof AdminKhqrDebugRoute
   '/games/$id': typeof GamesIdRoute
@@ -119,6 +127,7 @@ export interface FileRoutesById {
   '/admin': typeof AdminRouteWithChildren
   '/library': typeof LibraryRoute
   '/login': typeof LoginRoute
+  '/pay': typeof PayRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/admin/khqr-debug': typeof AdminKhqrDebugRoute
   '/games/$id': typeof GamesIdRoute
@@ -135,6 +144,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/library'
     | '/login'
+    | '/pay'
     | '/sitemap.xml'
     | '/admin/khqr-debug'
     | '/games/$id'
@@ -149,6 +159,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/library'
     | '/login'
+    | '/pay'
     | '/sitemap.xml'
     | '/admin/khqr-debug'
     | '/games/$id'
@@ -163,6 +174,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/library'
     | '/login'
+    | '/pay'
     | '/sitemap.xml'
     | '/admin/khqr-debug'
     | '/games/$id'
@@ -178,6 +190,7 @@ export interface RootRouteChildren {
   AdminRoute: typeof AdminRouteWithChildren
   LibraryRoute: typeof LibraryRoute
   LoginRoute: typeof LoginRoute
+  PayRoute: typeof PayRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   GamesIdRoute: typeof GamesIdRoute
   ApiPaymentCreateRoute: typeof ApiPaymentCreateRoute
@@ -193,6 +206,13 @@ declare module '@tanstack/react-router' {
       path: '/sitemap.xml'
       fullPath: '/sitemap.xml'
       preLoaderRoute: typeof SitemapDotxmlRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pay': {
+      id: '/pay'
+      path: '/pay'
+      fullPath: '/pay'
+      preLoaderRoute: typeof PayRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login': {
@@ -291,6 +311,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminRoute: AdminRouteWithChildren,
   LibraryRoute: LibraryRoute,
   LoginRoute: LoginRoute,
+  PayRoute: PayRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   GamesIdRoute: GamesIdRoute,
   ApiPaymentCreateRoute: ApiPaymentCreateRoute,
@@ -301,3 +322,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
