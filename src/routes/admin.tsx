@@ -46,6 +46,8 @@ import {
   oversizeForBucketMessage,
 } from "@/lib/upload-error-messages";
 import { DownloadLogsTab } from "@/components/admin/DownloadLogsTab";
+import { SplitFileGuideDialog } from "@/components/admin/SplitFileGuideDialog";
+import { isPlatformCapError } from "@/lib/chunk-plan";
 import { DashboardTab } from "@/components/admin/DashboardTab";
 import { TutorialsTab } from "@/components/admin/TutorialsTab";
 import { adminListTopupRequests, adminApproveTopup, adminRejectTopup } from "@/lib/topup.functions";
