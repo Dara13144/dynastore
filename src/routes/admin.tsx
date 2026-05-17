@@ -513,7 +513,7 @@ function GamesTab() {
         parallelUploads: 1,
         onError: (err: Error) => {
           if (aborted) return;
-          const friendly = friendlyUploadError(err.message);
+          const friendly = friendlyUploadError(err.message, { fileSize: file.size });
           setUploadStage("error");
           setUploadError(friendly);
           setUploadPct(null);
