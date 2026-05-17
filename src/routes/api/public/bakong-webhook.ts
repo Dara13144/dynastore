@@ -63,21 +63,20 @@ export const Route = createFileRoute("/api/public/bakong-webhook")({
         }
 
         // Resolve topup_requests row from any of {id, md5, hash}.
-        let row:
-          | { id: string; user_id: string; status: string; md5: string | null; amount_usd: number; coins: number; expires_at: string | null }
-          | null = null;
+        type Row = { id: string; user_id: string; status: string; md5: string | null; amount_usd: number; coins: number; expires_at: string | null };
+        let row: Row | null = null;
         if (payload.id) {
           const { data } = await supabaseAdmin
             .from("topup_requests")
             .select("id, user_id, status, md5, amount_usd, coins, expires_at")
             .eq("id", payload.id).maybeSingle();
-          row = data as typeof row;
+          row = (data ?? null) as Row | null;
         } else if (payload.md5) {
           const { data } = await supabaseAdmin
             .from("topup_requests")
             .select("id, user_id, status, md5, amount_usd, coins, expires_at")
             .eq("md5", payload.md5).maybeSingle();
-          row = data as typeof row;
+          row = (data ?? null) as Row | null;
         }
         if (!row) return json({ error: "not_found" }, 404);
 
