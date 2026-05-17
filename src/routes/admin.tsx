@@ -38,6 +38,7 @@ import {
 import { validateGameFile, validateGameFileUrl } from "@/lib/validate-game-file";
 import { submitCreateGame } from "@/lib/create-game";
 import { DownloadLogsTab } from "@/components/admin/DownloadLogsTab";
+import { DashboardTab } from "@/components/admin/DashboardTab";
 import { adminListTopupRequests, adminApproveTopup, adminRejectTopup } from "@/lib/topup.functions";
 import {
   AlertDialog,
