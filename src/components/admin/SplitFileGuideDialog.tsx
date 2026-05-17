@@ -9,14 +9,16 @@ import {
 import { Button } from "@/components/ui/button";
 import { computeChunkPlan, PLATFORM_PER_UPLOAD_CAP } from "@/lib/chunk-plan";
 import { formatBytes } from "@/lib/upload-error-messages";
-import { Scissors, Cloud, Terminal } from "lucide-react";
+import { Scissors, Cloud, Terminal, LinkIcon } from "lucide-react";
 
 interface Props {
   open: boolean;
   onClose: () => void;
   fileSize?: number | null;
-  /** Optional callback so admin can jump to the S3 / External URL tab. */
+  /** Optional callback so admin can jump to the S3 tab. */
   onSwitchToExternal?: () => void;
+  /** Optional callback so admin can jump to the External URL tab (no setup, no cap). */
+  onSwitchToLibrary?: () => void;
 }
 
 /**
@@ -24,7 +26,13 @@ interface Props {
  * cap ~50GB). Explains how to split the file into smaller parts and shows a
  * concrete chunk plan up to ~1000GB.
  */
-export function SplitFileGuideDialog({ open, onClose, fileSize, onSwitchToExternal }: Props) {
+export function SplitFileGuideDialog({
+  open,
+  onClose,
+  fileSize,
+  onSwitchToExternal,
+  onSwitchToLibrary,
+}: Props) {
   const cap = PLATFORM_PER_UPLOAD_CAP;
   const examples = [
     100 * 1024 ** 3,
@@ -109,13 +117,18 @@ export function SplitFileGuideDialog({ open, onClose, fileSize, onSwitchToExtern
           </div>
         </div>
 
-        <DialogFooter className="gap-2 sm:gap-2">
-          {onSwitchToExternal && (
-            <Button type="button" variant="outline" onClick={onSwitchToExternal}>
-              <Cloud className="h-3.5 w-3.5 mr-1.5" /> ប្ដូរទៅ S3 / External
+        <DialogFooter className="gap-2 sm:gap-2 flex-wrap">
+          {onSwitchToLibrary && (
+            <Button type="button" onClick={onSwitchToLibrary} className="bg-emerald-600 hover:bg-emerald-700 text-white">
+              <LinkIcon className="h-3.5 w-3.5 mr-1.5" /> ប្រើ External URL (មិនបាច់បំបែក)
             </Button>
           )}
-          <Button type="button" onClick={onClose}>យល់ហើយ</Button>
+          {onSwitchToExternal && (
+            <Button type="button" variant="outline" onClick={onSwitchToExternal}>
+              <Cloud className="h-3.5 w-3.5 mr-1.5" /> ប្ដូរទៅ AWS S3
+            </Button>
+          )}
+          <Button type="button" variant="ghost" onClick={onClose}>យល់ហើយ</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

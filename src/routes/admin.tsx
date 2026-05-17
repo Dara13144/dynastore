@@ -1649,6 +1649,10 @@ function GamesTab() {
         open={splitGuideOpen}
         onClose={() => setSplitGuideOpen(false)}
         fileSize={draftFile?.size ?? null}
+        onSwitchToLibrary={() => {
+          setSourceMode("library");
+          setSplitGuideOpen(false);
+        }}
         onSwitchToExternal={() => {
           setSourceMode("s3");
           setSplitGuideOpen(false);
