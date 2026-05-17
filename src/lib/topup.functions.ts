@@ -123,8 +123,12 @@ export const adminListTopupRequests = createServerFn({ method: "POST" })
     const map = new Map((profs ?? []).map(p => [p.user_id, p.display_name]));
     // sign slip URLs
     const out = await Promise.all((rows ?? []).map(async (r) => {
-      const { data: signed } = await supabaseAdmin.storage.from("topup-slips").createSignedUrl(r.slip_path, 60 * 30);
-      return { ...r, user_name: map.get(r.user_id) ?? "—", slip_url: signed?.signedUrl ?? null };
+      let slip_url: string | null = null;
+      if (r.slip_path) {
+        const { data: signed } = await supabaseAdmin.storage.from("topup-slips").createSignedUrl(r.slip_path, 60 * 30);
+        slip_url = signed?.signedUrl ?? null;
+      }
+      return { ...r, user_name: map.get(r.user_id) ?? "—", slip_url };
     }));
     return out;
   });
