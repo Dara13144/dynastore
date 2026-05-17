@@ -78,6 +78,15 @@ describe("friendlyUploadError — TUS flow failures with exact Khmer text", () =
     );
   });
 
+  it("413 with file under bucket limit blames platform per-upload cap, not bucket", () => {
+    const out = friendlyUploadError("response code: 413, response text: Maximum size exceeded", {
+      fileSize: 63 * ONE_GB,
+      bucketLimitBytes: 1000 * ONE_GB,
+    });
+    expect(out).toBe(
+      'ឯកសារ 63.00GB លើសដែនកំណត់ platform per-upload (~50GB) — bucket "game-files" អនុញ្ញាត 1000.00GB ប៉ុន្តែ Supabase កំណត់ទំហំ upload តែម្ដងត្រឹម ~50GB។ សូមបំបែកឯកសារជា part តូចជាង ឬប្រើ external storage',
+    );
+
   it('"failed to fetch" → connection-lost message', () => {
     expect(friendlyUploadError("TypeError: Failed to fetch")).toBe(
       "ការតភ្ជាប់បណ្ដាញដាច់ — សូមព្យាយាមម្ដងទៀត",
