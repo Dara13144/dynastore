@@ -777,6 +777,14 @@ function GamesTab() {
             <FileArchive className="h-3 w-3" />
             អតិបរមា Upload: {formatBytes(effectiveMaxBytes())}
           </span>
+          <button
+            type="button"
+            onClick={() => setShowDiagnostics((v) => !v)}
+            className="inline-flex items-center gap-1 rounded-full bg-muted/40 px-2.5 py-1 text-[10px] font-semibold text-muted-foreground ring-1 ring-border hover:text-foreground"
+            title="បង្ហាញ/លាក់ផ្ទាំង diagnostics"
+          >
+            {showDiagnostics ? "លាក់" : "បង្ហាញ"} Diagnostics
+          </button>
         </div>
         <button
           onClick={() => setCreating((v) => !v)}
