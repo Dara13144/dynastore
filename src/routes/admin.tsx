@@ -287,6 +287,7 @@ function GamesTab() {
   const [draftFile, setDraftFile] = useState<File | null>(null);
   const [draftFileError, setDraftFileError] = useState<string | null>(null);
   const [draftUrlError, setDraftUrlError] = useState<string | null>(null);
+  const [sourceMode, setSourceMode] = useState<"file" | "library">("file");
 
   const showToast = (m: string) => {
     setToast(m);
