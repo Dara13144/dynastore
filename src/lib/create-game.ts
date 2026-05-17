@@ -12,6 +12,10 @@ export type GameDraft = {
   price_coins: number;
   visible: boolean;
   image_url: string;
+  /** Optional list of screenshot/gallery image URLs. */
+  screenshots?: string[];
+  /** Optional short preview/trailer video URL. */
+  preview_video_url?: string | null;
   /** Optional external link to the game archive (alternative to uploading a file). */
   file_url?: string | null;
   /** Which storage backend holds the file: supabase (default), s3, external_url. */
