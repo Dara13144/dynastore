@@ -390,6 +390,13 @@ function GamesTab() {
   type UploadStage = "idle" | "preparing" | "uploading" | "processing" | "done" | "error";
   const [uploadStage, setUploadStage] = useState<UploadStage>("idle");
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [uploadedInfo, setUploadedInfo] = useState<{
+    path: string;
+    size: number;
+    mime: string;
+    provider: "supabase" | "s3" | "external_url";
+    bucket?: string;
+  } | null>(null);
   const [splitGuideOpen, setSplitGuideOpen] = useState(false);
   const uploadRef = useRef<{ abort: () => void } | null>(null);
 
@@ -786,6 +793,7 @@ function GamesTab() {
     }
     setBusy(true);
     setUploadError(null);
+    setUploadedInfo(null);
     if (!draftFile) setUploadStage("processing");
     const result = await submitCreateGame(
       {
@@ -811,7 +819,16 @@ function GamesTab() {
       {
         uploadFile: async (gameId, file) => {
           const up = await uploadFile(gameId, file as File);
-          if (up) setUploadStage("processing");
+          if (up) {
+            setUploadStage("processing");
+            setUploadedInfo({
+              path: up.path,
+              size: up.size,
+              mime: (file as File).type || "application/octet-stream",
+              provider: "supabase",
+              bucket: "game-files",
+            });
+          }
           return up;
         },
         insertGame: async (row) => {
@@ -832,6 +849,22 @@ function GamesTab() {
       return;
     }
     setUploadStage("done");
+    // Capture metadata for S3 / External URL flows (file flow set it inside uploadFile).
+    if (sourceMode === "s3" && s3UploadedKey) {
+      setUploadedInfo({
+        path: s3UploadedKey,
+        size: s3UploadedSize ?? draftFile?.size ?? 0,
+        mime: draftFile?.type || "application/octet-stream",
+        provider: "s3",
+      });
+    } else if (sourceMode === "library" && draft.file_path) {
+      setUploadedInfo({
+        path: draft.file_path,
+        size: 0,
+        mime: "application/octet-stream",
+        provider: "external_url",
+      });
+    }
     setUploadPct(null);
     setUploadStats(null);
     setCreating(false);
@@ -1441,6 +1474,43 @@ function GamesTab() {
                         <p className="text-[10px] text-muted-foreground">
                           កំពុងរក្សាទុកព័ត៌មានហ្គេមទៅមូលដ្ឋានទិន្នន័យ…
                         </p>
+                      )}
+
+                      {uploadStage === "done" && uploadedInfo && (
+                        <div className="rounded-md border border-emerald-500/30 bg-emerald-500/5 p-2.5 space-y-1.5">
+                          <div className="text-[10px] font-semibold uppercase tracking-wide text-emerald-600 dark:text-emerald-400">
+                            ឯកសារបានរក្សាទុក
+                          </div>
+                          <dl className="grid grid-cols-[80px_1fr] gap-x-2 gap-y-1 text-[11px]">
+                            <dt className="text-muted-foreground">Provider</dt>
+                            <dd className="font-mono">{uploadedInfo.provider}{uploadedInfo.bucket ? ` · ${uploadedInfo.bucket}` : ""}</dd>
+                            <dt className="text-muted-foreground">Path</dt>
+                            <dd className="flex items-center gap-1.5 min-w-0">
+                              <code className="truncate font-mono text-[10.5px]" title={uploadedInfo.path}>{uploadedInfo.path}</code>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  navigator.clipboard?.writeText(uploadedInfo.path);
+                                  showToast("បានចម្លងតំណ");
+                                }}
+                                className="shrink-0 rounded bg-muted px-1.5 py-0.5 text-[9.5px] font-semibold hover:bg-muted/70"
+                              >
+                                Copy
+                              </button>
+                            </dd>
+                            {uploadedInfo.size > 0 && (
+                              <>
+                                <dt className="text-muted-foreground">Size</dt>
+                                <dd className="font-mono">
+                                  {(uploadedInfo.size / 1024 / 1024).toFixed(2)} MB
+                                  <span className="text-muted-foreground"> ({uploadedInfo.size.toLocaleString()} B)</span>
+                                </dd>
+                              </>
+                            )}
+                            <dt className="text-muted-foreground">MIME</dt>
+                            <dd className="font-mono">{uploadedInfo.mime}</dd>
+                          </dl>
+                        </div>
                       )}
 
                       {uploadStage === "error" && uploadError && (
