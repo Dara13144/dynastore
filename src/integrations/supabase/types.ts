@@ -328,40 +328,55 @@ export type Database = {
       topup_requests: {
         Row: {
           amount_usd: number
+          bakong_response: Json | null
+          bakong_verified_at: string | null
           coins: number
           created_at: string
+          expires_at: string | null
           id: string
+          md5: string | null
           note: string | null
+          qr_payload: string | null
           reject_reason: string | null
           reviewed_at: string | null
           reviewed_by: string | null
-          slip_path: string
+          slip_path: string | null
           status: Database["public"]["Enums"]["topup_status"]
           user_id: string
         }
         Insert: {
           amount_usd: number
+          bakong_response?: Json | null
+          bakong_verified_at?: string | null
           coins: number
           created_at?: string
+          expires_at?: string | null
           id?: string
+          md5?: string | null
           note?: string | null
+          qr_payload?: string | null
           reject_reason?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
-          slip_path: string
+          slip_path?: string | null
           status?: Database["public"]["Enums"]["topup_status"]
           user_id: string
         }
         Update: {
           amount_usd?: number
+          bakong_response?: Json | null
+          bakong_verified_at?: string | null
           coins?: number
           created_at?: string
+          expires_at?: string | null
           id?: string
+          md5?: string | null
           note?: string | null
+          qr_payload?: string | null
           reject_reason?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
-          slip_path?: string
+          slip_path?: string | null
           status?: Database["public"]["Enums"]["topup_status"]
           user_id?: string
         }
@@ -420,6 +435,15 @@ export type Database = {
             Args: { _new_balance: number; _reason?: string; _user_id: string }
             Returns: number
           }
+      credit_topup_atomic: {
+        Args: { _bakong_response: Json; _request_id: string }
+        Returns: {
+          credited: number
+          new_balance: number
+          ok: boolean
+          status: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -438,7 +462,7 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "user"
-      topup_status: "pending" | "approved" | "rejected"
+      topup_status: "pending" | "approved" | "rejected" | "expired"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -567,7 +591,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "user"],
-      topup_status: ["pending", "approved", "rejected"],
+      topup_status: ["pending", "approved", "rejected", "expired"],
     },
   },
 } as const
