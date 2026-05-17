@@ -848,6 +848,22 @@ function GamesTab() {
       return;
     }
     setUploadStage("done");
+    // Capture metadata for S3 / External URL flows (file flow set it inside uploadFile).
+    if (sourceMode === "s3" && s3UploadedKey) {
+      setUploadedInfo({
+        path: s3UploadedKey,
+        size: s3UploadedSize ?? draftFile?.size ?? 0,
+        mime: draftFile?.type || "application/octet-stream",
+        provider: "s3",
+      });
+    } else if (sourceMode === "library" && draft.file_path) {
+      setUploadedInfo({
+        path: draft.file_path,
+        size: 0,
+        mime: "application/octet-stream",
+        provider: "external_url",
+      });
+    }
     setUploadPct(null);
     setUploadStats(null);
     setCreating(false);
