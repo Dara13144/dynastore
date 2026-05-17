@@ -22,6 +22,7 @@ import {
   verifyBakongTopup,
 } from "@/lib/topup.functions";
 import khqrSeal from "@/assets/khqr-seal.png";
+import { TutorialVideo } from "@/components/TutorialVideo";
 
 type Props = { onClose: () => void; onToast: (m: string) => void };
 type Mode = "auto" | "manual";
@@ -504,6 +505,8 @@ export function TopupModal({ onClose, onToast }: Props) {
         </div>
 
         <div className="p-5 space-y-5">
+          <TutorialVideo slug="topup" />
+
           <p className="text-xs text-muted-foreground">
             អត្រា៖{" "}
             <span className="text-foreground font-semibold">

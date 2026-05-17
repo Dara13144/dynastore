@@ -16,6 +16,7 @@ import {
   FileArchive,
   Settings as SettingsIcon,
   Pencil,
+  Play,
   History,
   ChevronDown,
   ChevronUp,
@@ -40,6 +41,7 @@ import { validateGameFile, validateGameFileUrl } from "@/lib/validate-game-file"
 import { submitCreateGame } from "@/lib/create-game";
 import { DownloadLogsTab } from "@/components/admin/DownloadLogsTab";
 import { DashboardTab } from "@/components/admin/DashboardTab";
+import { TutorialsTab } from "@/components/admin/TutorialsTab";
 import { adminListTopupRequests, adminApproveTopup, adminRejectTopup } from "@/lib/topup.functions";
 import {
   AlertDialog,
@@ -107,7 +109,7 @@ function AdminPage() {
   const { authed, loading } = useStore();
   const navigate = useNavigate();
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
-  const [tab, setTab] = useState<"dashboard" | "games" | "users" | "topups" | "content" | "settings" | "logs">(
+  const [tab, setTab] = useState<"dashboard" | "games" | "users" | "topups" | "content" | "tutorials" | "settings" | "logs">(
     "dashboard",
   );
 
@@ -201,6 +203,12 @@ function AdminPage() {
               label="មាតិកា"
             />
             <TabBtn
+              active={tab === "tutorials"}
+              onClick={() => setTab("tutorials")}
+              icon={<Play className="h-3.5 w-3.5" />}
+              label="វីដេអូ"
+            />
+            <TabBtn
               active={tab === "settings"}
               onClick={() => setTab("settings")}
               icon={<SettingsIcon className="h-3.5 w-3.5" />}
@@ -222,6 +230,7 @@ function AdminPage() {
         {tab === "users" && <UsersTab />}
         {tab === "topups" && <TopupsTab />}
         {tab === "content" && <ContentTab />}
+        {tab === "tutorials" && <TutorialsTab />}
         {tab === "settings" && <SettingsTab />}
         {tab === "logs" && <DownloadLogsTab />}
       </main>
