@@ -818,7 +818,16 @@ function GamesTab() {
       {
         uploadFile: async (gameId, file) => {
           const up = await uploadFile(gameId, file as File);
-          if (up) setUploadStage("processing");
+          if (up) {
+            setUploadStage("processing");
+            setUploadedInfo({
+              path: up.path,
+              size: up.size,
+              mime: (file as File).type || "application/octet-stream",
+              provider: "supabase",
+              bucket: "game-files",
+            });
+          }
           return up;
         },
         insertGame: async (row) => {
