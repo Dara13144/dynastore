@@ -12,6 +12,24 @@ export type TlvTag = {
   warnings: string[];
 };
 
+export type FixRecommendation = {
+  /** Q0626 / CRC / STRUCTURE / FORMAT */
+  code: string;
+  /** Short headline shown as the recommendation title */
+  title: string;
+  /** Plain-English explanation of why banks reject this */
+  why: string;
+  /** Exact field path that is wrong, e.g. "tag 29 → subtag 00" */
+  field: string;
+  /** What the value currently is (may be empty / "missing") */
+  current: string;
+  /** What the value MUST be set to */
+  expected: string;
+  /** Concrete code/builder change to apply */
+  fix: string;
+  severity: "critical" | "high" | "medium";
+};
+
 export type KhqrParseResult = {
   ok: boolean;
   tags: TlvTag[];
@@ -22,6 +40,7 @@ export type KhqrParseResult = {
   };
   warnings: string[];
   errors: string[];
+  recommendations: FixRecommendation[];
 };
 
 // Root EMV tags relevant to KHQR
