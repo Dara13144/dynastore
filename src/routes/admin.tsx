@@ -1279,6 +1279,63 @@ function GamesTab() {
                     </div>
                   )}
                 </div>
+              ) : sourceMode === "s3" ? (
+                <div className="animate-fade-in space-y-2">
+                  <div className="flex items-center gap-2 text-[10px]">
+                    <span
+                      className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 font-semibold ${
+                        s3Connected === true
+                          ? "bg-emerald-500/15 text-emerald-400"
+                          : s3Connected === false
+                            ? "bg-destructive/15 text-destructive"
+                            : "bg-muted text-muted-foreground"
+                      }`}
+                    >
+                      <Cloud className="h-3 w-3" />
+                      {s3Connected === true
+                        ? "S3 connector បានភ្ជាប់"
+                        : s3Connected === false
+                          ? "S3 connector មិនទាន់ភ្ជាប់"
+                          : "កំពុងពិនិត្យ…"}
+                    </span>
+                  </div>
+                  <input
+                    type="file"
+                    accept=".zip,.rar,.7z,.tar,.gz,.tgz"
+                    disabled={s3Busy || s3Connected === false}
+                    onChange={(e) => {
+                      const f = e.target.files?.[0];
+                      if (!f || !draft.id.trim()) {
+                        if (!draft.id.trim()) setS3Error("ត្រូវការ id ហ្គេមជាមុនសិន");
+                        return;
+                      }
+                      void uploadToS3(draft.id.trim(), f);
+                    }}
+                    className="w-full text-xs file:mr-2 file:rounded-full file:border-0 file:bg-primary file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-primary-foreground"
+                  />
+                  <p className="text-[10px] text-muted-foreground">
+                    ឯកសារនឹង upload ផ្ទាល់ទៅ AWS S3 តាមរយៈ signed URL — មិនមានដែនកំណត់ Supabase 50GB
+                  </p>
+                  {s3Pct !== null && (
+                    <div className="space-y-1">
+                      <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+                        <div
+                          className={`h-full transition-all ${s3Pct === 100 ? "bg-emerald-500" : "bg-primary"}`}
+                          style={{ width: `${s3Pct}%` }}
+                        />
+                      </div>
+                      <span className="text-[10px] text-muted-foreground">{s3Pct}%</span>
+                    </div>
+                  )}
+                  {s3UploadedKey && (
+                    <span className="block text-[10px] text-emerald-400">
+                      ✓ Uploaded · key: <code className="text-[10px]">{s3UploadedKey}</code>
+                    </span>
+                  )}
+                  {s3Error && (
+                    <span className="block text-[10px] text-destructive">{s3Error}</span>
+                  )}
+                </div>
               ) : (
                 <div className="animate-fade-in">
                   <input
