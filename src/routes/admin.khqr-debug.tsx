@@ -110,12 +110,52 @@ function StatusBanner({ ok, crcValid, errorCount }: { ok: boolean; crcValid: boo
   );
 }
 
-function Section({ title, children, tone }: { title: string; children: React.ReactNode; tone?: "error" }) {
+function Section({ title, children, tone }: { title: string; children: React.ReactNode; tone?: "error" | "fix" }) {
+  const cls =
+    tone === "error" ? "border-red-500/30 bg-red-500/5"
+    : tone === "fix" ? "border-amber-500/30 bg-amber-500/5"
+    : "border-border bg-card";
   return (
-    <section className={`rounded-md border p-4 ${tone === "error" ? "border-red-500/30 bg-red-500/5" : "border-border bg-card"}`}>
+    <section className={`rounded-md border p-4 ${cls}`}>
       <h2 className="font-semibold mb-2">{title}</h2>
       {children}
     </section>
+  );
+}
+
+const SEVERITY_STYLES: Record<FixRecommendation["severity"], string> = {
+  critical: "bg-red-500/20 text-red-300 border-red-500/40",
+  high: "bg-amber-500/20 text-amber-300 border-amber-500/40",
+  medium: "bg-sky-500/20 text-sky-300 border-sky-500/40",
+};
+
+function RecommendationCard({ rec }: { rec: FixRecommendation }) {
+  return (
+    <div className="rounded-md border border-border bg-card/60 p-3 space-y-2">
+      <div className="flex items-center gap-2 flex-wrap">
+        <Wrench className="h-4 w-4 text-amber-400 shrink-0" />
+        <span className="font-semibold text-sm">{rec.title}</span>
+        <span className={`text-[10px] uppercase tracking-wide px-1.5 py-0.5 rounded border ${SEVERITY_STYLES[rec.severity]}`}>
+          {rec.severity}
+        </span>
+        <span className="text-[10px] uppercase tracking-wide px-1.5 py-0.5 rounded border border-border text-muted-foreground">
+          {rec.code}
+        </span>
+      </div>
+      <p className="text-xs text-muted-foreground">{rec.why}</p>
+      <div className="grid grid-cols-1 md:grid-cols-[max-content_1fr] gap-x-3 gap-y-1 text-xs font-mono">
+        <span className="text-muted-foreground">field:</span>
+        <span className="break-all">{rec.field}</span>
+        <span className="text-muted-foreground">current:</span>
+        <span className="break-all text-red-300">{rec.current}</span>
+        <span className="text-muted-foreground">expected:</span>
+        <span className="break-all text-emerald-300">{rec.expected}</span>
+      </div>
+      <div className="text-xs">
+        <span className="text-muted-foreground font-mono">fix: </span>
+        <span className="font-mono break-all">{rec.fix}</span>
+      </div>
+    </div>
   );
 }
 
