@@ -15,9 +15,6 @@ import {
   Loader2,
   Wallet,
   Plus,
-  Facebook,
-  Instagram,
-  Github,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { StoreProvider, useStore, type Game } from "@/lib/store";
