@@ -147,6 +147,8 @@ function GameDetailPage() {
               )}
             </div>
 
+            {!owned && <TutorialVideo slug="buy_game" />}
+
             <div className="flex flex-wrap gap-2">
               {owned ? (
                 <>
