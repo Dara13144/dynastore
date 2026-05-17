@@ -43,14 +43,19 @@ function KhqrCard({
       ref={innerRef}
       className="w-full overflow-hidden rounded-2xl bg-white shadow-md ring-1 ring-black/5"
     >
-      {/* Red header */}
-      <div
-        className="flex items-center justify-center py-2"
-        style={{ backgroundColor: KHQR_RED }}
-      >
-        <span className="text-white font-black tracking-wider text-lg leading-none">
-          KH<span className="inline-block -translate-y-[1px]">Q</span>R
-        </span>
+      {/* Red header with notched bottom-right corner */}
+      <div className="relative">
+        <div
+          className="flex items-center justify-center py-2.5"
+          style={{
+            backgroundColor: KHQR_RED,
+            clipPath: "polygon(0 0, 100% 0, 100% 60%, 88% 100%, 0 100%)",
+          }}
+        >
+          <span className="text-white font-black tracking-wider text-lg leading-none">
+            KHQR
+          </span>
+        </div>
       </div>
 
       {/* Merchant + amount */}
@@ -83,13 +88,13 @@ function KhqrCard({
               <Loader2 className="h-5 w-5 animate-spin" />
             </div>
           )}
-          {/* Center logo */}
+          {/* Center KHQR seal */}
           {qrValue && (
             <div
-              className="absolute inset-0 m-auto h-12 w-12 rounded-full grid place-items-center text-white font-black text-base shadow"
+              className="absolute inset-0 m-auto h-12 w-12 rounded-full grid place-items-center text-white shadow ring-2 ring-white"
               style={{ backgroundColor: KHQR_RED }}
             >
-              C
+              <span className="text-xl leading-none font-bold">៛</span>
             </div>
           )}
         </div>
