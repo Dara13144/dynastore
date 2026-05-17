@@ -16,6 +16,7 @@ import {
   FileArchive,
   Settings as SettingsIcon,
   Pencil,
+  Play,
   History,
   ChevronDown,
   ChevronUp,
