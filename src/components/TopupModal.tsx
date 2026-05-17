@@ -399,7 +399,7 @@ export function TopupModal({ onClose, onToast }: Props) {
         ctx.fillText(amtText, BODY_PAD, TOP_PAD + 90);
 
         // Dashed separator
-        const sepY = HEADER_H + TEXT_BLOCK_H + SEP_H / 2;
+        const sepY = TOP_PAD + TEXT_BLOCK_H + SEP_H / 2;
         ctx.strokeStyle = "#bbbbbb";
         ctx.lineWidth = 2;
         ctx.setLineDash([8, 6]);
@@ -411,7 +411,7 @@ export function TopupModal({ onClose, onToast }: Props) {
 
         // QR code (centered)
         const qrX = (W - QR_SIZE) / 2;
-        const qrY = HEADER_H + TEXT_BLOCK_H + SEP_H;
+        const qrY = TOP_PAD + TEXT_BLOCK_H + SEP_H;
         ctx.drawImage(img, qrX, qrY, QR_SIZE, QR_SIZE);
 
         // Center KHQR seal with riel symbol
