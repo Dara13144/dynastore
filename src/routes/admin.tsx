@@ -46,6 +46,8 @@ import {
   oversizeForBucketMessage,
 } from "@/lib/upload-error-messages";
 import { DownloadLogsTab } from "@/components/admin/DownloadLogsTab";
+import { SplitFileGuideDialog } from "@/components/admin/SplitFileGuideDialog";
+import { isPlatformCapError } from "@/lib/chunk-plan";
 import { DashboardTab } from "@/components/admin/DashboardTab";
 import { TutorialsTab } from "@/components/admin/TutorialsTab";
 import { adminListTopupRequests, adminApproveTopup, adminRejectTopup } from "@/lib/topup.functions";
@@ -384,7 +386,16 @@ function GamesTab() {
   type UploadStage = "idle" | "preparing" | "uploading" | "processing" | "done" | "error";
   const [uploadStage, setUploadStage] = useState<UploadStage>("idle");
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [splitGuideOpen, setSplitGuideOpen] = useState(false);
   const uploadRef = useRef<{ abort: () => void } | null>(null);
+
+  // Auto-open the split-file guide when an upload fails with a platform
+  // per-upload cap (413 / ~50GB) error.
+  useEffect(() => {
+    if (uploadStage === "error" && isPlatformCapError(uploadError)) {
+      setSplitGuideOpen(true);
+    }
+  }, [uploadStage, uploadError]);
 
   // Startup check: read game-files bucket's file_size_limit so we can block
   // oversize uploads BEFORE starting TUS (which would otherwise fail with 413
@@ -1274,7 +1285,18 @@ function GamesTab() {
                       )}
 
                       {uploadStage === "error" && uploadError && (
-                        <p className="text-[10px] text-destructive">{uploadError}</p>
+                        <div className="space-y-1.5">
+                          <p className="text-[10px] text-destructive">{uploadError}</p>
+                          {isPlatformCapError(uploadError) && (
+                            <button
+                              type="button"
+                              onClick={() => setSplitGuideOpen(true)}
+                              className="inline-flex items-center gap-1 rounded-full bg-destructive/15 px-2 py-0.5 text-[10px] font-semibold text-destructive hover:bg-destructive/25"
+                            >
+                              មើលវិធីបំបែកឯកសារ →
+                            </button>
+                          )}
+                        </div>
                       )}
                     </div>
                   )}
@@ -1463,6 +1485,16 @@ function GamesTab() {
           {toast}
         </div>
       )}
+
+      <SplitFileGuideDialog
+        open={splitGuideOpen}
+        onClose={() => setSplitGuideOpen(false)}
+        fileSize={draftFile?.size ?? null}
+        onSwitchToExternal={() => {
+          setSourceMode("s3");
+          setSplitGuideOpen(false);
+        }}
+      />
     </div>
   );
 }
