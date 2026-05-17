@@ -102,6 +102,8 @@ type GameRow = {
   price_coins: number;
   visible: boolean;
   image_url: string | null;
+  screenshots: string[];
+  preview_video_url: string | null;
   file_path: string | null;
   file_size_bytes: number | null;
   created_at?: string;
