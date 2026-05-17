@@ -530,18 +530,59 @@ function Footer() {
           </div>
         </div>
 
-        <div>
-          © {new Date().getFullYear()} Dyna Store. All rights reserved.
-          <span className="mx-2 opacity-50">·</span>
-          Dev By{" "}
-          <a
-            href="https://t.me/ismeDara"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-primary hover:underline"
-          >
-            @ismeDara
-          </a>
+        <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-2">
+          <span>© {new Date().getFullYear()} Dyna Store. All rights reserved.</span>
+          <span className="opacity-50">·</span>
+          <span>
+            Dev By{" "}
+            <a
+              href="https://t.me/ismeDara"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-primary hover:underline"
+            >
+              @ismeDara
+            </a>
+          </span>
+          <span className="opacity-50">·</span>
+          <div className="flex items-center gap-2">
+            <a
+              href="https://t.me/ismeDara"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Telegram"
+              className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/5 ring-1 ring-border/60 hover:bg-primary/15 hover:text-primary transition-colors"
+            >
+              <Send className="h-4 w-4" />
+            </a>
+            <a
+              href="https://facebook.com/"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Facebook"
+              className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/5 ring-1 ring-border/60 hover:bg-primary/15 hover:text-primary transition-colors"
+            >
+              <Facebook className="h-4 w-4" />
+            </a>
+            <a
+              href="https://instagram.com/"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Instagram"
+              className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/5 ring-1 ring-border/60 hover:bg-primary/15 hover:text-primary transition-colors"
+            >
+              <Instagram className="h-4 w-4" />
+            </a>
+            <a
+              href="https://github.com/"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="GitHub"
+              className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/5 ring-1 ring-border/60 hover:bg-primary/15 hover:text-primary transition-colors"
+            >
+              <Github className="h-4 w-4" />
+            </a>
+          </div>
         </div>
       </div>
     </footer>
