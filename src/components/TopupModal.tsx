@@ -26,7 +26,7 @@ type Props = { onClose: () => void; onToast: (m: string) => void };
 type Mode = "auto" | "manual";
 
 const PRESETS = [1, 2, 5, 10, 20, 50];
-const MERCHANT_NAME = "DYNA STORE";
+const MERCHANT_NAME = "SOTHIDA BEN";
 const KHQR_RED = "#E21A23";
 
 function KhqrCard({
@@ -60,7 +60,6 @@ function KhqrCard({
         </div>
         <div className="mt-1 text-2xl font-bold text-black tabular-nums">
           {amount > 0 ? amount.toFixed(2) : "0"}
-          <span className="ml-1 text-xs font-semibold text-black/60">USD</span>
         </div>
       </div>
 
@@ -397,10 +396,6 @@ export function TopupModal({ onClose, onToast }: Props) {
         ctx.font = "800 44px system-ui, -apple-system, sans-serif";
         const amtText = amountUsd > 0 ? amountUsd.toFixed(2) : "0";
         ctx.fillText(amtText, BODY_PAD, HEADER_H + 96);
-        const amtWidth = ctx.measureText(amtText).width;
-        ctx.font = "700 18px system-ui, -apple-system, sans-serif";
-        ctx.fillStyle = "#666666";
-        ctx.fillText("USD", BODY_PAD + amtWidth + 8, HEADER_H + 96);
 
         // Dashed separator
         const sepY = HEADER_H + TEXT_BLOCK_H + SEP_H / 2;
