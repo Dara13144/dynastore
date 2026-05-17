@@ -37,7 +37,7 @@ export function TopupModal({ onClose, onToast }: Props) {
   const qrBoxRef = useRef<HTMLDivElement>(null);
   const autoQrBoxRef = useRef<HTMLDivElement>(null);
 
-  const [mode, setMode] = useState<Mode>("auto");
+  const [mode] = useState<Mode>("manual");
   const [staticQr, setStaticQr] = useState<string | null>(null);
   const [rate, setRate] = useState(1);
   const [amount, setAmount] = useState<number>(1);
@@ -345,24 +345,6 @@ export function TopupModal({ onClose, onToast }: Props) {
           <button onClick={onClose} className="rounded-full p-2 hover:bg-accent">
             <X className="h-4 w-4" />
           </button>
-        </div>
-
-        {/* Tabs */}
-        <div className="px-5 pt-4">
-          <div className="inline-flex rounded-full bg-muted/40 p-1 text-xs font-semibold">
-            <button
-              onClick={() => setMode("auto")}
-              className={`px-4 py-2 rounded-full inline-flex items-center gap-1.5 transition ${mode === "auto" ? "bg-primary text-primary-foreground shadow" : "text-muted-foreground hover:text-foreground"}`}
-            >
-              <Zap className="h-3.5 w-3.5" /> Auto Bakong
-            </button>
-            <button
-              onClick={() => setMode("manual")}
-              className={`px-4 py-2 rounded-full inline-flex items-center gap-1.5 transition ${mode === "manual" ? "bg-primary text-primary-foreground shadow" : "text-muted-foreground hover:text-foreground"}`}
-            >
-              <FileImage className="h-3.5 w-3.5" /> Upload Slip
-            </button>
-          </div>
         </div>
 
         <div className="p-5 space-y-5">
