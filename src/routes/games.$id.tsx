@@ -243,7 +243,95 @@ function GameDetailPage() {
             </div>
           </div>
         </div>
+
+        <MediaSection
+          screenshots={game.screenshots ?? []}
+          videoUrl={game.preview_video_url ?? null}
+          title={game.title}
+        />
       </main>
+    </div>
+  );
+}
+
+function MediaSection({
+  screenshots,
+  videoUrl,
+  title,
+}: {
+  screenshots: string[];
+  videoUrl: string | null;
+  title: string;
+}) {
+  const [lightbox, setLightbox] = useState<string | null>(null);
+  const hasShots = screenshots.length > 0;
+  const hasVideo = !!videoUrl;
+
+  return (
+    <section className="mt-10 space-y-8">
+      <div>
+        <h2 className="font-semibold text-sm mb-3">វីដេអូមើលជាមុន</h2>
+        {hasVideo ? (
+          <div className="rounded-2xl overflow-hidden border border-border/60 glass">
+            <video
+              src={videoUrl!}
+              controls
+              preload="metadata"
+              className="w-full aspect-video bg-black"
+            >
+              <track kind="captions" />
+            </video>
+          </div>
+        ) : (
+          <EmptyMedia label="មិនទាន់មានវីដេអូ preview" />
+        )}
+      </div>
+
+      <div>
+        <h2 className="font-semibold text-sm mb-3">រូបភាពហ្គេម ({screenshots.length})</h2>
+        {hasShots ? (
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+            {screenshots.map((src, i) => (
+              <button
+                key={src + i}
+                onClick={() => setLightbox(src)}
+                className="group relative aspect-video rounded-xl overflow-hidden border border-border/60 glass focus:outline-none focus:ring-2 focus:ring-primary"
+              >
+                <img
+                  src={src}
+                  alt={`${title} screenshot ${i + 1}`}
+                  loading="lazy"
+                  className="w-full h-full object-cover transition-transform group-hover:scale-105"
+                />
+              </button>
+            ))}
+          </div>
+        ) : (
+          <EmptyMedia label="មិនទាន់មានរូបភាព" />
+        )}
+      </div>
+
+      {lightbox && (
+        <button
+          onClick={() => setLightbox(null)}
+          className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm grid place-items-center p-4 cursor-zoom-out"
+          aria-label="Close preview"
+        >
+          <img
+            src={lightbox}
+            alt="preview"
+            className="max-w-full max-h-full rounded-xl shadow-2xl"
+          />
+        </button>
+      )}
+    </section>
+  );
+}
+
+function EmptyMedia({ label }: { label: string }) {
+  return (
+    <div className="rounded-2xl border border-dashed border-border/60 bg-muted/20 px-4 py-10 grid place-items-center text-xs text-muted-foreground">
+      {label}
     </div>
   );
 }
