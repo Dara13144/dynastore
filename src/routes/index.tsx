@@ -530,7 +530,19 @@ function Footer() {
           </div>
         </div>
 
-        <div>© {new Date().getFullYear()} Dyna Store. All rights reserved.</div>
+        <div>
+          © {new Date().getFullYear()} Dyna Store. All rights reserved.
+          <span className="mx-2 opacity-50">·</span>
+          Dev By{" "}
+          <a
+            href="https://t.me/ismeDara"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-primary hover:underline"
+          >
+            @ismeDara
+          </a>
+        </div>
       </div>
     </footer>
   );
