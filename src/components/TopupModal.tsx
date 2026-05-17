@@ -553,26 +553,7 @@ export function TopupModal({ onClose, onToast }: Props) {
           {mode === "manual" && (
             <>
               <div className="mx-auto w-full max-w-[320px] flex flex-col items-center gap-3">
-                <div
-                  ref={qrBoxRef}
-                  className="rounded-2xl bg-white p-5 w-full flex flex-col items-center"
-                >
-                  {staticQr ? (
-                    <QRCode
-                      value={staticQr}
-                      size={260}
-                      style={{ height: "auto", maxWidth: "100%", width: "100%" }}
-                      viewBox="0 0 256 256"
-                    />
-                  ) : (
-                    <div className="h-[260px] w-[260px] grid place-items-center text-muted-foreground">
-                      <Loader2 className="h-5 w-5 animate-spin" />
-                    </div>
-                  )}
-                  <div className="mt-3 text-center text-[10px] font-semibold tracking-wider text-black">
-                    DYNASTORE • KHQR
-                  </div>
-                </div>
+                <KhqrCard innerRef={qrBoxRef} qrValue={staticQr} amount={amount} />
                 <div className="flex w-full items-center gap-2">
                   <input
                     value={qrName}
