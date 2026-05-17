@@ -105,6 +105,8 @@ export async function submitCreateGame(
     file_path,
     file_size_bytes,
     storage_provider: provider,
+    screenshots: (draft.screenshots ?? []).filter((u) => u && u.trim()),
+    preview_video_url: (draft.preview_video_url ?? "").trim() || null,
   });
   if (error) {
     deps.onError?.(error.message);
