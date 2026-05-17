@@ -39,6 +39,12 @@ export const Route = createFileRoute("/api/payment/create")({
           const billNumber = `BILL-${Date.now()}`;
           log("building KHQR", { paymentId, billNumber, amount });
 
+          if (typeof buildKhqr !== "function") {
+            throw new Error(`[/api/payment/create] buildKhqr is ${typeof buildKhqr} — export missing from "@/lib/bakong.server" (src/lib/bakong.server.ts). Restart dev server / check the file's exports.`);
+          }
+          if (typeof md5Hex !== "function") {
+            throw new Error(`[/api/payment/create] md5Hex is ${typeof md5Hex} — export missing from "@/lib/bakong.server" (src/lib/bakong.server.ts).`);
+          }
           const khqr = buildKhqr(amount, billNumber);
           const md5 = md5Hex(khqr);
           log("KHQR built", {
