@@ -962,6 +962,11 @@ function GamesTab() {
                   <input
                     type="file"
                     accept=".zip,.rar,.7z,.tar,.gz,.tgz"
+                    title={
+                      bucketLimitBytes && bucketLimitBytes < MAX_GAME_FILE_BYTES
+                        ? `អតិបរមា ${formatBytes(effectiveMaxBytes())} — កំណត់ដោយ bucket "game-files" (ដែនកំណត់ម៉ាស៊ីន ${formatBytes(MAX_GAME_FILE_BYTES)})`
+                        : `អតិបរមា ${formatBytes(effectiveMaxBytes())} — ដែនកំណត់ម៉ាស៊ីន`
+                    }
                     onChange={(e) => {
                       const f = e.target.files?.[0] ?? null;
                       const err = f ? validateFile(f) : null;
