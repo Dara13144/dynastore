@@ -171,6 +171,12 @@ function AdminPage() {
           </div>
           <nav className="flex gap-1 rounded-full bg-muted/30 p-1 overflow-x-auto">
             <TabBtn
+              active={tab === "dashboard"}
+              onClick={() => setTab("dashboard")}
+              icon={<LayoutDashboard className="h-3.5 w-3.5" />}
+              label="Dashboard"
+            />
+            <TabBtn
               active={tab === "games"}
               onClick={() => setTab("games")}
               icon={<Gamepad2 className="h-3.5 w-3.5" />}
