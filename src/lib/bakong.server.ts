@@ -2,6 +2,7 @@
 // SERVER ONLY
 
 import crypto from "crypto";
+import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
 function tlv(id: string, value: string): string {
   return `${id}${value.length.toString().padStart(2, "0")}${value}`;
@@ -21,8 +22,39 @@ function crc16(payload: string): string {
   return crc.toString(16).toUpperCase().padStart(4, "0");
 }
 
-export function buildKhqr(amountUsd: number, billNumber: string): string {
-  const accountId = process.env.BAKONG_ACCOUNT_ID || "ben_sothida@bkrt";
+const ENV_BAKONG_ACCOUNT_ID = "ben_sothida@bkrt";
+
+/**
+ * Resolve the effective Bakong account ID: prefer the live value stored in
+ * app_settings.bakong_account_id (admin-editable), fall back to env var, then
+ * a hard-coded default. Trims whitespace and ignores empty strings.
+ */
+export async function getEffectiveBakongAccountId(): Promise<string> {
+  try {
+    const { data } = await supabaseAdmin
+      .from("app_settings")
+      .select("bakong_account_id")
+      .eq("id", 1)
+      .maybeSingle();
+    const fromDb = (data?.bakong_account_id ?? "").trim();
+    if (fromDb) return fromDb;
+  } catch {
+    /* fall through to env */
+  }
+  const fromEnv = (process.env.BAKONG_ACCOUNT_ID ?? "").trim();
+  return fromEnv || ENV_BAKONG_ACCOUNT_ID;
+}
+
+export function buildKhqr(
+  amountUsd: number,
+  billNumber: string,
+  accountIdOverride?: string,
+): string {
+  const accountId =
+    (accountIdOverride ?? "").trim() ||
+    (process.env.BAKONG_ACCOUNT_ID ?? "").trim() ||
+    ENV_BAKONG_ACCOUNT_ID;
+
 
   const merchantName = process.env.BAKONG_MERCHANT_NAME || "Dyna Store";
 

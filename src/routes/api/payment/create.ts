@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import QRCode from "qrcode";
 import { randomUUID } from "crypto";
-import { buildKhqr, md5Hex } from "@/lib/bakong.server";
+import { buildKhqr, md5Hex, getEffectiveBakongAccountId } from "@/lib/bakong.server";
 import { payments } from "@/lib/payment-store.server";
 
 // GET /api/payment/create?amount=1
@@ -49,7 +49,8 @@ export const Route = createFileRoute("/api/payment/create")({
               `[/api/payment/create] md5Hex is ${typeof md5Hex} — export missing from "@/lib/bakong.server" (src/lib/bakong.server.ts).`,
             );
           }
-          const khqr = buildKhqr(amount, billNumber);
+          const accountId = await getEffectiveBakongAccountId();
+          const khqr = buildKhqr(amount, billNumber, accountId);
           const md5 = md5Hex(khqr);
           log("KHQR built", {
             paymentId,
