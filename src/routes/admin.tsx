@@ -797,6 +797,8 @@ function GamesTab() {
         price_coins: Number(draft.price_coins) || 0,
         visible: draft.visible,
         image_url: draft.image_url ?? "",
+        screenshots: draft.screenshots ?? [],
+        preview_video_url: draft.preview_video_url ?? null,
         file_url: sourceMode === "library" ? (draft.file_path ?? null) : null,
         storage_provider:
           sourceMode === "s3" ? "s3" : sourceMode === "library" ? "external_url" : "supabase",
