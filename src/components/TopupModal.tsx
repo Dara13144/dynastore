@@ -361,13 +361,13 @@ export function TopupModal({ onClose, onToast }: Props) {
       try {
         // Card layout
         const W = 720;
-        const HEADER_H = 80;
         const BODY_PAD = 40;
+        const TOP_PAD = 50;
         const QR_SIZE = 560;
-        const TEXT_BLOCK_H = 110;
+        const TEXT_BLOCK_H = 130;
         const SEP_H = 30;
         const QR_PAD_BOTTOM = 40;
-        const H = HEADER_H + TEXT_BLOCK_H + SEP_H + QR_SIZE + QR_PAD_BOTTOM;
+        const H = TOP_PAD + TEXT_BLOCK_H + SEP_H + QR_SIZE + QR_PAD_BOTTOM;
 
         const canvas = document.createElement("canvas");
         canvas.width = W;
@@ -378,31 +378,25 @@ export function TopupModal({ onClose, onToast }: Props) {
         ctx.fillStyle = "#ffffff";
         ctx.fillRect(0, 0, W, H);
 
-        // Red header with notched bottom-right corner
+        // Red triangular corner notch in top-right
+        const NOTCH = 90;
         ctx.fillStyle = KHQR_RED;
         ctx.beginPath();
-        ctx.moveTo(0, 0);
-        ctx.lineTo(W, 0);
-        ctx.lineTo(W, HEADER_H * 0.6);
-        ctx.lineTo(W * 0.88, HEADER_H);
-        ctx.lineTo(0, HEADER_H);
+        ctx.moveTo(W, 0);
+        ctx.lineTo(W - NOTCH, 0);
+        ctx.lineTo(W, NOTCH);
         ctx.closePath();
         ctx.fill();
-        ctx.fillStyle = "#ffffff";
-        ctx.font = "900 42px system-ui, -apple-system, sans-serif";
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
-        ctx.fillText("KHQR", W / 2, HEADER_H / 2);
 
         // Merchant + amount
         ctx.textAlign = "left";
         ctx.textBaseline = "alphabetic";
         ctx.fillStyle = "#111111";
-        ctx.font = "600 22px system-ui, -apple-system, sans-serif";
-        ctx.fillText(MERCHANT_NAME, BODY_PAD, HEADER_H + 44);
-        ctx.font = "800 44px system-ui, -apple-system, sans-serif";
+        ctx.font = "600 24px system-ui, -apple-system, sans-serif";
+        ctx.fillText(MERCHANT_NAME, BODY_PAD, TOP_PAD + 30);
+        ctx.font = "800 52px system-ui, -apple-system, sans-serif";
         const amtText = amountUsd > 0 ? amountUsd.toFixed(2) : "0";
-        ctx.fillText(amtText, BODY_PAD, HEADER_H + 96);
+        ctx.fillText(amtText, BODY_PAD, TOP_PAD + 90);
 
         // Dashed separator
         const sepY = HEADER_H + TEXT_BLOCK_H + SEP_H / 2;
