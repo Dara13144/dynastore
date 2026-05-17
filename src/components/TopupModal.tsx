@@ -216,10 +216,20 @@ export function TopupModal({ onClose, onToast }: Props) {
   }
 
   function downloadQrPng() {
-    const svg = qrBoxRef.current?.querySelector("svg");
+    downloadQrFromRef(qrBoxRef, qrName.trim() || "dynastore-khqr", "DYNASTORE • KHQR");
+  }
+
+  function downloadAutoQrPng() {
+    if (!autoSession) return;
+    const fname = `dynastore-khqr-$${autoSession.amount.toFixed(2)}-${autoSession.id.slice(0, 8)}`;
+    downloadQrFromRef(autoQrBoxRef, fname, `DYNASTORE • KHQR • $${autoSession.amount.toFixed(2)}`);
+  }
+
+  function downloadQrFromRef(ref: React.RefObject<HTMLDivElement | null>, filename: string, label: string) {
+    const svg = ref.current?.querySelector("svg");
     if (!svg) { onToast("QR មិនទាន់រួចរាល់"); return; }
     setExporting(true);
-    const safeName = (qrName.trim() || "dynastore-khqr").replace(/[^a-zA-Z0-9_\-]+/g, "-").slice(0, 80);
+    const safeName = filename.replace(/[^a-zA-Z0-9_\-\.]+/g, "-").slice(0, 80);
     const xml = new XMLSerializer().serializeToString(svg);
     const svgBlob = new Blob([xml], { type: "image/svg+xml;charset=utf-8" });
     const url = URL.createObjectURL(svgBlob);
@@ -233,7 +243,7 @@ export function TopupModal({ onClose, onToast }: Props) {
         ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, canvas.width, canvas.height);
         ctx.drawImage(img, PAD, PAD, SIZE - PAD * 2, SIZE - PAD * 2);
         ctx.fillStyle = "#000"; ctx.font = "bold 28px system-ui, sans-serif"; ctx.textAlign = "center";
-        ctx.fillText("DYNASTORE • KHQR", SIZE / 2, SIZE + 40);
+        ctx.fillText(label, SIZE / 2, SIZE + 40);
         URL.revokeObjectURL(url);
         canvas.toBlob((blob) => {
           if (!blob) { onToast("Export បរាជ័យ"); setExporting(false); return; }
