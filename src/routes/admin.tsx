@@ -217,6 +217,7 @@ function AdminPage() {
       </header>
 
       <main className="container mx-auto px-4 py-6">
+        {tab === "dashboard" && <DashboardTab />}
         {tab === "games" && <GamesTab />}
         {tab === "users" && <UsersTab />}
         {tab === "topups" && <TopupsTab />}
