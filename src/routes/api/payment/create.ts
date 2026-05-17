@@ -49,7 +49,8 @@ export const Route = createFileRoute("/api/payment/create")({
               `[/api/payment/create] md5Hex is ${typeof md5Hex} — export missing from "@/lib/bakong.server" (src/lib/bakong.server.ts).`,
             );
           }
-          const khqr = buildKhqr(amount, billNumber);
+          const accountId = await getEffectiveBakongAccountId();
+          const khqr = buildKhqr(amount, billNumber, accountId);
           const md5 = md5Hex(khqr);
           log("KHQR built", {
             paymentId,
