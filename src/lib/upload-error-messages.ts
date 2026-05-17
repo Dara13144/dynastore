@@ -36,6 +36,11 @@ export function friendlyUploadError(raw: string, ctx: FriendlyErrorContext = {})
   ) {
     const limit = ctx.bucketLimitBytes;
     const sizePart = ctx.fileSize ? `ឯកសារ ${formatBytes(ctx.fileSize)}` : "ឯកសារ";
+    // If the file fits under the bucket limit, the 413 is from the platform
+    // per-upload cap (Supabase hosted resumable cap ≈ 50GB), not the bucket.
+    if (ctx.fileSize && limit && ctx.fileSize <= limit) {
+      return `${sizePart} លើសដែនកំណត់ platform per-upload (~50GB) — bucket "game-files" អនុញ្ញាត ${formatBytes(limit)} ប៉ុន្តែ Supabase កំណត់ទំហំ upload តែម្ដងត្រឹម ~50GB។ សូមបំបែកឯកសារជា part តូចជាង ឬប្រើ external storage`;
+    }
     const limitPart = limit
       ? `លើសដែនកំណត់ bucket (${formatBytes(limit)})`
       : "លើសដែនកំណត់ម៉ាស៊ីន";
