@@ -26,6 +26,8 @@ export type Game = {
   badge?: string | null;
   price_coins: number;
   file_path?: string | null;
+  screenshots?: string[];
+  preview_video_url?: string | null;
 };
 export type Recommendation = {
   id: string;
@@ -131,6 +133,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
               image_url?: string | null;
               file_path?: string | null;
               badge?: string | null;
+              screenshots?: string[] | null;
+              preview_video_url?: string | null;
             }) => ({
               id: g.id,
               title: g.title,
@@ -140,6 +144,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
               badge: g.badge,
               price_coins: g.price_coins,
               file_path: g.file_path ?? null,
+              screenshots: g.screenshots ?? [],
+              preview_video_url: g.preview_video_url ?? null,
             }),
           ),
         );
