@@ -41,20 +41,23 @@ function KhqrCard({
   return (
     <div
       ref={innerRef}
-      className="relative w-full overflow-hidden rounded-2xl bg-white shadow-md ring-1 ring-black/5"
+      className="w-full overflow-hidden rounded-2xl bg-white shadow-md ring-1 ring-black/5"
     >
-      {/* Red triangular corner notch in top-right */}
+      {/* Red header with notched bottom-right corner + KHQR wordmark */}
       <div
-        aria-hidden
-        className="absolute top-0 right-0 h-10 w-10"
+        className="flex items-center justify-center py-3"
         style={{
           backgroundColor: KHQR_RED,
-          clipPath: "polygon(100% 0, 0 0, 100% 100%)",
+          clipPath: "polygon(0 0, 100% 0, 100% 55%, 86% 100%, 0 100%)",
         }}
-      />
+      >
+        <span className="text-white font-black tracking-widest text-xl leading-none">
+          KHQR
+        </span>
+      </div>
 
       {/* Merchant + amount */}
-      <div className="px-5 pt-5">
+      <div className="px-5 pt-4">
         <div className="text-[13px] font-semibold uppercase tracking-wider text-black">
           {MERCHANT_NAME}
         </div>
