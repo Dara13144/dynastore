@@ -5,50 +5,49 @@ import {
   GAME_FILE_URL_ERRORS,
   MIN_GAME_FILE_BYTES,
   MAX_GAME_FILE_BYTES,
-  MIN_GAME_FILE_GB,
+  MIN_GAME_FILE_MB,
   MAX_GAME_FILE_GB,
 } from "./validate-game-file";
 
 describe("validateGameFile - byte conversion", () => {
-  it("MIN_GAME_FILE_BYTES == 1 * 1024 * 1024 * 1024", () => {
-    expect(MIN_GAME_FILE_BYTES).toBe(1 * 1024 * 1024 * 1024);
+  it("MIN_GAME_FILE_BYTES == 1 * 1024 * 1024 (1MB)", () => {
+    expect(MIN_GAME_FILE_BYTES).toBe(1 * 1024 * 1024);
   });
-  it("MAX_GAME_FILE_BYTES == 5000 * 1024 * 1024 * 1024", () => {
-    expect(MAX_GAME_FILE_BYTES).toBe(5000 * 1024 * 1024 * 1024);
+  it("MAX_GAME_FILE_BYTES == 1000 * 1024 * 1024 * 1024 (1000GB)", () => {
+    expect(MAX_GAME_FILE_BYTES).toBe(1000 * 1024 * 1024 * 1024);
   });
 });
 
 describe("validateGameFile - boundaries", () => {
-  it("accepts a file exactly at the minimum (1GB)", () => {
+  it("accepts a file exactly at the minimum (1MB)", () => {
     expect(validateGameFile({ name: "g.zip", size: MIN_GAME_FILE_BYTES })).toBeNull();
   });
-  it("accepts a file exactly at the maximum (5000GB)", () => {
+  it("accepts a file exactly at the maximum (1000GB)", () => {
     expect(validateGameFile({ name: "g.zip", size: MAX_GAME_FILE_BYTES })).toBeNull();
   });
   it("rejects 1 byte under the minimum with exact Khmer string", () => {
     const size = MIN_GAME_FILE_BYTES - 1;
-    const gb = (size / 1024 / 1024 / 1024).toFixed(2);
+    const mb = (size / 1024 / 1024).toFixed(2);
     expect(validateGameFile({ name: "g.zip", size })).toBe(
-      `ឯកសារតូចពេក (${gb}GB) — តម្រូវយ៉ាងតិច ${MIN_GAME_FILE_GB}GB`,
+      `ឯកសារតូចពេក (${mb}MB) — តម្រូវយ៉ាងតិច ${MIN_GAME_FILE_MB}MB`,
     );
   });
-  it("rejects 1 byte over the maximum with exact Khmer string (bytes formatting)", () => {
+  it("rejects 1 byte over the maximum with exact Khmer string", () => {
     const size = MAX_GAME_FILE_BYTES + 1;
     expect(validateGameFile({ name: "g.zip", size })).toBe(
-      `ឯកសារធំពេក (${size} bytes) — អតិបរមា ${MAX_GAME_FILE_BYTES} bytes`,
+      `ឯកសារធំពេក — អតិបរមា ${MAX_GAME_FILE_GB}GB`,
     );
   });
-  it("rejects very large sizes with exact Khmer string (bytes formatting)", () => {
+  it("rejects very large sizes with exact Khmer string", () => {
     const size = MAX_GAME_FILE_BYTES * 2;
     expect(validateGameFile({ name: "g.zip", size })).toBe(
-      `ឯកសារធំពេក (${size} bytes) — អតិបរមា ${MAX_GAME_FILE_BYTES} bytes`,
+      `ឯកសារធំពេក — អតិបរមា ${MAX_GAME_FILE_GB}GB`,
     );
   });
-  it("over-max error mentions 'bytes' and never 'GB' for the limit", () => {
+  it("over-max error mentions GB limit", () => {
     const msg = validateGameFile({ name: "g.zip", size: MAX_GAME_FILE_BYTES + 1 })!;
-    expect(msg).toContain("bytes");
     expect(msg).toContain("ធំពេក");
-    expect(msg).not.toMatch(/GB/);
+    expect(msg).toContain(`${MAX_GAME_FILE_GB}GB`);
   });
 });
 
@@ -154,7 +153,7 @@ describe("createGame integration - boundary file sizes", () => {
     h = makeCreateGame();
   });
 
-  it("accepts a file at exactly 1000GB (uploads + inserts)", async () => {
+  it("accepts a file at exactly 1MB (uploads + inserts)", async () => {
     const r = await h.createGame({
       id: "g1",
       title: "G1",
@@ -165,7 +164,7 @@ describe("createGame integration - boundary file sizes", () => {
     expect(h.insert).toHaveBeenCalledTimes(1);
   });
 
-  it("accepts a file at exactly the maximum (1e80 bytes) (uploads + inserts)", async () => {
+  it("accepts a file at exactly the maximum (1000GB) (uploads + inserts)", async () => {
     const r = await h.createGame({
       id: "g2",
       title: "G2",
@@ -176,7 +175,7 @@ describe("createGame integration - boundary file sizes", () => {
     expect(h.insert).toHaveBeenCalledTimes(1);
   });
 
-  it("rejects 1 byte under 1000GB BEFORE uploading or inserting", async () => {
+  it("rejects 1 byte under 1MB BEFORE uploading or inserting", async () => {
     const r = await h.createGame({
       id: "g3",
       title: "G3",
