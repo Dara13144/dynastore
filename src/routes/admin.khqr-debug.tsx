@@ -1,8 +1,8 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { parseKhqr, type TlvTag } from "@/lib/khqr-parser";
-import { ArrowLeft, CheckCircle2, AlertTriangle, XCircle } from "lucide-react";
+import { parseKhqr, type TlvTag, type FixRecommendation } from "@/lib/khqr-parser";
+import { ArrowLeft, CheckCircle2, AlertTriangle, XCircle, Wrench } from "lucide-react";
 
 export const Route = createFileRoute("/admin/khqr-debug")({
   head: () => ({
