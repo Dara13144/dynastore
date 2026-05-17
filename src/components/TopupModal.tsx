@@ -4,7 +4,13 @@ import { useEffect, useState } from "react";
 
 import { createBakongTopup, verifyBakongTopup } from "@/lib/topup.functions";
 
-export default function TopupModal() {
+export function TopupModal() {
+  return TopupModalInner();
+}
+
+export default TopupModal;
+
+function TopupModalInner() {
   const [amount, setAmount] = useState(1);
 
   const [payment, setPayment] = useState<any>();
