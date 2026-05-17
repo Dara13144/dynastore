@@ -14,6 +14,10 @@ export type GameDraft = {
   image_url: string;
   /** Optional external link to the game archive (alternative to uploading a file). */
   file_url?: string | null;
+  /** Which storage backend holds the file: supabase (default), s3, external_url. */
+  storage_provider?: "supabase" | "s3" | "external_url";
+  /** Pre-uploaded external file (e.g. S3 object key + size) skipping the bucket upload. */
+  external_file?: { path: string; size: number | null } | null;
 };
 
 export type CreateGameDeps = {
