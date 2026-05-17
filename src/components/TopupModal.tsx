@@ -43,14 +43,19 @@ function KhqrCard({
       ref={innerRef}
       className="w-full overflow-hidden rounded-2xl bg-white shadow-md ring-1 ring-black/5"
     >
-      {/* Red header */}
-      <div
-        className="flex items-center justify-center py-2"
-        style={{ backgroundColor: KHQR_RED }}
-      >
-        <span className="text-white font-black tracking-wider text-lg leading-none">
-          KH<span className="inline-block -translate-y-[1px]">Q</span>R
-        </span>
+      {/* Red header with notched bottom-right corner */}
+      <div className="relative">
+        <div
+          className="flex items-center justify-center py-2.5"
+          style={{
+            backgroundColor: KHQR_RED,
+            clipPath: "polygon(0 0, 100% 0, 100% 60%, 88% 100%, 0 100%)",
+          }}
+        >
+          <span className="text-white font-black tracking-wider text-lg leading-none">
+            KHQR
+          </span>
+        </div>
       </div>
 
       {/* Merchant + amount */}
@@ -83,13 +88,13 @@ function KhqrCard({
               <Loader2 className="h-5 w-5 animate-spin" />
             </div>
           )}
-          {/* Center logo */}
+          {/* Center KHQR seal */}
           {qrValue && (
             <div
-              className="absolute inset-0 m-auto h-12 w-12 rounded-full grid place-items-center text-white font-black text-base shadow"
+              className="absolute inset-0 m-auto h-12 w-12 rounded-full grid place-items-center text-white shadow ring-2 ring-white"
               style={{ backgroundColor: KHQR_RED }}
             >
-              C
+              <span className="text-xl leading-none font-bold">៛</span>
             </div>
           )}
         </div>
@@ -378,9 +383,16 @@ export function TopupModal({ onClose, onToast }: Props) {
         ctx.fillStyle = "#ffffff";
         ctx.fillRect(0, 0, W, H);
 
-        // Red header
+        // Red header with notched bottom-right corner
         ctx.fillStyle = KHQR_RED;
-        ctx.fillRect(0, 0, W, HEADER_H);
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(W, 0);
+        ctx.lineTo(W, HEADER_H * 0.6);
+        ctx.lineTo(W * 0.88, HEADER_H);
+        ctx.lineTo(0, HEADER_H);
+        ctx.closePath();
+        ctx.fill();
         ctx.fillStyle = "#ffffff";
         ctx.font = "900 42px system-ui, -apple-system, sans-serif";
         ctx.textAlign = "center";
@@ -413,19 +425,24 @@ export function TopupModal({ onClose, onToast }: Props) {
         const qrY = HEADER_H + TEXT_BLOCK_H + SEP_H;
         ctx.drawImage(img, qrX, qrY, QR_SIZE, QR_SIZE);
 
-        // Center logo circle
+        // Center KHQR seal with riel symbol
         const cx = W / 2;
         const cy = qrY + QR_SIZE / 2;
         const r = 48;
+        // White ring background
+        ctx.fillStyle = "#ffffff";
+        ctx.beginPath();
+        ctx.arc(cx, cy, r + 4, 0, Math.PI * 2);
+        ctx.fill();
         ctx.fillStyle = KHQR_RED;
         ctx.beginPath();
         ctx.arc(cx, cy, r, 0, Math.PI * 2);
         ctx.fill();
         ctx.fillStyle = "#ffffff";
-        ctx.font = "900 44px system-ui, -apple-system, sans-serif";
+        ctx.font = "700 52px system-ui, -apple-system, sans-serif";
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
-        ctx.fillText("C", cx, cy + 2);
+        ctx.fillText("\u17DB", cx, cy + 2);
 
         URL.revokeObjectURL(url);
         canvas.toBlob((blob) => {
