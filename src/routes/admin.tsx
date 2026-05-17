@@ -1142,6 +1142,113 @@ function GamesTab() {
                 />
               )}
             </div>
+
+            {/* Screenshots gallery (multi-image) */}
+            <div className="block md:col-span-2">
+              <span className="block text-[10px] uppercase tracking-wider text-muted-foreground mb-1">
+                Screenshots (gallery)
+              </span>
+              <div className="flex flex-wrap items-start gap-2">
+                {draft.screenshots.map((url, i) => (
+                  <div key={url + i} className="relative group">
+                    <img
+                      src={url}
+                      alt={`shot-${i}`}
+                      className="h-20 w-32 rounded-lg object-cover ring-1 ring-border"
+                    />
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setDraft({
+                          ...draft,
+                          screenshots: draft.screenshots.filter((_, j) => j !== i),
+                        })
+                      }
+                      className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-destructive text-destructive-foreground text-[10px] grid place-items-center opacity-0 group-hover:opacity-100 transition"
+                      title="Remove"
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+                <label className="h-20 w-32 cursor-pointer rounded-lg border-2 border-dashed border-border grid place-items-center text-[10px] text-muted-foreground hover:border-primary hover:text-primary">
+                  + បន្ថែម
+                  <input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    className="hidden"
+                    onChange={async (e) => {
+                      const files = Array.from(e.target.files ?? []);
+                      e.target.value = "";
+                      const uploaded: string[] = [];
+                      for (const f of files) {
+                        const u = await uploadScreenshot(f);
+                        if (u) uploaded.push(u);
+                      }
+                      if (uploaded.length) {
+                        setDraft((d) => ({
+                          ...d,
+                          screenshots: [...d.screenshots, ...uploaded],
+                        }));
+                      }
+                    }}
+                  />
+                </label>
+              </div>
+              <p className="mt-1 text-[10px] text-muted-foreground">
+                អាចជ្រើសរើសច្រើនដង · max 10MB / រូប
+              </p>
+            </div>
+
+            {/* Preview video (short trailer) */}
+            <div className="block md:col-span-2">
+              <span className="block text-[10px] uppercase tracking-wider text-muted-foreground mb-1">
+                Preview video (trailer ~50MB)
+              </span>
+              <div className="flex items-center gap-2">
+                <input
+                  value={draft.preview_video_url ?? ""}
+                  placeholder="https://… ឬ ផ្ទុកវីដេអូឡើង"
+                  onChange={(e) =>
+                    setDraft({ ...draft, preview_video_url: e.target.value || null })
+                  }
+                  className="flex-1 rounded-lg bg-input px-3 py-2 text-xs outline-none ring-1 ring-border focus:ring-primary"
+                />
+                <label className="shrink-0 cursor-pointer rounded-full bg-primary/10 text-primary px-3 py-2 text-[11px] font-semibold hover:bg-primary/20">
+                  ផ្ទុកវីដេអូ
+                  <input
+                    type="file"
+                    accept="video/*"
+                    className="hidden"
+                    onChange={async (e) => {
+                      const f = e.target.files?.[0];
+                      if (!f) return;
+                      const url = await uploadPreviewVideo(f);
+                      if (url) setDraft({ ...draft, preview_video_url: url });
+                      e.target.value = "";
+                    }}
+                  />
+                </label>
+                {draft.preview_video_url && (
+                  <button
+                    type="button"
+                    onClick={() => setDraft({ ...draft, preview_video_url: null })}
+                    className="rounded-full bg-muted/60 px-3 py-2 text-[11px] text-muted-foreground hover:text-foreground"
+                  >
+                    Clear
+                  </button>
+                )}
+              </div>
+              {draft.preview_video_url && (
+                <video
+                  src={draft.preview_video_url}
+                  controls
+                  className="mt-2 h-40 rounded-lg ring-1 ring-border"
+                />
+              )}
+            </div>
+
             <div className="block">
               <span className="block text-[10px] uppercase tracking-wider text-muted-foreground mb-1">
                 ប្រភពឯកសារហ្គេម
