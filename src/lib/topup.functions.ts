@@ -7,7 +7,13 @@ import {
   notifyTelegramPhotoFromStorage,
   formatUserById,
 } from "@/lib/telegram.server";
-import { buildKhqr, md5Hex, checkTransactionByMd5, BakongApiError } from "@/lib/bakong.server";
+import {
+  buildKhqr,
+  md5Hex,
+  checkTransactionByMd5,
+  BakongApiError,
+  getEffectiveBakongAccountId,
+} from "@/lib/bakong.server";
 
 // Static KHQR payload for DynaStore (Bakong account: ben_sothida@bkr)
 export const KHQR_PAYLOAD =
