@@ -551,6 +551,8 @@ function GamesTab() {
       if (preErr) setDraftFileError(preErr);
     }
     setBusy(true);
+    setUploadError(null);
+    if (!draftFile) setUploadStage("processing");
     const result = await submitCreateGame(
       {
         id: draft.id,
@@ -565,16 +567,31 @@ function GamesTab() {
       },
       draftFile,
       {
-        uploadFile: (gameId, file) => uploadFile(gameId, file as File),
+        uploadFile: async (gameId, file) => {
+          const up = await uploadFile(gameId, file as File);
+          if (up) setUploadStage("processing");
+          return up;
+        },
         insertGame: async (row) => {
           const { error } = await supabase.from("games").insert(row);
           return { error: error ? { message: error.message } : null };
         },
-        onError: showToast,
+        onError: (msg) => {
+          setUploadStage("error");
+          setUploadError(msg);
+          showToast(msg);
+        },
       },
     );
     setBusy(false);
-    if (!result.ok) return;
+    if (!result.ok) {
+      // uploadFile / onError already populated stage. If they didn't, set error here.
+      setUploadStage((s) => (s === "processing" || s === "uploading" ? "error" : s));
+      return;
+    }
+    setUploadStage("done");
+    setUploadPct(null);
+    setUploadStats(null);
     setCreating(false);
     setDraft({
       id: "",
@@ -593,6 +610,7 @@ function GamesTab() {
     setDraftUrlError(null);
     loadGames();
     showToast("បន្ថែមរួច");
+    setTimeout(() => setUploadStage("idle"), 1500);
   };
 
   const categories = Array.from(new Set(games.map((g) => g.category).filter(Boolean))).sort();
