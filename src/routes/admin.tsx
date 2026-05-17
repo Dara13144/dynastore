@@ -351,6 +351,8 @@ function GamesTab() {
       .then((r) => {
         if (!alive) return;
         setBucketLimitBytes(r.limitBytes);
+        setLastLimitFetchAt(Date.now());
+        setLastLimitFetchError(null);
         try {
           window.localStorage.setItem(
             BUCKET_LIMIT_CACHE_KEY,
@@ -360,7 +362,9 @@ function GamesTab() {
           /* ignore quota */
         }
       })
-      .catch(() => {
+      .catch((e: unknown) => {
+        if (!alive) return;
+        setLastLimitFetchError(e instanceof Error ? e.message : String(e));
         /* keep cached or null; upload will fall back to static MAX */
       });
     return () => {
