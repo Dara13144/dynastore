@@ -701,6 +701,50 @@ function GamesTab() {
     return data.publicUrl;
   };
 
+  /** Upload a screenshot/gallery image (same bucket as cover, separate folder). */
+  const uploadScreenshot = async (file: File): Promise<string | null> => {
+    if (!file.type.startsWith("image/")) {
+      showToast("សូមជ្រើសរូបភាព");
+      return null;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      showToast("រូបភាពធំជាង 10MB");
+      return null;
+    }
+    const safe = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+    const path = `screenshots/${Date.now()}_${Math.random().toString(36).slice(2, 8)}_${safe}`;
+    const { error } = await supabase.storage
+      .from("game-images")
+      .upload(path, file, { upsert: true, contentType: file.type });
+    if (error) {
+      showToast(`Upload: ${error.message}`);
+      return null;
+    }
+    return supabase.storage.from("game-images").getPublicUrl(path).data.publicUrl;
+  };
+
+  /** Upload a short preview/trailer video (capped to keep page fast). */
+  const uploadPreviewVideo = async (file: File): Promise<string | null> => {
+    if (!file.type.startsWith("video/")) {
+      showToast("សូមជ្រើសវីដេអូ");
+      return null;
+    }
+    if (file.size > 50 * 1024 * 1024) {
+      showToast("វីដេអូធំជាង 50MB — សូមបង្ហាប់សិន");
+      return null;
+    }
+    const safe = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+    const path = `videos/${Date.now()}_${Math.random().toString(36).slice(2, 8)}_${safe}`;
+    const { error } = await supabase.storage
+      .from("game-images")
+      .upload(path, file, { upsert: true, contentType: file.type });
+    if (error) {
+      showToast(`Upload: ${error.message}`);
+      return null;
+    }
+    return supabase.storage.from("game-images").getPublicUrl(path).data.publicUrl;
+  };
+
   const updateGame = async (id: string, patch: Partial<GameRow>) => {
     setBusy(true);
     const { error } = await supabase.from("games").update(patch).eq("id", id);
