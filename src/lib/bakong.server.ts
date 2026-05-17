@@ -89,19 +89,64 @@ export type BakongCheckResult = {
   } | null;
 };
 
-export async function checkTransactionByMd5(md5: string): Promise<BakongCheckResult> {
+export class BakongApiError extends Error {
+  constructor(
+    public kind: "rate_limited" | "upstream_error" | "network_error" | "auth_error",
+    public status: number,
+    message: string,
+  ) {
+    super(message);
+    this.name = "BakongApiError";
+  }
+}
+
+export async function checkTransactionByMd5(
+  md5: string,
+  opts: { retries?: number } = {},
+): Promise<BakongCheckResult> {
   const token = env("BAKONG_DEVELOPER_TOKEN");
-  const res = await fetch(`${BAKONG_API}/v1/check_transaction_by_md5`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
-    body: JSON.stringify({ md5 }),
-  });
-  const text = await res.text();
-  let json: unknown;
-  try { json = JSON.parse(text); }
-  catch { throw new Error(`Bakong API non-JSON response [${res.status}]: ${text.slice(0, 200)}`); }
-  return json as BakongCheckResult;
+  const retries = opts.retries ?? 2;
+  let lastErr: unknown;
+
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      const res = await fetch(`${BAKONG_API}/v1/check_transaction_by_md5`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ md5 }),
+      });
+
+      // Hard auth errors — don't retry.
+      if (res.status === 401 || res.status === 403) {
+        throw new BakongApiError("auth_error", res.status, `Bakong auth failed (${res.status})`);
+      }
+      // Rate limited — retryable with backoff.
+      if (res.status === 429) {
+        lastErr = new BakongApiError("rate_limited", 429, "Bakong rate-limited");
+      } else if (res.status >= 500) {
+        lastErr = new BakongApiError("upstream_error", res.status, `Bakong ${res.status}`);
+      } else {
+        const text = await res.text();
+        try {
+          return JSON.parse(text) as BakongCheckResult;
+        } catch {
+          throw new BakongApiError("upstream_error", res.status, `Non-JSON response: ${text.slice(0, 200)}`);
+        }
+      }
+    } catch (e) {
+      if (e instanceof BakongApiError && e.kind === "auth_error") throw e;
+      lastErr = e instanceof BakongApiError ? e : new BakongApiError(
+        "network_error", 0,
+        e instanceof Error ? e.message : "Bakong fetch failed",
+      );
+    }
+    if (attempt < retries) {
+      // Backoff: 300ms, 900ms
+      await new Promise((r) => setTimeout(r, 300 * Math.pow(3, attempt)));
+    }
+  }
+  throw lastErr instanceof Error ? lastErr : new BakongApiError("network_error", 0, "unknown");
 }
