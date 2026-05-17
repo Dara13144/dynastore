@@ -1181,6 +1181,7 @@ function GameRowEditor({
   validateFile,
   onValidationError,
   onUploadCover,
+  maxUploadLabel,
 }: {
   game: GameRow;
   busy: boolean;
@@ -1190,6 +1191,7 @@ function GameRowEditor({
   validateFile: (f: File) => string | null;
   onValidationError: (m: string) => void;
   onUploadCover: (f: File) => Promise<string | null>;
+  maxUploadLabel: string;
 }) {
   const [edit, setEdit] = useState<GameRow>(game);
   useEffect(() => setEdit(game), [game]);
