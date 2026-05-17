@@ -21,6 +21,7 @@ export function TopupModal({ onClose, onToast }: Props) {
   const verifyAutoFn = useServerFn(verifyBakongTopup);
   const fileRef = useRef<HTMLInputElement>(null);
   const qrBoxRef = useRef<HTMLDivElement>(null);
+  const autoQrBoxRef = useRef<HTMLDivElement>(null);
 
   const [mode, setMode] = useState<Mode>("auto");
   const [staticQr, setStaticQr] = useState<string | null>(null);
