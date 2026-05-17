@@ -121,7 +121,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       const { data } = await supabase.from("games").select("*").order("title");
       if (data)
         setGames(
-          data.map((g: any) => ({
+          data.map((g: Record<string, unknown> & { id: string; title: string; category: string; price_coins: number; description?: string | null; image_url?: string | null; file_path?: string | null }) => ({
             id: g.id,
             title: g.title,
             category: g.category,

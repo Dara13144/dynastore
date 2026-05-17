@@ -44,7 +44,7 @@ export const Route = createFileRoute("/api/payment/status/$id")({
 
           log("calling Bakong checkTransactionByMd5", { md5: payment.md5 });
           const checkStart = Date.now();
-          let result: any;
+          let result: Awaited<ReturnType<typeof checkTransactionByMd5>>;
           try {
             result = await checkTransactionByMd5(payment.md5);
           } catch (checkErr) {

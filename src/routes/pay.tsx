@@ -63,8 +63,8 @@ export default function PayPage() {
       setPayment(data);
       appendLog(`Created payment ${data.paymentId} (${data.amount} USD)`);
       startPolling(data.paymentId!);
-    } catch (e: any) {
-      appendLog(`Create failed: ${e.message}`);
+    } catch (e: unknown) {
+      appendLog(`Create failed: ${(e as Error).message}`);
     } finally {
       setLoading(false);
     }
@@ -78,8 +78,8 @@ export default function PayPage() {
         setStatus(data);
         appendLog(`Status: ${data.status ?? data.error ?? "?"}`);
         if (data.status === "paid") stopPolling();
-      } catch (e: any) {
-        appendLog(`Status error: ${e.message}`);
+      } catch (e: unknown) {
+        appendLog(`Status error: ${(e as Error).message}`);
       }
     };
     tick();

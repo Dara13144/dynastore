@@ -66,7 +66,9 @@ export function DynastoreAIChat() {
     setMessages([WELCOME]);
     try {
       window.localStorage.removeItem(STORAGE_KEY);
-    } catch {}
+    } catch {
+      /* ignore */
+    }
   };
 
   const send = async (text: string) => {

@@ -281,7 +281,7 @@ export function TopupModal({ onClose, onToast }: Props) {
       return;
     }
     setExporting(true);
-    const safeName = filename.replace(/[^a-zA-Z0-9_\-\.]+/g, "-").slice(0, 80);
+    const safeName = filename.replace(/[^a-zA-Z0-9_\-.]+/g, "-").slice(0, 80);
     const xml = new XMLSerializer().serializeToString(svg);
     const svgBlob = new Blob([xml], { type: "image/svg+xml;charset=utf-8" });
     const url = URL.createObjectURL(svgBlob);

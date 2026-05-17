@@ -104,7 +104,9 @@ function AccountPage() {
       await navigator.clipboard.writeText(text);
       setCopied(label);
       setTimeout(() => setCopied(null), 1500);
-    } catch {}
+    } catch {
+      /* ignore */
+    }
   };
 
   return (

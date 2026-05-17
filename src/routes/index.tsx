@@ -382,7 +382,7 @@ function DealsBanner() {
       .limit(1)
       .maybeSingle()
       .then(({ data }) => {
-        if (data) setPromo(data as any);
+        if (data) setPromo(data as Promo);
       });
   }, []);
   if (!promo) return null;

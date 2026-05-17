@@ -58,8 +58,8 @@ function LoginPage() {
         if (error) throw error;
         navigate({ to: "/" });
       }
-    } catch (e: any) {
-      setErr(e.message);
+    } catch (e: unknown) {
+      setErr((e as Error).message);
     } finally {
       setBusy(false);
     }
@@ -75,8 +75,8 @@ function LoginPage() {
       if (result.error) throw result.error;
       if (result.redirected) return;
       navigate({ to: "/" });
-    } catch (e: any) {
-      setErr(e.message ?? "Google sign-in បរាជ័យ");
+    } catch (e: unknown) {
+      setErr((e as Error).message ?? "Google sign-in បរាជ័យ");
     } finally {
       setBusy(false);
     }
@@ -92,8 +92,8 @@ function LoginPage() {
       if (result.error) throw result.error;
       if (result.redirected) return;
       navigate({ to: "/" });
-    } catch (e: any) {
-      setErr(e.message ?? "Apple sign-in បរាជ័យ");
+    } catch (e: unknown) {
+      setErr((e as Error).message ?? "Apple sign-in បរាជ័យ");
     } finally {
       setBusy(false);
     }

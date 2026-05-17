@@ -22,7 +22,9 @@ export async function formatUserById(userId: string): Promise<string> {
   try {
     const [{ data: prof }, { data: u }] = await Promise.all([
       supabaseAdmin.from("profiles").select("display_name").eq("user_id", userId).maybeSingle(),
-      supabaseAdmin.auth.admin.getUserById(userId).catch(() => ({ data: null as any })),
+      supabaseAdmin.auth.admin
+        .getUserById(userId)
+        .catch(() => ({ data: null as { user: { email?: string } | null } | null })),
     ]);
     if (prof?.display_name) name = prof.display_name;
     email = u?.user?.email ?? "";

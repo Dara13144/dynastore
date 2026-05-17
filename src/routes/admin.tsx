@@ -319,7 +319,7 @@ function GamesTab() {
       showToast("Upload: not authenticated");
       return null;
     }
-    const projectUrl = (import.meta as any).env.VITE_SUPABASE_URL as string;
+    const projectUrl = import.meta.env.VITE_SUPABASE_URL as string;
     return await new Promise((resolve) => {
       setUploadPct(0);
       const upload = new tus.Upload(file, {
@@ -351,7 +351,7 @@ function GamesTab() {
           resolve({ path, size: file.size });
         },
       });
-      upload.findPreviousUploads().then((prev: any[]) => {
+      upload.findPreviousUploads().then((prev: tus.PreviousUpload[]) => {
         if (prev.length) upload.resumeFromPreviousUpload(prev[0]);
         upload.start();
       });
@@ -675,7 +675,7 @@ function GamesTab() {
                 </div>
               )}
               <span className="block text-[10px] uppercase tracking-wider text-muted-foreground mt-3 mb-1">
-                ឬ​បិទភ្ជាប់​តំណ (URL)
+                ឬ បិទភ្ជាប់ តំណ (URL)
               </span>
               <input
                 type="url"
@@ -1030,16 +1030,20 @@ function UsersTab() {
           supabase.from("library").select("user_id, kind"),
           supabase.from("user_roles").select("user_id, role"),
         ]);
-      const wMap = new Map((wallets ?? []).map((w: any) => [w.user_id, w.balance]));
+      type WalletRow = { user_id: string; balance: number };
+      type LibRow = { user_id: string; kind: string };
+      type RoleRow = { user_id: string; role: string };
+      type ProfileRow = { user_id: string; display_name: string | null; created_at: string };
+      const wMap = new Map((wallets ?? []).map((w: WalletRow) => [w.user_id, w.balance]));
       const oMap = new Map<string, number>();
-      (lib ?? []).forEach((l: any) => {
+      (lib ?? []).forEach((l: LibRow) => {
         if (l.kind === "owned") oMap.set(l.user_id, (oMap.get(l.user_id) ?? 0) + 1);
       });
       const aSet = new Set(
-        (roles ?? []).filter((r: any) => r.role === "admin").map((r: any) => r.user_id),
+        (roles ?? []).filter((r: RoleRow) => r.role === "admin").map((r: RoleRow) => r.user_id),
       );
       const merged: UserRow[] = (profiles ?? [])
-        .map((p: any) => ({
+        .map((p: ProfileRow) => ({
           user_id: p.user_id,
           display_name: p.display_name,
           created_at: p.created_at,
