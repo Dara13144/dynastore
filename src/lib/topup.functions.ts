@@ -268,6 +268,10 @@ export const createBakongTopup = createServerFn({ method: "POST" })
   });
 
 // Poll: ask Bakong if the QR has been paid. Credits wallet atomically on success.
+// Returns a typed shape so the client can render specific messages instead of
+// generic "error" toasts. Transient upstream issues (rate-limit, 5xx, network)
+// return `{ status: "pending", error: ... }` so the client keeps polling with
+// backoff. Hard errors (not_found / forbidden / missing_md5 / auth_error) throw.
 export const verifyBakongTopup = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) => z.object({ id: z.string().uuid() }).parse(i))
@@ -280,13 +284,18 @@ export const verifyBakongTopup = createServerFn({ method: "POST" })
     if (!row) throw new Error("not_found");
     if (row.user_id !== context.userId) throw new Error("forbidden");
 
+    type Out =
+      | { status: "approved"; new_balance: number; credited: number; error?: undefined }
+      | { status: "pending"; new_balance: 0; credited: 0; error?: "rate_limited" | "upstream_error" | "network_error" }
+      | { status: "rejected" | "expired"; new_balance: 0; credited: 0; error?: undefined };
+
     // Already final?
     if (row.status === "approved") {
       const { data: w } = await supabaseAdmin.from("wallets").select("balance").eq("user_id", row.user_id).maybeSingle();
-      return { status: "approved" as const, new_balance: Number(w?.balance ?? 0), credited: 0 };
+      return { status: "approved", new_balance: Number(w?.balance ?? 0), credited: 0 } satisfies Out;
     }
     if (row.status === "rejected" || row.status === "expired") {
-      return { status: row.status as "rejected" | "expired", new_balance: 0, credited: 0 };
+      return { status: row.status as "rejected" | "expired", new_balance: 0, credited: 0 } satisfies Out;
     }
 
     // Expired?
@@ -294,15 +303,27 @@ export const verifyBakongTopup = createServerFn({ method: "POST" })
       await supabaseAdmin.from("topup_requests")
         .update({ status: "expired", reviewed_at: new Date().toISOString() })
         .eq("id", row.id).eq("status", "pending");
-      return { status: "expired" as const, new_balance: 0, credited: 0 };
+      return { status: "expired", new_balance: 0, credited: 0 } satisfies Out;
     }
 
     if (!row.md5) throw new Error("missing_md5");
 
-    const check = await checkTransactionByMd5(row.md5);
+    let check;
+    try {
+      check = await checkTransactionByMd5(row.md5);
+    } catch (e) {
+      if (e instanceof BakongApiError) {
+        if (e.kind === "auth_error") throw e; // hard — let client surface it
+        console.warn("[verifyBakongTopup] transient Bakong error", { id: row.id, kind: e.kind, status: e.status });
+        return { status: "pending", new_balance: 0, credited: 0, error: e.kind } satisfies Out;
+      }
+      console.error("[verifyBakongTopup] unexpected error", e);
+      return { status: "pending", new_balance: 0, credited: 0, error: "network_error" } satisfies Out;
+    }
+
     // responseCode 0 = found/paid; non-zero = not found yet
     if (check.responseCode !== 0 || !check.data) {
-      return { status: "pending" as const, new_balance: 0, credited: 0 };
+      return { status: "pending", new_balance: 0, credited: 0 } satisfies Out;
     }
 
     // Optional sanity-check on amount
@@ -330,5 +351,5 @@ export const verifyBakongTopup = createServerFn({ method: "POST" })
       status: (result?.status ?? "approved") as "approved" | "pending",
       new_balance: Number(result?.new_balance ?? 0),
       credited: Number(result?.credited ?? 0),
-    };
+    } satisfies Out;
   });
