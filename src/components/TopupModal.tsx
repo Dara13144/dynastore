@@ -433,10 +433,10 @@ export function TopupModal({ onClose, onToast }: Props) {
         ctx.arc(cx, cy, r, 0, Math.PI * 2);
         ctx.fill();
         ctx.fillStyle = "#ffffff";
-        ctx.font = "700 52px system-ui, -apple-system, sans-serif";
+        ctx.font = "italic 800 36px system-ui, -apple-system, sans-serif";
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
-        ctx.fillText("\u17DB", cx, cy + 2);
+        ctx.fillText("khqr", cx, cy + 2);
 
         URL.revokeObjectURL(url);
         canvas.toBlob((blob) => {
