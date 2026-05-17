@@ -86,10 +86,15 @@ function KhqrCard({
           {/* Center KHQR seal */}
           {qrValue && (
             <div
-              className="absolute inset-0 m-auto h-12 w-12 rounded-full grid place-items-center text-white shadow ring-2 ring-white"
+              className="absolute inset-0 m-auto h-12 w-12 rounded-full grid place-items-center shadow ring-2 ring-white"
               style={{ backgroundColor: KHQR_RED }}
             >
-              <span className="text-xl leading-none font-bold">៛</span>
+              <span
+                className="text-white font-extrabold italic leading-none"
+                style={{ fontSize: "11px", letterSpacing: "-0.5px" }}
+              >
+                khqr
+              </span>
             </div>
           )}
         </div>
