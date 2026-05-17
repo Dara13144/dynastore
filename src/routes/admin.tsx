@@ -313,26 +313,49 @@ function GamesTab() {
     speedBps: number;
     etaSec: number;
   } | null>(null);
+  type UploadStage = "idle" | "preparing" | "uploading" | "processing" | "done" | "error";
+  const [uploadStage, setUploadStage] = useState<UploadStage>("idle");
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const uploadRef = useRef<{ abort: () => void } | null>(null);
   const validateFile = (file: File): string | null => validateGameFile(file);
 
+  // Map raw upload errors to friendlier Khmer messages.
+  const friendlyUploadError = (raw: string): string => {
+    const m = raw.toLowerCase();
+    if (m.includes("network") || m.includes("failed to fetch") || m.includes("econnreset"))
+      return "ការតភ្ជាប់បណ្ដាញដាច់ — សូមព្យាយាមម្ដងទៀត";
+    if (m.includes("timeout") || m.includes("etimedout"))
+      return "Upload អស់ពេល — សូមព្យាយាមម្ដងទៀតជាមួយបណ្ដាញលឿនជាង";
+    if (m.includes("401") || m.includes("unauthorized") || m.includes("jwt"))
+      return "សិទ្ធិផុតកំណត់ — សូមចូលគណនីឡើងវិញ";
+    if (m.includes("403") || m.includes("forbidden"))
+      return "មិនមានសិទ្ធិ upload — ត្រូវការ admin role";
+    if (m.includes("413") || m.includes("payload too large") || m.includes("entity too large"))
+      return "ឯកសារធំពេក — ខាងម៉ាស៊ីនបដិសេធ";
+    if (m.includes("507") || m.includes("storage") || m.includes("quota"))
+      return "ទំហំផ្ទុកមិនគ្រប់ — សូមទាក់ទង admin";
+    return raw;
+  };
+
   // Warn before closing/refreshing tab while an upload is in flight.
   useEffect(() => {
-    if (uploadPct === null) return;
+    if (uploadStage !== "uploading" && uploadStage !== "processing") return;
     const handler = (e: BeforeUnloadEvent) => {
       e.preventDefault();
       e.returnValue = "";
     };
     window.addEventListener("beforeunload", handler);
     return () => window.removeEventListener("beforeunload", handler);
-  }, [uploadPct]);
+  }, [uploadStage]);
 
   const cancelUpload = () => {
     uploadRef.current?.abort();
     uploadRef.current = null;
     setUploadPct(null);
     setUploadStats(null);
-    showToast("Upload បានបោះបង់");
+    setUploadStage("idle");
+    setUploadError(null);
+    toast("Upload បានបោះបង់");
   };
 
   const uploadFile = async (
