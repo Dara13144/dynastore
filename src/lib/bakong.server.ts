@@ -104,11 +104,73 @@ export class BakongApiError extends Error {
   }
 }
 
+// ---- Token store: DB-backed, falls back to env ----
+// We cannot rewrite the BAKONG_DEVELOPER_TOKEN secret at runtime, so a renewed
+// token is persisted in public.bakong_token (singleton row id=1).
+async function loadStoredToken(): Promise<string | null> {
+  try {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data } = await supabaseAdmin
+      .from("bakong_token")
+      .select("token")
+      .eq("id", 1)
+      .maybeSingle();
+    return data?.token ?? null;
+  } catch {
+    return null;
+  }
+}
+
+async function saveStoredToken(token: string): Promise<void> {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  await supabaseAdmin
+    .from("bakong_token")
+    .upsert({ id: 1, token, updated_at: new Date().toISOString() });
+}
+
+async function getActiveToken(): Promise<string> {
+  const stored = await loadStoredToken();
+  if (stored) return stored;
+  return env("BAKONG_DEVELOPER_TOKEN");
+}
+
+/**
+ * Exchange the current token for a fresh one via Bakong's /v1/renew_token.
+ * Works even if expired, as long as it was issued for the same email.
+ * Persists the new token to the DB.
+ */
+export async function renewBakongToken(): Promise<string> {
+  const current = await getActiveToken();
+  const res = await fetch(`${BAKONG_API}/v1/renew_token`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${current}`,
+    },
+    body: JSON.stringify({}),
+  });
+  if (!res.ok) {
+    throw new BakongApiError(
+      "auth_error",
+      res.status,
+      `Bakong renew_token failed (${res.status}). Re-register at https://api-bakong.nbc.gov.kh/register.`,
+    );
+  }
+  const json = (await res.json()) as { data?: { token?: string } };
+  const newToken = json?.data?.token;
+  if (!newToken) {
+    throw new BakongApiError("auth_error", res.status, `Bakong renew_token: no token in response`);
+  }
+  await saveStoredToken(newToken);
+  console.log("[bakong] developer token auto-renewed");
+  return newToken;
+}
+
 export async function checkTransactionByMd5(
   md5: string,
-  opts: { retries?: number } = {},
+  opts: { retries?: number; _renewed?: boolean } = {},
 ): Promise<BakongCheckResult> {
-  const token = env("BAKONG_DEVELOPER_TOKEN");
+  const token = await getActiveToken();
   const retries = opts.retries ?? 2;
   let lastErr: unknown;
 
@@ -123,11 +185,20 @@ export async function checkTransactionByMd5(
         body: JSON.stringify({ md5 }),
       });
 
-      // Hard auth errors — don't retry.
+      // Hard auth errors — try one auto-renew, then give up.
       if (res.status === 401 || res.status === 403) {
-        throw new BakongApiError("auth_error", res.status, `Bakong auth failed (${res.status})`);
+        if (!opts._renewed) {
+          try {
+            await renewBakongToken();
+            return await checkTransactionByMd5(md5, { ...opts, _renewed: true });
+          } catch (renewErr) {
+            throw renewErr instanceof BakongApiError
+              ? renewErr
+              : new BakongApiError("auth_error", res.status, `Bakong auth failed and renew failed (${res.status})`);
+          }
+        }
+        throw new BakongApiError("auth_error", res.status, `Bakong auth failed after renew (${res.status})`);
       }
-      // Rate limited — retryable with backoff.
       if (res.status === 429) {
         lastErr = new BakongApiError("rate_limited", 429, "Bakong rate-limited");
       } else if (res.status >= 500) {
@@ -148,7 +219,6 @@ export async function checkTransactionByMd5(
       );
     }
     if (attempt < retries) {
-      // Backoff: 300ms, 900ms
       await new Promise((r) => setTimeout(r, 300 * Math.pow(3, attempt)));
     }
   }
