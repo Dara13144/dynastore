@@ -26,6 +26,8 @@ export type Game = {
   badge?: string | null;
   price_coins: number;
   file_path?: string | null;
+  screenshots?: string[];
+  preview_video_url?: string | null;
 };
 export type Recommendation = {
   id: string;
