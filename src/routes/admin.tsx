@@ -469,9 +469,17 @@ function GamesTab() {
       return { path, size: file.size };
     }
     const tus = await import("tus-js-client");
-    const { data: sess } = await supabase.auth.getSession();
-    const token = sess.session?.access_token;
-    if (!token) {
+    // Always refresh before a long-running upload so we start with a full TTL on
+    // the access token; otherwise a near-expiry token can 401 mid-stream.
+    let { data: sess } = await supabase.auth.getSession();
+    try {
+      const refreshed = await supabase.auth.refreshSession();
+      if (refreshed.data.session) sess = { session: refreshed.data.session };
+    } catch {
+      /* keep existing session if refresh fails */
+    }
+    let currentToken = sess.session?.access_token;
+    if (!currentToken) {
       setUploadStage("error");
       setUploadError("សិទ្ធិផុតកំណត់ — សូមចូលគណនីឡើងវិញ");
       showToast("Upload: not authenticated");
@@ -494,13 +502,14 @@ function GamesTab() {
       let lastTs = performance.now();
       let lastSent = 0;
       let aborted = false;
+      const tusHeaders: Record<string, string> = {
+        authorization: `Bearer ${currentToken}`,
+        "x-upsert": "true",
+      };
       const upload = new tus.Upload(file, {
         endpoint: `${projectUrl}/storage/v1/upload/resumable`,
         retryDelays: [0, 1000, 3000, 5000, 10000, 20000, 30000],
-        headers: {
-          authorization: `Bearer ${token}`,
-          "x-upsert": "true",
-        },
+        headers: tusHeaders,
         uploadDataDuringCreation: true,
         removeFingerprintOnSuccess: true,
         metadata: {
@@ -511,6 +520,29 @@ function GamesTab() {
         },
         chunkSize,
         parallelUploads: 1,
+        // Refresh the bearer token on auth failures so multi-hour uploads
+        // survive Supabase's 1-hour access-token TTL.
+        onShouldRetry: (err: import("tus-js-client").DetailedError) => {
+          const status = err.originalResponse?.getStatus?.() ?? 0;
+          if (status === 401 || status === 403) {
+            // fire-and-forget refresh; tus retries with updated headers.
+            supabase.auth
+              .refreshSession()
+              .then(({ data }) => {
+                const fresh = data.session?.access_token;
+                if (fresh) {
+                  currentToken = fresh;
+                  tusHeaders.authorization = `Bearer ${fresh}`;
+                }
+              })
+              .catch(() => {
+                /* will fail on next chunk and surface via onError */
+              });
+            return true;
+          }
+          // Default tus retry behavior for non-auth errors (network/5xx).
+          return status === 0 || (status >= 500 && status < 600);
+        },
         onError: (err: Error) => {
           if (aborted) return;
           const friendly = friendlyUploadError(err.message, { fileSize: file.size });
@@ -553,13 +585,24 @@ function GamesTab() {
           resolve(null);
         },
       };
-      upload.findPreviousUploads().then((prev: import("tus-js-client").PreviousUpload[]) => {
-        if (aborted) return;
-        if (prev.length) upload.resumeFromPreviousUpload(prev[0]);
-        upload.start();
-      }).catch(() => {
-        if (!aborted) upload.start();
-      });
+      upload
+        .findPreviousUploads()
+        .then((prev: import("tus-js-client").PreviousUpload[]) => {
+          if (aborted) return;
+          // Only resume previous uploads from the LAST 6 hours — older
+          // fingerprints often reference upload URLs whose server-side state
+          // (and bearer auth) has already expired, causing immediate 4xx.
+          const SIX_HOURS = 6 * 60 * 60 * 1000;
+          const fresh = prev.find((p) => {
+            const t = p.creationTime ? Date.parse(p.creationTime) : 0;
+            return t && Date.now() - t < SIX_HOURS;
+          });
+          if (fresh) upload.resumeFromPreviousUpload(fresh);
+          upload.start();
+        })
+        .catch(() => {
+          if (!aborted) upload.start();
+        });
     });
   };
 
