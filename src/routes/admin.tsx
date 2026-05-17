@@ -662,61 +662,95 @@ function GamesTab() {
                 />
               )}
             </div>
-            <label className="block">
+            <div className="block">
               <span className="block text-[10px] uppercase tracking-wider text-muted-foreground mb-1">
-                ឯកសារហ្គេម (zip/installer)
+                ប្រភពឯកសារហ្គេម
               </span>
-              <input
-                type="file"
-                accept=".zip,.rar,.7z,.tar,.gz,.tgz"
-                onChange={(e) => {
-                  const f = e.target.files?.[0] ?? null;
-                  const err = f ? validateFile(f) : null;
-                  setDraftFileError(err);
-                  setDraftFile(f);
-                }}
-                className="w-full text-xs file:mr-2 file:rounded-full file:border-0 file:bg-primary file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-primary-foreground"
-              />
-              {draftFile && !draftFileError && (
-                <span className="text-[10px] text-muted-foreground mt-1 block">
-                  {draftFile.name} · {(draftFile.size / 1024 / 1024).toFixed(2)} MB
-                </span>
-              )}
-              {draftFileError && (
-                <span className="text-[10px] text-destructive mt-1 block">{draftFileError}</span>
-              )}
-              {uploadPct !== null && (
-                <div className="mt-2 h-1.5 w-full rounded-full bg-muted overflow-hidden">
-                  <div
-                    className="h-full bg-primary transition-all"
-                    style={{ width: `${uploadPct}%` }}
+              <div className="inline-flex rounded-full bg-muted/30 p-1 mb-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSourceMode("file");
+                    setDraft({ ...draft, file_path: null });
+                    setDraftUrlError(null);
+                  }}
+                  className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-semibold transition ${sourceMode === "file" ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}
+                >
+                  <Plus className="h-3 w-3" /> Add File
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSourceMode("library");
+                    setDraftFile(null);
+                    setDraftFileError(null);
+                  }}
+                  className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-semibold transition ${sourceMode === "library" ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}
+                >
+                  <LinkIcon className="h-3 w-3" /> Add Library
+                </button>
+              </div>
+
+              {sourceMode === "file" ? (
+                <div className="animate-fade-in">
+                  <input
+                    type="file"
+                    accept=".zip,.rar,.7z,.tar,.gz,.tgz"
+                    onChange={(e) => {
+                      const f = e.target.files?.[0] ?? null;
+                      const err = f ? validateFile(f) : null;
+                      setDraftFileError(err);
+                      setDraftFile(f);
+                    }}
+                    className="w-full text-xs file:mr-2 file:rounded-full file:border-0 file:bg-primary file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-primary-foreground"
                   />
+                  <p className="text-[10px] text-muted-foreground mt-1">
+                    អនុញ្ញាត zip, rar, 7z, tar, gz · ទំហំ 1MB ដល់ 1000GB
+                  </p>
+                  {draftFile && !draftFileError && (
+                    <span className="text-[10px] text-emerald-400 mt-1 block">
+                      {draftFile.name} · {(draftFile.size / 1024 / 1024).toFixed(2)} MB
+                    </span>
+                  )}
+                  {draftFileError && (
+                    <span className="text-[10px] text-destructive mt-1 block">{draftFileError}</span>
+                  )}
+                  {uploadPct !== null && (
+                    <div className="mt-2 h-1.5 w-full rounded-full bg-muted overflow-hidden">
+                      <div
+                        className="h-full bg-primary transition-all"
+                        style={{ width: `${uploadPct}%` }}
+                      />
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="animate-fade-in">
+                  <input
+                    type="url"
+                    placeholder="https://… link to zip/installer"
+                    value={draft.file_path ?? ""}
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      setDraft({ ...draft, file_path: v || null });
+                      setDraftUrlError(v.trim() ? validateGameFileUrl(v) : null);
+                    }}
+                    className="w-full rounded-lg bg-muted/40 px-3 py-2 text-xs outline-none focus:ring-1 focus:ring-primary"
+                  />
+                  <p className="text-[10px] text-muted-foreground mt-1">
+                    បិទភ្ជាប់តំណផ្ទាល់ទៅឯកសារ .zip/.rar/.7z/.tar/.gz
+                  </p>
+                  {draftUrlError && (
+                    <span className="text-[10px] text-destructive mt-1 block">{draftUrlError}</span>
+                  )}
+                  {draft.file_path && !draftUrlError && (
+                    <span className="text-[10px] text-emerald-400 mt-1 block">
+                      តំណបានកំណត់ — នឹងរក្សាទុកជា file_path
+                    </span>
+                  )}
                 </div>
               )}
-              <span className="block text-[10px] uppercase tracking-wider text-muted-foreground mt-3 mb-1">
-                ឬ បិទភ្ជាប់ តំណ (URL)
-              </span>
-              <input
-                type="url"
-                placeholder="https://… link to zip/installer"
-                value={draft.file_path ?? ""}
-                onChange={(e) => {
-                  const v = e.target.value;
-                  setDraft({ ...draft, file_path: v || null });
-                  setDraftUrlError(v.trim() ? validateGameFileUrl(v) : null);
-                }}
-                disabled={!!draftFile}
-                className="w-full rounded-lg bg-muted/40 px-3 py-2 text-xs outline-none focus:ring-1 focus:ring-primary disabled:opacity-50"
-              />
-              {draftUrlError && !draftFile && (
-                <span className="text-[10px] text-destructive mt-1 block">{draftUrlError}</span>
-              )}
-              {draft.file_path && !draftFile && !draftUrlError && (
-                <span className="text-[10px] text-emerald-400 mt-1 block">
-                  តំណបានកំណត់ — នឹងរក្សាទុកជា file_path
-                </span>
-              )}
-            </label>
+            </div>
           </div>
           <label className="inline-flex items-center gap-2 text-xs">
             <input
