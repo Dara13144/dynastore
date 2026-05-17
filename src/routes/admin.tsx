@@ -351,7 +351,7 @@ function GamesTab() {
           resolve({ path, size: file.size });
         },
       });
-      upload.findPreviousUploads().then((prev: tus.PreviousUpload[]) => {
+      upload.findPreviousUploads().then((prev: import("tus-js-client").PreviousUpload[]) => {
         if (prev.length) upload.resumeFromPreviousUpload(prev[0]);
         upload.start();
       });
@@ -1033,7 +1033,7 @@ function UsersTab() {
       type WalletRow = { user_id: string; balance: number };
       type LibRow = { user_id: string; kind: string };
       type RoleRow = { user_id: string; role: string };
-      type ProfileRow = { user_id: string; display_name: string | null; created_at: string };
+      type ProfileRow = { user_id: string; display_name: string; created_at: string };
       const wMap = new Map((wallets ?? []).map((w: WalletRow) => [w.user_id, w.balance]));
       const oMap = new Map<string, number>();
       (lib ?? []).forEach((l: LibRow) => {
