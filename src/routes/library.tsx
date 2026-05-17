@@ -12,8 +12,8 @@ import {
 } from "lucide-react";
 import { StoreProvider, useStore } from "@/lib/store";
 import { useSession } from "@/hooks/use-session";
-import { supabase } from "@/integrations/supabase/client";
-import { resolveDownloadUrl } from "@/lib/download-game-file";
+import { useServerFn } from "@tanstack/react-start";
+import { getGameDownloadUrl } from "@/lib/games.functions";
 import { toast } from "sonner";
 import logoD from "@/assets/dyna-logo.jpeg";
 
