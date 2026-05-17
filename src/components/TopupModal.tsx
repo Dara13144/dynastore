@@ -26,6 +26,78 @@ type Props = { onClose: () => void; onToast: (m: string) => void };
 type Mode = "auto" | "manual";
 
 const PRESETS = [1, 2, 5, 10, 20, 50];
+const MERCHANT_NAME = "DYNA STORE";
+const KHQR_RED = "#E21A23";
+
+function KhqrCard({
+  qrValue,
+  amount,
+  innerRef,
+}: {
+  qrValue: string | null;
+  amount: number;
+  innerRef?: React.RefObject<HTMLDivElement | null>;
+}) {
+  return (
+    <div
+      ref={innerRef}
+      className="w-full overflow-hidden rounded-2xl bg-white shadow-md ring-1 ring-black/5"
+    >
+      {/* Red header */}
+      <div
+        className="flex items-center justify-center py-2"
+        style={{ backgroundColor: KHQR_RED }}
+      >
+        <span className="text-white font-black tracking-wider text-lg leading-none">
+          KH<span className="inline-block -translate-y-[1px]">Q</span>R
+        </span>
+      </div>
+
+      {/* Merchant + amount */}
+      <div className="px-5 pt-4">
+        <div className="text-[11px] font-semibold uppercase tracking-wider text-black/90">
+          {MERCHANT_NAME}
+        </div>
+        <div className="mt-1 text-2xl font-bold text-black tabular-nums">
+          {amount > 0 ? amount.toFixed(2) : "0"}
+          <span className="ml-1 text-xs font-semibold text-black/60">USD</span>
+        </div>
+      </div>
+
+      {/* Dashed separator */}
+      <div className="px-5 py-3">
+        <div className="border-t border-dashed border-black/30" />
+      </div>
+
+      {/* QR */}
+      <div className="px-5 pb-5 flex justify-center">
+        <div className="relative">
+          {qrValue ? (
+            <QRCode
+              value={qrValue}
+              size={240}
+              style={{ height: "auto", maxWidth: "100%", width: "100%" }}
+              viewBox="0 0 256 256"
+            />
+          ) : (
+            <div className="h-[240px] w-[240px] grid place-items-center text-muted-foreground">
+              <Loader2 className="h-5 w-5 animate-spin" />
+            </div>
+          )}
+          {/* Center logo */}
+          {qrValue && (
+            <div
+              className="absolute inset-0 m-auto h-12 w-12 rounded-full grid place-items-center text-white font-black text-base shadow"
+              style={{ backgroundColor: KHQR_RED }}
+            >
+              C
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export function TopupModal({ onClose, onToast }: Props) {
   const cfgFn = useServerFn(getTopupConfig);
@@ -261,19 +333,19 @@ export function TopupModal({ onClose, onToast }: Props) {
   }
 
   function downloadQrPng() {
-    downloadQrFromRef(qrBoxRef, qrName.trim() || "dynastore-khqr", "DYNASTORE • KHQR");
+    downloadKhqrCard(qrBoxRef, qrName.trim() || "dynastore-khqr", amount);
   }
 
   function downloadAutoQrPng() {
     if (!autoSession) return;
     const fname = `dynastore-khqr-$${autoSession.amount.toFixed(2)}-${autoSession.id.slice(0, 8)}`;
-    downloadQrFromRef(autoQrBoxRef, fname, `DYNASTORE • KHQR • $${autoSession.amount.toFixed(2)}`);
+    downloadKhqrCard(autoQrBoxRef, fname, autoSession.amount);
   }
 
-  function downloadQrFromRef(
+  function downloadKhqrCard(
     ref: React.RefObject<HTMLDivElement | null>,
     filename: string,
-    label: string,
+    amountUsd: number,
   ) {
     const svg = ref.current?.querySelector("svg");
     if (!svg) {
@@ -288,19 +360,78 @@ export function TopupModal({ onClose, onToast }: Props) {
     const img = new Image();
     img.onload = () => {
       try {
-        const SIZE = 1024,
-          PAD = 64;
+        // Card layout
+        const W = 720;
+        const HEADER_H = 80;
+        const BODY_PAD = 40;
+        const QR_SIZE = 560;
+        const TEXT_BLOCK_H = 110;
+        const SEP_H = 30;
+        const QR_PAD_BOTTOM = 40;
+        const H = HEADER_H + TEXT_BLOCK_H + SEP_H + QR_SIZE + QR_PAD_BOTTOM;
+
         const canvas = document.createElement("canvas");
-        canvas.width = SIZE;
-        canvas.height = SIZE + 80;
+        canvas.width = W;
+        canvas.height = H;
         const ctx = canvas.getContext("2d")!;
-        ctx.fillStyle = "#fff";
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.drawImage(img, PAD, PAD, SIZE - PAD * 2, SIZE - PAD * 2);
-        ctx.fillStyle = "#000";
-        ctx.font = "bold 28px system-ui, sans-serif";
+
+        // White background
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(0, 0, W, H);
+
+        // Red header
+        ctx.fillStyle = KHQR_RED;
+        ctx.fillRect(0, 0, W, HEADER_H);
+        ctx.fillStyle = "#ffffff";
+        ctx.font = "900 42px system-ui, -apple-system, sans-serif";
         ctx.textAlign = "center";
-        ctx.fillText(label, SIZE / 2, SIZE + 40);
+        ctx.textBaseline = "middle";
+        ctx.fillText("KHQR", W / 2, HEADER_H / 2);
+
+        // Merchant + amount
+        ctx.textAlign = "left";
+        ctx.textBaseline = "alphabetic";
+        ctx.fillStyle = "#111111";
+        ctx.font = "600 22px system-ui, -apple-system, sans-serif";
+        ctx.fillText(MERCHANT_NAME, BODY_PAD, HEADER_H + 44);
+        ctx.font = "800 44px system-ui, -apple-system, sans-serif";
+        const amtText = amountUsd > 0 ? amountUsd.toFixed(2) : "0";
+        ctx.fillText(amtText, BODY_PAD, HEADER_H + 96);
+        const amtWidth = ctx.measureText(amtText).width;
+        ctx.font = "700 18px system-ui, -apple-system, sans-serif";
+        ctx.fillStyle = "#666666";
+        ctx.fillText("USD", BODY_PAD + amtWidth + 8, HEADER_H + 96);
+
+        // Dashed separator
+        const sepY = HEADER_H + TEXT_BLOCK_H + SEP_H / 2;
+        ctx.strokeStyle = "#bbbbbb";
+        ctx.lineWidth = 2;
+        ctx.setLineDash([8, 6]);
+        ctx.beginPath();
+        ctx.moveTo(BODY_PAD, sepY);
+        ctx.lineTo(W - BODY_PAD, sepY);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // QR code (centered)
+        const qrX = (W - QR_SIZE) / 2;
+        const qrY = HEADER_H + TEXT_BLOCK_H + SEP_H;
+        ctx.drawImage(img, qrX, qrY, QR_SIZE, QR_SIZE);
+
+        // Center logo circle
+        const cx = W / 2;
+        const cy = qrY + QR_SIZE / 2;
+        const r = 48;
+        ctx.fillStyle = KHQR_RED;
+        ctx.beginPath();
+        ctx.arc(cx, cy, r, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = "#ffffff";
+        ctx.font = "900 44px system-ui, -apple-system, sans-serif";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText("C", cx, cy + 2);
+
         URL.revokeObjectURL(url);
         canvas.toBlob((blob) => {
           if (!blob) {
@@ -407,25 +538,11 @@ export function TopupModal({ onClose, onToast }: Props) {
               )}
               {autoStatus === "waiting" && autoSession && (
                 <div className="mx-auto w-full max-w-[320px] flex flex-col items-center gap-3">
-                  <div
-                    ref={autoQrBoxRef}
-                    className="rounded-2xl bg-white p-5 w-full flex flex-col items-center"
-                  >
-                    <QRCode
-                      value={autoSession.qr}
-                      size={260}
-                      style={{ height: "auto", maxWidth: "100%", width: "100%" }}
-                      viewBox="0 0 256 256"
-                    />
-                    <div className="mt-3 text-center">
-                      <div className="text-[10px] font-semibold tracking-wider text-black">
-                        DYNASTORE • KHQR
-                      </div>
-                      <div className="mt-1 text-sm font-bold text-black">
-                        ${autoSession.amount.toFixed(2)} USD
-                      </div>
-                    </div>
-                  </div>
+                  <KhqrCard
+                    innerRef={autoQrBoxRef}
+                    qrValue={autoSession.qr}
+                    amount={autoSession.amount}
+                  />
                   <div className="w-full rounded-xl bg-muted/30 p-3 text-center">
                     <div className="inline-flex items-center gap-2 text-xs">
                       <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
@@ -495,26 +612,7 @@ export function TopupModal({ onClose, onToast }: Props) {
           {mode === "manual" && (
             <>
               <div className="mx-auto w-full max-w-[320px] flex flex-col items-center gap-3">
-                <div
-                  ref={qrBoxRef}
-                  className="rounded-2xl bg-white p-5 w-full flex flex-col items-center"
-                >
-                  {staticQr ? (
-                    <QRCode
-                      value={staticQr}
-                      size={260}
-                      style={{ height: "auto", maxWidth: "100%", width: "100%" }}
-                      viewBox="0 0 256 256"
-                    />
-                  ) : (
-                    <div className="h-[260px] w-[260px] grid place-items-center text-muted-foreground">
-                      <Loader2 className="h-5 w-5 animate-spin" />
-                    </div>
-                  )}
-                  <div className="mt-3 text-center text-[10px] font-semibold tracking-wider text-black">
-                    DYNASTORE • KHQR
-                  </div>
-                </div>
+                <KhqrCard innerRef={qrBoxRef} qrValue={staticQr} amount={amount} />
                 <div className="flex w-full items-center gap-2">
                   <input
                     value={qrName}
