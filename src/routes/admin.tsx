@@ -364,46 +364,57 @@ function GamesTab() {
   ): Promise<{ path: string; size: number } | null> => {
     const err = validateFile(file);
     if (err) {
+      setUploadStage("error");
+      setUploadError(err);
       showToast(err);
       return null;
     }
+    setUploadStage("preparing");
+    setUploadError(null);
     const safe = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
     const path = `${gameId}/${Date.now()}_${safe}`;
-    // Use single PUT only for very small files (<=2MB). Anything larger
-    // goes through TUS so we get resumable, chunked, abortable streaming
-    // that keeps the UI responsive and never blocks on a single huge PUT.
     const RESUMABLE_THRESHOLD = 2 * 1024 * 1024; // 2MB
     if (file.size <= RESUMABLE_THRESHOLD) {
+      setUploadStage("uploading");
+      setUploadPct(0);
+      setUploadStats({ sent: 0, total: file.size, speedBps: 0, etaSec: 0 });
       const { error } = await supabase.storage
         .from("game-files")
         .upload(path, file, { upsert: true, contentType: file.type || "application/octet-stream" });
       if (error) {
-        showToast(`Upload: ${error.message}`);
+        const friendly = friendlyUploadError(error.message);
+        setUploadStage("error");
+        setUploadError(friendly);
+        setUploadPct(null);
+        setUploadStats(null);
+        showToast(`Upload: ${friendly}`);
         return null;
       }
+      setUploadPct(100);
+      setUploadStats({ sent: file.size, total: file.size, speedBps: 0, etaSec: 0 });
       return { path, size: file.size };
     }
-    // Resumable upload via TUS for large files
     const tus = await import("tus-js-client");
     const { data: sess } = await supabase.auth.getSession();
     const token = sess.session?.access_token;
     if (!token) {
+      setUploadStage("error");
+      setUploadError("សិទ្ធិផុតកំណត់ — សូមចូលគណនីឡើងវិញ");
       showToast("Upload: not authenticated");
       return null;
     }
     const projectUrl = import.meta.env.VITE_SUPABASE_URL as string;
-    // Adaptive chunk size: bigger chunks for big files cut request overhead,
-    // but stay bounded so we don't pin memory at multi-GB scale.
     const GB = 1024 * 1024 * 1024;
     const chunkSize =
       file.size >= 50 * GB
-        ? 64 * 1024 * 1024 // 64MB for >=50GB
+        ? 64 * 1024 * 1024
         : file.size >= 5 * GB
-          ? 32 * 1024 * 1024 // 32MB for >=5GB
+          ? 32 * 1024 * 1024
           : file.size >= 200 * 1024 * 1024
-            ? 16 * 1024 * 1024 // 16MB for >=200MB
-            : 8 * 1024 * 1024; // 8MB default
+            ? 16 * 1024 * 1024
+            : 8 * 1024 * 1024;
     return await new Promise((resolve) => {
+      setUploadStage("uploading");
       setUploadPct(0);
       setUploadStats({ sent: 0, total: file.size, speedBps: 0, etaSec: 0 });
       let lastTs = performance.now();
@@ -425,20 +436,21 @@ function GamesTab() {
           cacheControl: "3600",
         },
         chunkSize,
-        // parallelUploads: 1 keeps memory bounded for huge files.
         parallelUploads: 1,
         onError: (err: Error) => {
           if (aborted) return;
+          const friendly = friendlyUploadError(err.message);
+          setUploadStage("error");
+          setUploadError(friendly);
           setUploadPct(null);
           setUploadStats(null);
           uploadRef.current = null;
-          showToast(`Upload: ${err.message}`);
+          showToast(`Upload: ${friendly}`);
           resolve(null);
         },
         onProgress: (sent: number, total: number) => {
           const now = performance.now();
           const dt = (now - lastTs) / 1000;
-          // Throttle React updates to ~4/s to keep the UI smooth on huge files.
           if (dt >= 0.25 || sent === total) {
             const speedBps = dt > 0 ? (sent - lastSent) / dt : 0;
             const remaining = Math.max(total - sent, 0);
@@ -450,8 +462,8 @@ function GamesTab() {
           }
         },
         onSuccess: () => {
-          setUploadPct(null);
-          setUploadStats(null);
+          setUploadPct(100);
+          setUploadStats({ sent: file.size, total: file.size, speedBps: 0, etaSec: 0 });
           uploadRef.current = null;
           resolve({ path, size: file.size });
         },
@@ -472,7 +484,6 @@ function GamesTab() {
         if (prev.length) upload.resumeFromPreviousUpload(prev[0]);
         upload.start();
       }).catch(() => {
-        // localStorage unavailable — start fresh rather than blocking.
         if (!aborted) upload.start();
       });
     });
