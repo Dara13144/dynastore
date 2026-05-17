@@ -389,6 +389,14 @@ function GamesTab() {
   const [splitGuideOpen, setSplitGuideOpen] = useState(false);
   const uploadRef = useRef<{ abort: () => void } | null>(null);
 
+  // Auto-open the split-file guide when an upload fails with a platform
+  // per-upload cap (413 / ~50GB) error.
+  useEffect(() => {
+    if (uploadStage === "error" && isPlatformCapError(uploadError)) {
+      setSplitGuideOpen(true);
+    }
+  }, [uploadStage, uploadError]);
+
   // Startup check: read game-files bucket's file_size_limit so we can block
   // oversize uploads BEFORE starting TUS (which would otherwise fail with 413
   // after wasting bandwidth on the create-upload request).
