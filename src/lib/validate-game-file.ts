@@ -1,7 +1,7 @@
 // Game archive upload validation — shared between admin UI and tests.
 export const ALLOWED_GAME_FILE_EXTS = [".zip", ".rar", ".7z", ".tar", ".gz", ".tgz"] as const;
 export const MIN_GAME_FILE_MB = 1;
-export const MAX_GAME_FILE_GB = 1000;
+export const MAX_GAME_FILE_GB = 100;
 export const MIN_GAME_FILE_BYTES = MIN_GAME_FILE_MB * 1024 * 1024;
 export const MAX_GAME_FILE_BYTES = MAX_GAME_FILE_GB * 1024 * 1024 * 1024;
 
