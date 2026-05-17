@@ -62,6 +62,24 @@ export type Database = {
         }
         Relationships: []
       }
+      bakong_token: {
+        Row: {
+          id: number
+          token: string
+          updated_at: string
+        }
+        Insert: {
+          id?: number
+          token: string
+          updated_at?: string
+        }
+        Update: {
+          id?: number
+          token?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       bakong_webhook_events: {
         Row: {
           delivery_id: string | null
