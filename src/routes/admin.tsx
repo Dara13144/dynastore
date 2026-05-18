@@ -706,6 +706,26 @@ function GamesTab() {
             try { currentUpload?.abort(true); } catch { /* ignore */ }
             resolve(null);
           },
+          pause: () => {
+            if (aborted || paused) return;
+            paused = true;
+            cleanupPending();
+            try { currentUpload?.abort(); } catch { /* ignore */ }
+            setUploadStage("paused");
+            setUploadError("ផ្អាកដោយដៃ — ចុច “បន្ត” ដើម្បីអាប់ឡូដបន្តពីចំណុចបច្ចុប្បន្ន");
+            showToast("Upload ត្រូវបានផ្អាក");
+          },
+          resume: () => {
+            if (aborted || !paused) return;
+            paused = false;
+            setUploadStage("uploading");
+            setUploadError(null);
+            // Reset speed/ETA baseline so resumed throughput is accurate.
+            lastTs = performance.now();
+            lastSent = 0;
+            buildAndStart();
+            showToast("Upload បានបន្ត");
+          },
         };
 
         currentUpload
