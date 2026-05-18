@@ -343,6 +343,30 @@ function GamesTab() {
   const [batchCategory, setBatchCategory] = useState<string>("Game");
   const [batchVisible, setBatchVisible] = useState<boolean>(true);
   const batchCurrentRef = useRef<string | null>(null);
+  const [batchPaused, setBatchPaused] = useState(false);
+  const batchPausedRef = useRef(false);
+  const batchResumeWaiterRef = useRef<(() => void) | null>(null);
+  const waitWhilePaused = () =>
+    batchPausedRef.current
+      ? new Promise<void>((res) => {
+          batchResumeWaiterRef.current = () => {
+            batchResumeWaiterRef.current = null;
+            res();
+          };
+        })
+      : Promise.resolve();
+  const pauseBatch = () => {
+    batchPausedRef.current = true;
+    setBatchPaused(true);
+    // Pause the currently-running TUS upload too.
+    if (uploadRef.current?.pause) uploadRef.current.pause();
+  };
+  const resumeBatch = () => {
+    batchPausedRef.current = false;
+    setBatchPaused(false);
+    if (uploadRef.current?.resume) uploadRef.current.resume();
+    batchResumeWaiterRef.current?.();
+  };
 
   const showToast = (m: string) => {
 
@@ -1239,6 +1263,8 @@ function GamesTab() {
     }
     setBatchRunning(true);
     for (const item of queue) {
+      // Block here if user paused the queue between items.
+      await waitWhilePaused();
       batchCurrentRef.current = item.id;
       updateBatchItem(item.id, { status: "uploading", pct: 0, message: undefined });
       setUploadError(null);
@@ -1287,6 +1313,9 @@ function GamesTab() {
       }
     }
     batchCurrentRef.current = null;
+    batchPausedRef.current = false;
+    setBatchPaused(false);
+    batchResumeWaiterRef.current?.();
     setBatchRunning(false);
     setUploadStage("idle");
     setUploadPct(null);
@@ -1420,6 +1449,26 @@ function GamesTab() {
             >
               {batchRunning ? "កំពុងបង្ហោះ…" : `ចាប់ផ្តើម Batch (${batchItems.filter((it) => it.status === "pending").length})`}
             </button>
+            {batchRunning && !batchPaused && (
+              <button
+                type="button"
+                onClick={pauseBatch}
+                className="inline-flex items-center gap-1.5 rounded-full bg-amber-500/15 px-3 py-1.5 text-xs font-semibold text-amber-400 ring-1 ring-amber-500/40 hover:bg-amber-500/25"
+                title="ផ្អាក batch និងឯកសារកំពុងបង្ហោះ"
+              >
+                ⏸ ផ្អាក Batch
+              </button>
+            )}
+            {batchRunning && batchPaused && (
+              <button
+                type="button"
+                onClick={resumeBatch}
+                className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/15 px-3 py-1.5 text-xs font-semibold text-emerald-400 ring-1 ring-emerald-500/40 hover:bg-emerald-500/25"
+                title="បន្ត batch ពីកន្លែងផ្អាក"
+              >
+                ▶ បន្ត Batch
+              </button>
+            )}
             <button
               type="button"
               onClick={clearBatch}
