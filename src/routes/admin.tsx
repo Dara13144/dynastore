@@ -1597,21 +1597,13 @@ function GamesTab() {
                                       setSigning(true);
                                       try {
                                         const EXP = 60 * 15;
-                                        let url: string;
-                                        if (uploadedInfo.provider === "supabase") {
-                                          const { data, error } = await supabase.storage
-                                            .from(uploadedInfo.bucket ?? "game-files")
-                                            .createSignedUrl(uploadedInfo.path, EXP, { download: true });
-                                          if (error || !data?.signedUrl) {
-                                            throw new Error(error?.message || "sign_failed");
-                                          }
-                                          url = data.signedUrl;
-                                        } else {
-                                          const r = await getS3SignedReadUrlFn({
-                                            data: { key: uploadedInfo.path },
-                                          });
-                                          url = r.url;
+                                        const { data, error } = await supabase.storage
+                                          .from(uploadedInfo.bucket ?? "game-files")
+                                          .createSignedUrl(uploadedInfo.path, EXP, { download: true });
+                                        if (error || !data?.signedUrl) {
+                                          throw new Error(error?.message || "sign_failed");
                                         }
+                                        const url = data.signedUrl;
                                         setSignedUrl({ url, expiresAt: Date.now() + EXP * 1000 });
                                         showToast("បានបង្កើត Signed URL (15 នាទី)");
                                       } catch (e) {
