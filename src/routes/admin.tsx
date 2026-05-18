@@ -823,15 +823,37 @@ function GamesTab() {
       sourceMode === "file" ? draftFile : null,
       {
         uploadFile: async (gameId, file) => {
-          const up = await uploadFile(gameId, file as File);
+          const f = file as File;
+          // Compute SHA-256 only for files <= 200MB to avoid blocking on huge files.
+          const CHECKSUM_MAX = 200 * 1024 * 1024;
+          let checksum: string | undefined;
+          let checksumSkippedReason: string | undefined;
+          if (f.size <= CHECKSUM_MAX && typeof crypto !== "undefined" && crypto.subtle) {
+            try {
+              const buf = await f.arrayBuffer();
+              const digest = await crypto.subtle.digest("SHA-256", buf);
+              checksum = Array.from(new Uint8Array(digest))
+                .map((b) => b.toString(16).padStart(2, "0"))
+                .join("");
+            } catch {
+              checksumSkippedReason = "compute failed";
+            }
+          } else if (f.size > CHECKSUM_MAX) {
+            checksumSkippedReason = "file > 200MB";
+          }
+          const up = await uploadFile(gameId, f);
           if (up) {
             setUploadStage("processing");
             setUploadedInfo({
               path: up.path,
               size: up.size,
-              mime: (file as File).type || "application/octet-stream",
+              mime: f.type || "application/octet-stream",
               provider: "supabase",
               bucket: "game-files",
+              uploadedAt: new Date().toISOString(),
+              checksum,
+              checksumAlgo: checksum ? "SHA-256" : undefined,
+              checksumSkippedReason,
             });
           }
           return up;
@@ -854,6 +876,7 @@ function GamesTab() {
       return;
     }
     setUploadStage("done");
+    const nowIso = new Date().toISOString();
     // Capture metadata for S3 / External URL flows (file flow set it inside uploadFile).
     if (sourceMode === "s3" && s3UploadedKey) {
       setUploadedInfo({
@@ -861,6 +884,9 @@ function GamesTab() {
         size: s3UploadedSize ?? draftFile?.size ?? 0,
         mime: draftFile?.type || "application/octet-stream",
         provider: "s3",
+        uploadedAt: nowIso,
+        processedAt: nowIso,
+        checksumSkippedReason: "S3 direct upload",
       });
     } else if (sourceMode === "library" && draft.file_path) {
       setUploadedInfo({
@@ -868,7 +894,12 @@ function GamesTab() {
         size: 0,
         mime: "application/octet-stream",
         provider: "external_url",
+        uploadedAt: nowIso,
+        processedAt: nowIso,
+        checksumSkippedReason: "external URL",
       });
+    } else {
+      setUploadedInfo((info) => (info ? { ...info, processedAt: nowIso } : info));
     }
     setUploadPct(null);
     setUploadStats(null);
