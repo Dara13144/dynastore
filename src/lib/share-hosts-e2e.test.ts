@@ -40,7 +40,7 @@ const SAMPLE_PATHS: Record<(typeof SHARE_HOSTS)[number], string> = {
   "bunkr.si": "/a/bunkrsi-abcd",
   "krakenfiles.com": "/view/kraken-abc/file.html",
   "sendspace.com": "/file/sendspace-abc123",
-  "1fichier.com": "/?onefichier-abc123",
+  "1fichier.com": "/onefichier-abc123",
   "workupload.com": "/file/workupload-abcXYZ",
   "anonfiles.com": "/anonfiles-abc123",
   "dropbox.com": "/s/dropbox-abc123/dropbox-game.zip",
