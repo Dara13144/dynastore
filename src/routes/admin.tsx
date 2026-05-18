@@ -250,6 +250,12 @@ function AdminPage() {
               icon={<History className="h-3.5 w-3.5" />}
               label="Uploads"
             />
+            <TabBtn
+              active={tab === "diagnostics"}
+              onClick={() => setTab("diagnostics")}
+              icon={<Activity className="h-3.5 w-3.5" />}
+              label="Diagnostics"
+            />
           </nav>
         </div>
       </header>
