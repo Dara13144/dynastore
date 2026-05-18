@@ -222,8 +222,9 @@ describe("TUS resume across offline → online", () => {
         submit: vi.fn(async () => {}),
       });
       path = r.path;
-      // eslint-disable-next-line no-console
-      console.log("attempt", attempt, "ok=", r.ok, "err=", r.error, "received=", server.bytesEverReceived);
+      // Each intermediate attempt either errors (drop scheduled) or succeeds.
+      if (attempt <= dropOffsets.length) expect(r.ok).toBe(false);
+      else expect(r.ok).toBe(true);
     }
 
     // After all reconnects, exactly fileSize bytes were ever received — no
