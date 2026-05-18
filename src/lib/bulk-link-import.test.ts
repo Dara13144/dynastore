@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { parseBulkLinks, deriveIdFromUrl, summarizeParse } from "./bulk-link-import";
+import { parseBulkLinks, deriveIdFromUrl, summarizeParse, dedupeAgainstExisting } from "./bulk-link-import";
 
 describe("bulk-link-import parser", () => {
   it("ignores blank lines and comments", () => {
@@ -58,7 +58,7 @@ describe("bulk-link-import parser", () => {
     const rows = parseBulkLinks(
       "https://x.example/a.zip\nhttps://x.example/b.zip\ngarbage-line",
     );
-    expect(summarizeParse(rows)).toEqual({ total: 3, valid: 2, invalid: 1 });
+    expect(summarizeParse(rows)).toEqual({ total: 3, valid: 2, invalid: 1, skipped: 0, importable: 2 });
   });
 
   it("clamps negative or non-numeric prices to 0", () => {
@@ -109,5 +109,53 @@ describe("bulk-link-import URL normalization", () => {
     const long = "https://example.com/" + "a".repeat(2100) + ".zip";
     const rows = parseBulkLinks(long);
     expect(rows[0].ok).toBe(false);
+  });
+});
+
+describe("dedupeAgainstExisting", () => {
+  it("marks rows whose id already exists in the system as skipped", () => {
+    const rows = parseBulkLinks(
+      "https://cdn.example.com/cool-game.zip\nhttps://cdn.example.com/new-game.zip",
+    );
+    const out = dedupeAgainstExisting(rows, { ids: ["cool-game"] });
+    expect(out[0].ok).toBe(false);
+    expect(out[0].skipped).toBe(true);
+    expect(out[0].skipReason).toContain("cool-game");
+    expect(out[1].ok).toBe(true);
+  });
+
+  it("marks rows whose URL already exists (case + www. insensitive)", () => {
+    const rows = parseBulkLinks("https://CDN.example.com/cool-game.zip");
+    const out = dedupeAgainstExisting(rows, {
+      urls: ["https://www.cdn.example.com/cool-game.zip"],
+    });
+    expect(out[0].ok).toBe(false);
+    expect(out[0].skipped).toBe(true);
+    expect(out[0].skipReason).toMatch(/URL/);
+  });
+
+  it("summarizeParse reports total/valid/invalid/skipped/importable", () => {
+    const rows = parseBulkLinks(
+      [
+        "https://cdn.example.com/a.zip",
+        "https://cdn.example.com/b.zip",
+        "not a url",
+      ].join("\n"),
+    );
+    const out = dedupeAgainstExisting(rows, { ids: ["a"] });
+    expect(summarizeParse(out)).toEqual({
+      total: 3,
+      valid: 1,
+      invalid: 1,
+      skipped: 1,
+      importable: 1,
+    });
+  });
+
+  it("leaves rows untouched when no existing set provided", () => {
+    const rows = parseBulkLinks("https://cdn.example.com/x.zip");
+    const out = dedupeAgainstExisting(rows, {});
+    expect(out[0].ok).toBe(true);
+    expect(out[0].skipped).toBeUndefined();
   });
 });

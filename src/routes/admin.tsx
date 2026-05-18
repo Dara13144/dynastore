@@ -40,7 +40,7 @@ import {
 } from "@/lib/admin.functions";
 import { validateGameFile, validateGameFileUrl, MAX_GAME_FILE_BYTES } from "@/lib/validate-game-file";
 import { submitCreateGame } from "@/lib/create-game";
-import { parseBulkLinks, summarizeParse, type ParsedLinkRow } from "@/lib/bulk-link-import";
+import { parseBulkLinks, summarizeParse, dedupeAgainstExisting, type ParsedLinkRow } from "@/lib/bulk-link-import";
 import { getGameFilesBucketLimit } from "@/lib/bucket-limit.functions";
 import {
   formatBytes,
@@ -1658,7 +1658,18 @@ function GamesTab() {
             <button
               type="button"
               disabled={bulkLinksRunning || !bulkLinksText.trim()}
-              onClick={() => setBulkLinksParsed(parseBulkLinks(bulkLinksText))}
+              onClick={async () => {
+                const parsed = parseBulkLinks(bulkLinksText);
+                // Fetch existing ids + external URLs so we can mark duplicates.
+                const { data: existing } = await supabase
+                  .from("games")
+                  .select("id, file_path, storage_provider");
+                const ids = (existing ?? []).map((g) => g.id as string);
+                const urls = (existing ?? [])
+                  .filter((g) => g.storage_provider === "external_url" && g.file_path)
+                  .map((g) => g.file_path as string);
+                setBulkLinksParsed(dedupeAgainstExisting(parsed, { ids, urls }));
+              }}
               className="rounded-full bg-muted/40 px-3 py-1.5 text-xs font-semibold ring-1 ring-border hover:bg-muted/60 disabled:opacity-50"
             >
               Parse
@@ -1667,7 +1678,7 @@ function GamesTab() {
               const s = summarizeParse(bulkLinksParsed);
               return (
                 <span className="text-[11px] text-muted-foreground">
-                  {s.valid}/{s.total} ត្រឹមត្រូវ · {s.invalid} ខុស
+                  {s.importable}/{s.total} នាំចូលបាន · {s.skipped} រំលង · {s.invalid} ខុស
                 </span>
               );
             })()}
@@ -1681,15 +1692,31 @@ function GamesTab() {
                 <tbody>
                   {bulkLinksParsed.map((r) => {
                     const log = bulkLinksLog.find((l) => l.id === r.draft?.id);
+                    const statusClass = r.skipped
+                      ? "text-amber-400"
+                      : r.ok
+                        ? log?.status === "fail"
+                          ? "text-rose-400"
+                          : log?.status === "ok"
+                            ? "text-emerald-400"
+                            : "text-foreground"
+                        : "text-rose-400";
+                    const statusText = r.skipped
+                      ? `⤼ ${r.skipReason ?? "រំលង"}`
+                      : r.ok
+                        ? log
+                          ? log.status === "ok"
+                            ? "✓ បានបន្ថែម"
+                            : `✗ ${log.message ?? "បរាជ័យ"}`
+                          : "រង់ចាំ"
+                        : r.error;
                     return (
                       <tr key={r.lineNumber} className="border-t border-border/40">
                         <td className="px-2 py-1 text-muted-foreground">{r.lineNumber}</td>
                         <td className="px-2 py-1 font-mono">{r.draft?.id ?? "—"}</td>
                         <td className="px-2 py-1 truncate max-w-[200px]">{r.draft?.title ?? r.raw}</td>
                         <td className="px-2 py-1">{r.draft?.price_coins ?? "—"}</td>
-                        <td className={`px-2 py-1 ${r.ok ? (log?.status === "fail" ? "text-rose-400" : log?.status === "ok" ? "text-emerald-400" : "text-foreground") : "text-rose-400"}`}>
-                          {r.ok ? (log ? (log.status === "ok" ? "✓ បានបន្ថែម" : `✗ ${log.message ?? "បរាជ័យ"}`) : "រង់ចាំ") : r.error}
-                        </td>
+                        <td className={`px-2 py-1 ${statusClass}`}>{statusText}</td>
                       </tr>
                     );
                   })}
@@ -1751,7 +1778,9 @@ function GamesTab() {
                 setBulkLinksRunning(false);
                 await loadGames();
                 const okCount = results.filter((r) => r.status === "ok").length;
-                showToast(`បាននាំចូល ${okCount}/${results.length} តំណ`);
+                const skipCount = bulkLinksParsed.filter((r) => r.skipped).length;
+                const suffix = skipCount > 0 ? ` · រំលង ${skipCount}` : "";
+                showToast(`បាននាំចូល ${okCount}/${results.length} តំណ${suffix}`);
               }}
               className="rounded-full bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground disabled:opacity-50"
             >

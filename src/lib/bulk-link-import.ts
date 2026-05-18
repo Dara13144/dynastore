@@ -13,6 +13,10 @@ export type ParsedLinkRow = {
   raw: string;
   ok: boolean;
   error?: string;
+  /** True when the row was a valid parse but matches something that already exists. */
+  skipped?: boolean;
+  /** Human-readable reason for the skip (e.g. "id already exists"). */
+  skipReason?: string;
   draft?: {
     id: string;
     title: string;
@@ -20,6 +24,13 @@ export type ParsedLinkRow = {
     price_coins: number;
     url: string;
   };
+};
+
+export type ExistingSet = {
+  /** Existing game IDs. Lowercased before comparison. */
+  ids?: Iterable<string>;
+  /** Existing external URLs. Normalized before comparison. */
+  urls?: Iterable<string>;
 };
 
 const DELIMS = /\t|\|/;
@@ -125,12 +136,60 @@ export function parseBulkLinks(input: string): ParsedLinkRow[] {
   return out;
 }
 
-export function summarizeParse(rows: ParsedLinkRow[]): { total: number; valid: number; invalid: number } {
+export function summarizeParse(
+  rows: ParsedLinkRow[],
+): { total: number; valid: number; invalid: number; skipped: number; importable: number } {
   let valid = 0;
   let invalid = 0;
+  let skipped = 0;
   for (const r of rows) {
-    if (r.ok) valid++;
+    if (r.skipped) skipped++;
+    else if (r.ok) valid++;
     else invalid++;
   }
-  return { total: rows.length, valid, invalid };
+  return { total: rows.length, valid, invalid, skipped, importable: valid };
+}
+
+/** Normalize a URL string for duplicate comparison. */
+function normalizeForCompare(raw: string): string {
+  const v = raw.trim();
+  try {
+    const u = new URL(v);
+    let host = u.hostname.toLowerCase();
+    if (host.startsWith("www.")) host = host.slice(4);
+    u.hostname = host;
+    u.pathname = u.pathname.replace(/\/{2,}/g, "/");
+    u.hash = "";
+    return u.toString().toLowerCase();
+  } catch {
+    return v.toLowerCase();
+  }
+}
+
+/**
+ * Mark rows whose `draft.id` or `draft.url` collides with an existing item.
+ * Returns a new array; original rows are not mutated. Rows that were already
+ * invalid (`ok: false`) are returned unchanged.
+ */
+export function dedupeAgainstExisting(
+  rows: ParsedLinkRow[],
+  existing: ExistingSet,
+): ParsedLinkRow[] {
+  const existingIds = new Set<string>();
+  for (const id of existing.ids ?? []) existingIds.add(id.toLowerCase());
+  const existingUrls = new Set<string>();
+  for (const u of existing.urls ?? []) existingUrls.add(normalizeForCompare(u));
+
+  return rows.map((r) => {
+    if (!r.ok || !r.draft) return r;
+    const idLower = r.draft.id.toLowerCase();
+    const urlKey = normalizeForCompare(r.draft.url);
+    if (existingIds.has(idLower)) {
+      return { ...r, ok: false, skipped: true, skipReason: `id "${r.draft.id}" មាននៅក្នុងប្រព័ន្ធរួចហើយ` };
+    }
+    if (existingUrls.has(urlKey)) {
+      return { ...r, ok: false, skipped: true, skipReason: "URL នេះត្រូវបាននាំចូលរួចហើយ" };
+    }
+    return r;
+  });
 }
