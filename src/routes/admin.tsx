@@ -27,6 +27,7 @@ import {
   Download,
   Link as LinkIcon,
   LayoutDashboard,
+  Activity,
 } from "lucide-react";
 import { StoreProvider } from "@/lib/store";
 import {
