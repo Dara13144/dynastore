@@ -368,7 +368,11 @@ function GamesTab() {
     checksumSkippedReason?: string;
   } | null>(null);
   const [splitGuideOpen, setSplitGuideOpen] = useState(false);
-  const uploadRef = useRef<{ abort: () => void } | null>(null);
+  const uploadRef = useRef<{
+    abort: () => void;
+    pause?: () => void;
+    resume?: () => void;
+  } | null>(null);
 
   // Auto-open the split-file guide when an upload fails with a platform
   // per-upload cap (413 / ~50GB) error.
