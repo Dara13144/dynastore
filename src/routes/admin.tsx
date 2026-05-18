@@ -356,6 +356,21 @@ function GamesTab() {
   const removeMediaUpload = (id: string) =>
     setMediaUploads((prev) => prev.filter((p) => p.id !== id));
 
+  // Files rejected by DropZone (wrong type / oversize) per upload slot.
+  const [rejectedByKind, setRejectedByKind] = useState<{
+    cover: RejectedFile[];
+    screenshot: RejectedFile[];
+    video: RejectedFile[];
+    archive: RejectedFile[];
+  }>({ cover: [], screenshot: [], video: [], archive: [] });
+  const addRejections = (
+    kind: "cover" | "screenshot" | "video" | "archive",
+    items: RejectedFile[],
+  ) =>
+    setRejectedByKind((prev) => ({ ...prev, [kind]: [...prev[kind], ...items] }));
+  const clearRejections = (kind: "cover" | "screenshot" | "video" | "archive") =>
+    setRejectedByKind((prev) => ({ ...prev, [kind]: [] }));
+
   // --- Batch multi-file upload state ---
   type BatchStatus = "pending" | "uploading" | "done" | "error" | "skipped";
   type BatchItem = {
