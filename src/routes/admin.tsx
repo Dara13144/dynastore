@@ -2260,6 +2260,10 @@ function GamesTab() {
                     message={m.message}
                   />
                 ))}
+              <RejectedFilesBanner
+                items={rejectedByKind.video}
+                onClear={() => clearRejections("video")}
+              />
               {draft.preview_video_url && (
                 <div>
                   <video
