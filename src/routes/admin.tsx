@@ -343,6 +343,30 @@ function GamesTab() {
   const [batchCategory, setBatchCategory] = useState<string>("Game");
   const [batchVisible, setBatchVisible] = useState<boolean>(true);
   const batchCurrentRef = useRef<string | null>(null);
+  const [batchPaused, setBatchPaused] = useState(false);
+  const batchPausedRef = useRef(false);
+  const batchResumeWaiterRef = useRef<(() => void) | null>(null);
+  const waitWhilePaused = () =>
+    batchPausedRef.current
+      ? new Promise<void>((res) => {
+          batchResumeWaiterRef.current = () => {
+            batchResumeWaiterRef.current = null;
+            res();
+          };
+        })
+      : Promise.resolve();
+  const pauseBatch = () => {
+    batchPausedRef.current = true;
+    setBatchPaused(true);
+    // Pause the currently-running TUS upload too.
+    if (uploadRef.current?.pause) uploadRef.current.pause();
+  };
+  const resumeBatch = () => {
+    batchPausedRef.current = false;
+    setBatchPaused(false);
+    if (uploadRef.current?.resume) uploadRef.current.resume();
+    batchResumeWaiterRef.current?.();
+  };
 
   const showToast = (m: string) => {
 
