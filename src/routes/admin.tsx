@@ -1545,7 +1545,55 @@ function GamesTab() {
                             )}
                             <dt className="text-muted-foreground">MIME</dt>
                             <dd className="font-mono">{uploadedInfo.mime}</dd>
-                          </dl>
+                            {uploadedInfo.uploadedAt && (
+                              <>
+                                <dt className="text-muted-foreground">Uploaded</dt>
+                                <dd className="font-mono text-[10.5px]" title={uploadedInfo.uploadedAt}>
+                                  {new Date(uploadedInfo.uploadedAt).toLocaleString()}
+                                </dd>
+                              </>
+                            )}
+                            {uploadedInfo.processedAt && (
+                              <>
+                                <dt className="text-muted-foreground">Processed</dt>
+                                <dd className="font-mono text-[10.5px]" title={uploadedInfo.processedAt}>
+                                  {new Date(uploadedInfo.processedAt).toLocaleString()}
+                                </dd>
+                              </>
+                            )}
+                            {(uploadedInfo.checksum || uploadedInfo.checksumSkippedReason) && (
+                              <>
+                                <dt className="text-muted-foreground">
+                                  {uploadedInfo.checksumAlgo ?? "Checksum"}
+                                </dt>
+                                <dd className="min-w-0">
+                                  {uploadedInfo.checksum ? (
+                                    <div className="flex items-center gap-1.5 min-w-0">
+                                      <code
+                                        className="truncate font-mono text-[10.5px]"
+                                        title={uploadedInfo.checksum}
+                                      >
+                                        {uploadedInfo.checksum}
+                                      </code>
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          navigator.clipboard?.writeText(uploadedInfo.checksum!);
+                                          showToast("បានចម្លង checksum");
+                                        }}
+                                        className="shrink-0 rounded bg-muted px-1.5 py-0.5 text-[9.5px] font-semibold hover:bg-muted/70"
+                                      >
+                                        Copy
+                                      </button>
+                                    </div>
+                                  ) : (
+                                    <span className="text-[10.5px] text-muted-foreground italic">
+                                      មិនបានគណនា ({uploadedInfo.checksumSkippedReason})
+                                    </span>
+                                  )}
+                                </dd>
+                              </>
+                            )}
                         </div>
                       )}
 
