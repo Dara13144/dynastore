@@ -9,14 +9,12 @@ import {
 import { Button } from "@/components/ui/button";
 import { computeChunkPlan, PLATFORM_PER_UPLOAD_CAP } from "@/lib/chunk-plan";
 import { formatBytes } from "@/lib/upload-error-messages";
-import { Scissors, Cloud, Terminal, LinkIcon } from "lucide-react";
+import { Scissors, Terminal, LinkIcon } from "lucide-react";
 
 interface Props {
   open: boolean;
   onClose: () => void;
   fileSize?: number | null;
-  /** Optional callback so admin can jump to the S3 tab. */
-  onSwitchToExternal?: () => void;
   /** Optional callback so admin can jump to the External URL tab (no setup, no cap). */
   onSwitchToLibrary?: () => void;
 }
