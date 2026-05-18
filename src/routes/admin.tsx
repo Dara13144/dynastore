@@ -475,7 +475,7 @@ function GamesTab() {
     setUploadError(null);
     const safe = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
     const path = `${gameId}/${Date.now()}_${safe}`;
-    const RESUMABLE_THRESHOLD = 2 * 1024 * 1024; // 2MB
+    const RESUMABLE_THRESHOLD = 1 * 1024 * 1024; // 1MB — files >1MB use TUS resumable
     if (file.size <= RESUMABLE_THRESHOLD) {
       setUploadStage("uploading");
       setUploadPct(0);
