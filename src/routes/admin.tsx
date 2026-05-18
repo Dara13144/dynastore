@@ -1683,6 +1683,18 @@ function GamesTab() {
               );
             })()}
           </div>
+          {bulkLinksParsed.some((r) => r.skipped) && (() => {
+            const dups = bulkLinksParsed.filter((r) => r.skipped);
+            const ids = dups.map((r) => r.draft?.id).filter(Boolean) as string[];
+            const preview = ids.slice(0, 6).join(", ");
+            const more = ids.length > 6 ? ` +${ids.length - 6}` : "";
+            return (
+              <div className="rounded-lg bg-amber-500/10 ring-1 ring-amber-500/30 px-3 py-2 text-[11px] text-amber-200">
+                <div className="font-semibold">⚠ រកឃើញស្ទួន {dups.length} ធាតុ — នឹងរំលង</div>
+                {preview && <div className="mt-0.5 font-mono text-amber-100/80 truncate">{preview}{more}</div>}
+              </div>
+            );
+          })()}
           {bulkLinksParsed.length > 0 && (
             <div className="max-h-56 overflow-auto rounded-lg ring-1 ring-border text-[11px]">
               <table className="w-full">
