@@ -232,3 +232,101 @@ export function RejectedFilesBanner({ items, onClear }: RejectedFilesBannerProps
     </div>
   );
 }
+
+export interface UploadOverallSummaryProps {
+  mediaUploads: Array<{
+    id: string;
+    kind: "cover" | "screenshot" | "video";
+    name: string;
+    status: "uploading" | "done" | "error";
+    message?: string;
+  }>;
+  /** Archive upload percent (0-100) or null when idle. */
+  archivePct?: number | null;
+}
+
+/** Compact overall upload status summary shown at the top of the form section. */
+export function UploadOverallSummary({ mediaUploads, archivePct }: UploadOverallSummaryProps) {
+  const groups: Array<{ key: "cover" | "screenshot" | "video"; label: string }> = [
+    { key: "cover", label: "Cover" },
+    { key: "screenshot", label: "Screenshots" },
+    { key: "video", label: "Video" },
+  ];
+  const stats = groups.map((g) => {
+    const items = mediaUploads.filter((u) => u.kind === g.key);
+    return {
+      ...g,
+      total: items.length,
+      uploading: items.filter((i) => i.status === "uploading").length,
+      done: items.filter((i) => i.status === "done").length,
+      error: items.filter((i) => i.status === "error").length,
+    };
+  });
+  const archiveActive = archivePct != null;
+  const totalActive =
+    stats.reduce((a, s) => a + s.uploading, 0) + (archiveActive && archivePct < 100 ? 1 : 0);
+  const totalError = stats.reduce((a, s) => a + s.error, 0);
+  const anything =
+    stats.some((s) => s.total > 0) || archiveActive;
+  if (!anything) return null;
+
+  const pillTone = (s: { uploading: number; error: number; done: number }) =>
+    s.error > 0
+      ? "border-destructive/50 bg-destructive/10 text-destructive"
+      : s.uploading > 0
+        ? "border-primary/50 bg-primary/10 text-primary"
+        : s.done > 0
+          ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-500"
+          : "border-border bg-muted text-muted-foreground";
+
+  return (
+    <div
+      role="status"
+      aria-live="polite"
+      className="rounded-xl border border-border bg-muted/30 p-2.5 text-[11px]"
+    >
+      <div className="flex items-center justify-between gap-2 mb-1.5">
+        <span className="font-semibold text-foreground">
+          ស្ថានភាព Upload សរុប
+        </span>
+        <span className="text-[10px] text-muted-foreground">
+          {totalActive > 0
+            ? `កំពុងដំណើរការ ${totalActive}`
+            : totalError > 0
+              ? `មានបញ្ហា ${totalError}`
+              : "បានរួចរាល់"}
+        </span>
+      </div>
+      <div className="flex flex-wrap gap-1.5">
+        {stats.map((s) => (
+          <span
+            key={s.key}
+            className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 ${pillTone(s)}`}
+          >
+            <span className="font-semibold">{s.label}</span>
+            <span className="opacity-80">
+              {s.uploading > 0 && `↑${s.uploading}`}
+              {s.done > 0 && ` ✓${s.done}`}
+              {s.error > 0 && ` ✗${s.error}`}
+              {s.total === 0 && "—"}
+            </span>
+          </span>
+        ))}
+        <span
+          className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 ${
+            archiveActive
+              ? archivePct! >= 100
+                ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-500"
+                : "border-primary/50 bg-primary/10 text-primary"
+              : "border-border bg-muted text-muted-foreground"
+          }`}
+        >
+          <span className="font-semibold">Archive</span>
+          <span className="opacity-80">
+            {archiveActive ? `${Math.round(archivePct!)}%` : "—"}
+          </span>
+        </span>
+      </div>
+    </div>
+  );
+}

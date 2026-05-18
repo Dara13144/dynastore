@@ -55,6 +55,7 @@ import {
   DropZone,
   UploadProgressLine,
   RejectedFilesBanner,
+  UploadOverallSummary,
   type RejectedFile,
 } from "@/components/admin/DropZone";
 import { DiagnosticsTab } from "@/components/admin/DiagnosticsTab";
@@ -2010,6 +2011,10 @@ function GamesTab() {
               <span className="font-semibold text-foreground">{formatBytes(effectiveMaxBytes())}</span>
             </span>
           </div>
+          <UploadOverallSummary
+            mediaUploads={mediaUploads}
+            archivePct={uploadPct}
+          />
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <Field
               label="លេខសម្គាល់ (slug)"
