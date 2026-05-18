@@ -306,7 +306,29 @@ function GamesTab() {
   const [signedUrl, setSignedUrl] = useState<{ url: string; expiresAt: number } | null>(null);
   const [signing, setSigning] = useState(false);
 
+  // --- Batch multi-file upload state ---
+  type BatchStatus = "pending" | "uploading" | "done" | "error" | "skipped";
+  type BatchItem = {
+    id: string;
+    file: File;
+    title: string;
+    slug: string;
+    status: BatchStatus;
+    pct: number;
+    message?: string;
+    path?: string;
+    size?: number;
+  };
+  const [batchOpen, setBatchOpen] = useState(false);
+  const [batchItems, setBatchItems] = useState<BatchItem[]>([]);
+  const [batchRunning, setBatchRunning] = useState(false);
+  const [batchPrice, setBatchPrice] = useState<number>(0);
+  const [batchCategory, setBatchCategory] = useState<string>("Game");
+  const [batchVisible, setBatchVisible] = useState<boolean>(true);
+  const batchCurrentRef = useRef<string | null>(null);
+
   const showToast = (m: string) => {
+
     setToast(m);
     setTimeout(() => setToast(null), 2200);
   };
@@ -889,6 +911,132 @@ function GamesTab() {
   };
   const sortIcon = (k: typeof sortKey) => (sortKey === k ? (sortDir === "asc" ? " ▲" : " ▼") : "");
 
+  // --- Batch upload helpers ---
+  const slugifyName = (name: string): string => {
+    const noExt = name.replace(/\.(zip|rar|7z|tar|gz|tgz)$/i, "");
+    const base = noExt.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+    return (base || `game-${Date.now()}`).slice(0, 48);
+  };
+  const uniqueSlug = (base: string, taken: Set<string>): string => {
+    if (!taken.has(base)) return base;
+    let i = 2;
+    while (taken.has(`${base}-${i}`)) i++;
+    return `${base}-${i}`;
+  };
+
+  const updateBatchItem = (id: string, patch: Partial<BatchItem>) => {
+    setBatchItems((items) => items.map((it) => (it.id === id ? { ...it, ...patch } : it)));
+  };
+
+  // Mirror shared upload progress into the currently-running batch row.
+  useEffect(() => {
+    if (!batchRunning || !batchCurrentRef.current) return;
+    if (uploadPct == null) return;
+    updateBatchItem(batchCurrentRef.current, { pct: uploadPct });
+  }, [uploadPct, batchRunning]);
+
+  const addBatchFiles = (files: File[]) => {
+    const taken = new Set<string>([
+      ...games.map((g) => g.id),
+      ...batchItems.map((b) => b.slug),
+    ]);
+    const next: BatchItem[] = [];
+    for (const f of files) {
+      const base = slugifyName(f.name);
+      const slug = uniqueSlug(base, taken);
+      taken.add(slug);
+      const titleBase = f.name.replace(/\.(zip|rar|7z|tar|gz|tgz)$/i, "");
+      const preErr = validateFile(f);
+      next.push({
+        id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        file: f,
+        title: titleBase,
+        slug,
+        status: preErr ? "error" : "pending",
+        pct: 0,
+        message: preErr ?? undefined,
+      });
+    }
+    setBatchItems((prev) => [...prev, ...next]);
+  };
+
+  const removeBatchItem = (id: string) => {
+    if (batchRunning && batchCurrentRef.current === id) return;
+    setBatchItems((prev) => prev.filter((it) => it.id !== id));
+  };
+
+  const clearBatch = () => {
+    if (batchRunning) return;
+    setBatchItems([]);
+  };
+
+  const runBatch = async () => {
+    if (batchRunning) return;
+    const queue = batchItems.filter((it) => it.status === "pending");
+    if (queue.length === 0) {
+      showToast("គ្មានឯកសារត្រូវបង្ហោះ");
+      return;
+    }
+    setBatchRunning(true);
+    for (const item of queue) {
+      batchCurrentRef.current = item.id;
+      updateBatchItem(item.id, { status: "uploading", pct: 0, message: undefined });
+      setUploadError(null);
+      try {
+        const up = await uploadFile(item.slug, item.file);
+        if (!up) {
+          updateBatchItem(item.id, {
+            status: "error",
+            message: uploadError ?? "Upload បរាជ័យ",
+          });
+          continue;
+        }
+        // Insert game row directly via Supabase (RLS: admin only).
+        const { error: insErr } = await supabase.from("games").insert({
+          id: item.slug,
+          title: item.title || item.slug,
+          category: batchCategory || "Game",
+          description: "",
+          badge: null,
+          price_coins: batchPrice || 0,
+          visible: batchVisible,
+          image_url: null,
+          screenshots: [],
+          preview_video_url: null,
+          file_path: up.path,
+          file_size_bytes: up.size,
+          storage_provider: "supabase",
+        });
+        if (insErr) {
+          // Roll back uploaded object so it doesn't orphan.
+          await supabase.storage.from("game-files").remove([up.path]).catch(() => {});
+          updateBatchItem(item.id, { status: "error", message: insErr.message });
+          continue;
+        }
+        updateBatchItem(item.id, {
+          status: "done",
+          pct: 100,
+          path: up.path,
+          size: up.size,
+        });
+      } catch (e: any) {
+        updateBatchItem(item.id, {
+          status: "error",
+          message: e?.message ?? String(e),
+        });
+      }
+    }
+    batchCurrentRef.current = null;
+    setBatchRunning(false);
+    setUploadStage("idle");
+    setUploadPct(null);
+    setUploadStats(null);
+    await loadGames();
+    const okCount = batchItems.filter((it) => it.status === "done").length;
+    showToast(`Batch upload បានបញ្ចប់ — ${okCount}/${queue.length} ជោគជ័យ`);
+  };
+
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-3 flex-wrap">
@@ -916,13 +1064,175 @@ function GamesTab() {
             {showDiagnostics ? "លាក់" : "បង្ហាញ"} Diagnostics
           </button>
         </div>
-        <button
-          onClick={() => setCreating((v) => !v)}
-          className="inline-flex items-center gap-1.5 rounded-full bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground"
-        >
-          <Plus className="h-3.5 w-3.5" /> បន្ថែមហ្គេម
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setBatchOpen((v) => !v)}
+            className="inline-flex items-center gap-1.5 rounded-full bg-muted/40 px-3 py-1.5 text-xs font-semibold text-foreground ring-1 ring-border hover:bg-muted/60"
+            title="បង្ហោះច្រើនឯកសារក្នុងដងតែមួយ"
+          >
+            <FileArchive className="h-3.5 w-3.5" /> Batch Upload
+          </button>
+          <button
+            onClick={() => setCreating((v) => !v)}
+            className="inline-flex items-center gap-1.5 rounded-full bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground"
+          >
+            <Plus className="h-3.5 w-3.5" /> បន្ថែមហ្គេម
+          </button>
+        </div>
       </div>
+
+      {batchOpen && (
+        <div className="rounded-2xl glass p-4 space-y-3 animate-scale-in origin-top border border-primary/20">
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <h3 className="font-semibold text-sm flex items-center gap-1.5">
+              <FileArchive className="h-4 w-4 text-primary" /> Batch Upload (ច្រើនឯកសារ)
+            </h3>
+            <span className="text-[10px] text-muted-foreground">
+              បង្ហោះម្តងមួយឯកសារ · ទំហំ 1MB–{formatBytes(effectiveMaxBytes())}
+            </span>
+          </div>
+
+          {/* Shared defaults for batch */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+            <label className="block">
+              <span className="block text-[10px] uppercase tracking-wider text-muted-foreground mb-1">ប្រភេទរួម</span>
+              <input
+                value={batchCategory}
+                onChange={(e) => setBatchCategory(e.target.value)}
+                disabled={batchRunning}
+                className="w-full rounded-lg bg-input px-3 py-2 text-xs outline-none ring-1 ring-border focus:ring-primary disabled:opacity-50"
+              />
+            </label>
+            <label className="block">
+              <span className="block text-[10px] uppercase tracking-wider text-muted-foreground mb-1">តម្លៃរួម (Balance)</span>
+              <input
+                type="number"
+                value={batchPrice ? String(batchPrice) : ""}
+                placeholder="0"
+                onChange={(e) => setBatchPrice(Number(e.target.value) || 0)}
+                disabled={batchRunning}
+                className="w-full rounded-lg bg-input px-3 py-2 text-xs outline-none ring-1 ring-border focus:ring-primary disabled:opacity-50"
+              />
+            </label>
+            <label className="flex items-end gap-2 text-xs">
+              <input
+                type="checkbox"
+                checked={batchVisible}
+                onChange={(e) => setBatchVisible(e.target.checked)}
+                disabled={batchRunning}
+                className="h-4 w-4"
+              />
+              បង្ហាញសាធារណៈ
+            </label>
+          </div>
+
+          {/* File picker */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <label className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 text-primary px-3 py-1.5 text-xs font-semibold cursor-pointer hover:bg-primary/20">
+              + ជ្រើសរើសឯកសារ
+              <input
+                type="file"
+                accept=".zip,.rar,.7z,.tar,.gz,.tgz"
+                multiple
+                disabled={batchRunning}
+                className="hidden"
+                onChange={(e) => {
+                  const files = Array.from(e.target.files ?? []);
+                  e.target.value = "";
+                  if (files.length) addBatchFiles(files);
+                }}
+              />
+            </label>
+            <button
+              type="button"
+              onClick={runBatch}
+              disabled={batchRunning || batchItems.filter((it) => it.status === "pending").length === 0}
+              className="inline-flex items-center gap-1.5 rounded-full bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground disabled:opacity-50"
+            >
+              {batchRunning ? "កំពុងបង្ហោះ…" : `ចាប់ផ្តើម Batch (${batchItems.filter((it) => it.status === "pending").length})`}
+            </button>
+            <button
+              type="button"
+              onClick={clearBatch}
+              disabled={batchRunning || batchItems.length === 0}
+              className="inline-flex items-center gap-1.5 rounded-full bg-muted/40 px-3 py-1.5 text-xs text-muted-foreground ring-1 ring-border disabled:opacity-50"
+            >
+              សម្អាត
+            </button>
+          </div>
+
+          {/* Items list */}
+          {batchItems.length > 0 && (
+            <div className="space-y-1.5 max-h-96 overflow-y-auto pr-1">
+              {batchItems.map((it) => {
+                const toneRing =
+                  it.status === "done"
+                    ? "ring-emerald-500/40"
+                    : it.status === "error"
+                      ? "ring-destructive/50"
+                      : it.status === "uploading"
+                        ? "ring-primary/50"
+                        : "ring-border";
+                const toneBar =
+                  it.status === "done"
+                    ? "bg-emerald-400"
+                    : it.status === "error"
+                      ? "bg-destructive"
+                      : "bg-primary";
+                return (
+                  <div key={it.id} className={`rounded-lg bg-card/50 p-2 ring-1 ${toneRing}`}>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-xs font-medium flex-1 truncate" title={it.file.name}>
+                        {it.file.name}
+                      </span>
+                      <span className="text-[10px] text-muted-foreground tabular-nums">
+                        {(it.file.size / 1024 / 1024).toFixed(1)} MB
+                      </span>
+                      <span className="text-[10px] font-mono text-muted-foreground" title="slug">
+                        {it.slug}
+                      </span>
+                      <span
+                        className={`text-[10px] font-semibold uppercase ${
+                          it.status === "done"
+                            ? "text-emerald-400"
+                            : it.status === "error"
+                              ? "text-destructive"
+                              : it.status === "uploading"
+                                ? "text-primary"
+                                : "text-muted-foreground"
+                        }`}
+                      >
+                        {it.status === "uploading" ? `${it.pct.toFixed(0)}%` : it.status}
+                      </span>
+                      {!batchRunning && it.status !== "uploading" && (
+                        <button
+                          type="button"
+                          onClick={() => removeBatchItem(it.id)}
+                          className="text-[10px] text-muted-foreground hover:text-destructive"
+                        >
+                          ×
+                        </button>
+                      )}
+                    </div>
+                    {(it.status === "uploading" || it.status === "done") && (
+                      <div className="mt-1 h-1 w-full overflow-hidden rounded-full bg-muted">
+                        <div
+                          className={`h-full ${toneBar} transition-all`}
+                          style={{ width: `${Math.min(100, it.pct)}%` }}
+                        />
+                      </div>
+                    )}
+                    {it.message && (
+                      <p className="mt-1 text-[10px] text-destructive">{it.message}</p>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
 
       {showDiagnostics && (
         <div className="rounded-2xl glass p-3 text-[11px] font-mono space-y-2 border border-amber-500/30 bg-amber-500/5">
