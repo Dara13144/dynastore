@@ -2389,6 +2389,10 @@ function GamesTab() {
                       ) : null}
                     </p>
                   </DropZone>
+                  <RejectedFilesBanner
+                    items={rejectedByKind.archive}
+                    onClear={() => clearRejections("archive")}
+                  />
                   {draftFile && (
                     <div className="mt-2 space-y-1">
                       <span className="text-[11px] text-foreground/90 block">
