@@ -1449,6 +1449,26 @@ function GamesTab() {
             >
               {batchRunning ? "កំពុងបង្ហោះ…" : `ចាប់ផ្តើម Batch (${batchItems.filter((it) => it.status === "pending").length})`}
             </button>
+            {batchRunning && !batchPaused && (
+              <button
+                type="button"
+                onClick={pauseBatch}
+                className="inline-flex items-center gap-1.5 rounded-full bg-amber-500/15 px-3 py-1.5 text-xs font-semibold text-amber-400 ring-1 ring-amber-500/40 hover:bg-amber-500/25"
+                title="ផ្អាក batch និងឯកសារកំពុងបង្ហោះ"
+              >
+                ⏸ ផ្អាក Batch
+              </button>
+            )}
+            {batchRunning && batchPaused && (
+              <button
+                type="button"
+                onClick={resumeBatch}
+                className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/15 px-3 py-1.5 text-xs font-semibold text-emerald-400 ring-1 ring-emerald-500/40 hover:bg-emerald-500/25"
+                title="បន្ត batch ពីកន្លែងផ្អាក"
+              >
+                ▶ បន្ត Batch
+              </button>
+            )}
             <button
               type="button"
               onClick={clearBatch}
