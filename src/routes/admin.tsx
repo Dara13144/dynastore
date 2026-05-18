@@ -1594,6 +1594,7 @@ function GamesTab() {
                                 </dd>
                               </>
                             )}
+                          </dl>
                         </div>
                       )}
 
