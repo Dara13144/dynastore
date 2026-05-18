@@ -335,6 +335,22 @@ function GamesTab() {
   const [signedUrl, setSignedUrl] = useState<{ url: string; expiresAt: number } | null>(null);
   const [signing, setSigning] = useState(false);
 
+  // Live status for cover / screenshot / video uploads (indeterminate progress).
+  type MediaUpload = {
+    id: string;
+    kind: "cover" | "screenshot" | "video";
+    name: string;
+    status: "uploading" | "done" | "error";
+    message?: string;
+  };
+  const [mediaUploads, setMediaUploads] = useState<MediaUpload[]>([]);
+  const pushMediaUpload = (u: MediaUpload) =>
+    setMediaUploads((prev) => [...prev.filter((p) => p.id !== u.id), u]);
+  const updateMediaUpload = (id: string, patch: Partial<MediaUpload>) =>
+    setMediaUploads((prev) => prev.map((p) => (p.id === id ? { ...p, ...patch } : p)));
+  const removeMediaUpload = (id: string) =>
+    setMediaUploads((prev) => prev.filter((p) => p.id !== id));
+
   // --- Batch multi-file upload state ---
   type BatchStatus = "pending" | "uploading" | "done" | "error" | "skipped";
   type BatchItem = {
