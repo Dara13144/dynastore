@@ -2505,6 +2505,7 @@ function GameRowEditor({
   maxUploadLabel: string;
 }) {
   const [edit, setEdit] = useState<GameRow>(game);
+  const [fullOpen, setFullOpen] = useState(false);
   useEffect(() => setEdit(game), [game]);
   const dirty =
     edit.title !== game.title ||
