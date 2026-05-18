@@ -352,7 +352,7 @@ function GamesTab() {
     speedBps: number;
     etaSec: number;
   } | null>(null);
-  type UploadStage = "idle" | "preparing" | "uploading" | "processing" | "done" | "error";
+  type UploadStage = "idle" | "preparing" | "uploading" | "paused" | "processing" | "done" | "error";
   const [uploadStage, setUploadStage] = useState<UploadStage>("idle");
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [uploadedInfo, setUploadedInfo] = useState<{
