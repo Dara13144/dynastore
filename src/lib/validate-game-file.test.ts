@@ -293,9 +293,15 @@ describe("validateGameFileUrl - exact error messages", () => {
       GAME_FILE_URL_ERRORS.BAD_EXTENSION,
     );
   });
-  it("ignores query string when checking extension (extension must be in pathname)", () => {
+  it("accepts extension found in either pathname or query string", () => {
     expect(validateGameFileUrl("https://x.example.com/g.zip?token=abc")).toBeNull();
-    expect(validateGameFileUrl("https://x.example.com/download?file=g.zip")).toBe(
+    expect(validateGameFileUrl("https://x.example.com/download?file=g.zip")).toBeNull();
+    expect(
+      validateGameFileUrl(
+        "https://fileditchfiles.me/file.php?f=/alpha4/abc/interactv-scenarios-v100.rar",
+      ),
+    ).toBeNull();
+    expect(validateGameFileUrl("https://x.example.com/download?file=game.exe")).toBe(
       GAME_FILE_URL_ERRORS.BAD_EXTENSION,
     );
   });
