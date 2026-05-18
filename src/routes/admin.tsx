@@ -2075,8 +2075,13 @@ function GamesTab() {
                   />
                 </label>
               </div>
+              <ScreenshotUrlAdder
+                onAdd={(url) =>
+                  setDraft((d) => ({ ...d, screenshots: [...d.screenshots, url] }))
+                }
+              />
               <p className="mt-1 text-[10px] text-muted-foreground">
-                អាចជ្រើសរើសច្រើនដង · max 10MB / រូប
+                អាចជ្រើសរើសច្រើនដង · max 10MB / រូប · ឬបិទភ្ជាប់ URL រូបភាព
               </p>
             </div>
 
@@ -2785,6 +2790,43 @@ function Field({
         className="w-full rounded-lg bg-input px-3 py-2 text-xs outline-none ring-1 ring-border focus:ring-primary"
       />
     </label>
+  );
+}
+
+function ScreenshotUrlAdder({ onAdd }: { onAdd: (url: string) => void }) {
+  const [val, setVal] = useState("");
+  const submit = () => {
+    const u = val.trim();
+    if (!u) return;
+    if (!/^https?:\/\//i.test(u)) {
+      toast.error("URL ត្រូវចាប់ផ្តើមដោយ http:// ឬ https://");
+      return;
+    }
+    onAdd(u);
+    setVal("");
+  };
+  return (
+    <div className="mt-2 flex items-center gap-2">
+      <input
+        value={val}
+        placeholder="បិទភ្ជាប់ URL រូបភាព (https://…)"
+        onChange={(e) => setVal(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            submit();
+          }
+        }}
+        className="flex-1 rounded-lg bg-input px-3 py-2 text-xs outline-none ring-1 ring-border focus:ring-primary"
+      />
+      <button
+        type="button"
+        onClick={submit}
+        className="shrink-0 rounded-full bg-primary/10 text-primary px-3 py-2 text-[11px] font-semibold hover:bg-primary/20"
+      >
+        បន្ថែម URL
+      </button>
+    </div>
   );
 }
 
