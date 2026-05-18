@@ -383,6 +383,45 @@ function GamesTab() {
     resume?: () => void;
   } | null>(null);
 
+  // Admin-tunable TUS retry config (fetched once from app_settings on mount).
+  // Defaults match the prior hardcoded values so behavior is unchanged until
+  // an admin overrides them in Settings.
+  const retryCfgRef = useRef<{
+    maxNetRetries: number;
+    retryDelaysMs: number[];
+    backoffBaseMs: number;
+    backoffStepMs: number;
+    backoffCapMs: number;
+  }>({
+    maxNetRetries: 50,
+    retryDelaysMs: [0, 1000, 3000, 5000, 10000, 20000, 30000, 60000, 120000],
+    backoffBaseMs: 3000,
+    backoffStepMs: 2000,
+    backoffCapMs: 30000,
+  });
+  const fetchAppSettings = useServerFn(getAppSettings);
+  useEffect(() => {
+    (async () => {
+      try {
+        const s = (await fetchAppSettings({})) as Record<string, unknown>;
+        const delays = Array.isArray(s.tus_retry_delays_ms)
+          ? (s.tus_retry_delays_ms as unknown[])
+              .map((n) => Number(n))
+              .filter((n) => Number.isFinite(n) && n >= 0)
+          : retryCfgRef.current.retryDelaysMs;
+        retryCfgRef.current = {
+          maxNetRetries: Number(s.tus_max_net_retries) || retryCfgRef.current.maxNetRetries,
+          retryDelaysMs: delays.length ? delays : retryCfgRef.current.retryDelaysMs,
+          backoffBaseMs: Number(s.tus_backoff_base_ms) || retryCfgRef.current.backoffBaseMs,
+          backoffStepMs: Number(s.tus_backoff_step_ms) || retryCfgRef.current.backoffStepMs,
+          backoffCapMs: Number(s.tus_backoff_cap_ms) || retryCfgRef.current.backoffCapMs,
+        };
+      } catch {
+        /* keep defaults */
+      }
+    })();
+  }, [fetchAppSettings]);
+
   // Auto-open the split-file guide when an upload fails with a platform
   // per-upload cap (413 / ~50GB) error.
   useEffect(() => {
