@@ -347,6 +347,13 @@ function GamesTab() {
     size?: number;
   };
   const [batchOpen, setBatchOpen] = useState(false);
+  const [bulkLinksOpen, setBulkLinksOpen] = useState(false);
+  const [bulkLinksText, setBulkLinksText] = useState("");
+  const [bulkLinksParsed, setBulkLinksParsed] = useState<ParsedLinkRow[]>([]);
+  const [bulkLinksRunning, setBulkLinksRunning] = useState(false);
+  const [bulkLinksLog, setBulkLinksLog] = useState<
+    Array<{ id: string; status: "ok" | "fail"; message?: string }>
+  >([]);
   const [batchItems, setBatchItems] = useState<BatchItem[]>([]);
   const [batchRunning, setBatchRunning] = useState(false);
   const [batchPrice, setBatchPrice] = useState<number>(0);
