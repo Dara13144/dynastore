@@ -183,3 +183,52 @@ export function UploadProgressLine({ name, pct, status = "uploading", message }:
     </div>
   );
 }
+
+export interface RejectedFilesBannerProps {
+  items: RejectedFile[];
+  onClear?: () => void;
+}
+
+/** Compact red banner listing rejected files with their reasons. */
+export function RejectedFilesBanner({ items, onClear }: RejectedFilesBannerProps) {
+  if (!items || items.length === 0) return null;
+  const fmt = (n: number) =>
+    n >= 1024 ** 3
+      ? `${(n / 1024 ** 3).toFixed(2)} GiB`
+      : n >= 1024 ** 2
+        ? `${(n / 1024 ** 2).toFixed(1)} MiB`
+        : n >= 1024
+          ? `${(n / 1024).toFixed(1)} KiB`
+          : `${n} B`;
+  return (
+    <div
+      role="alert"
+      aria-live="polite"
+      className="mt-2 rounded-lg border border-destructive/40 bg-destructive/5 p-2 text-[11px] text-destructive"
+    >
+      <div className="flex items-center justify-between gap-2 mb-1">
+        <span className="font-semibold">
+          ✗ បដិសេធ {items.length} ឯកសារ
+        </span>
+        {onClear && (
+          <button
+            type="button"
+            onClick={onClear}
+            className="text-[10px] text-muted-foreground hover:text-foreground"
+          >
+            បិទ
+          </button>
+        )}
+      </div>
+      <ul className="space-y-1">
+        {items.map((r, i) => (
+          <li key={`${r.name}-${i}`} className="leading-tight">
+            <span className="font-mono text-foreground/80 break-all">{r.name}</span>
+            <span className="text-muted-foreground"> · {fmt(r.size)}</span>
+            <div className="text-destructive/90 break-words">{r.reason}</div>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
