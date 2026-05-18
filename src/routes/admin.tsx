@@ -1734,8 +1734,7 @@ function GamesTab() {
                 busy ||
                 !!draftFileError ||
                 !!draftUrlError ||
-                (sourceMode === "library" && !(draft.file_path ?? "").trim()) ||
-                (sourceMode === "s3" && !s3UploadedKey)
+                (sourceMode === "library" && !(draft.file_path ?? "").trim())
               }
               onClick={createGame}
               className="rounded-full bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground disabled:opacity-50"
