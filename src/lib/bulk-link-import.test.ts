@@ -69,4 +69,11 @@ describe("bulk-link-import parser", () => {
   it("derives id from URL filename ignoring extension", () => {
     expect(deriveIdFromUrl("https://cdn.example.com/path/Hello-World.7z")).toBe("hello-world");
   });
+
+  it("accepts CDN links with the filename in the query string", () => {
+    const url = "https://fileditchfiles.me/file.php?f=/alpha4/c80c951923db4e2fe7d5/interactv-scenarios-v100.rar";
+    const rows = parseBulkLinks(url);
+    expect(rows[0].ok).toBe(true);
+    expect(rows[0].draft?.id).toBe("interactv-scenarios-v100");
+  });
 });

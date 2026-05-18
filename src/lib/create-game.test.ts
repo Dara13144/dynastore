@@ -353,16 +353,14 @@ describe("submitCreateGame - Add Library tab contract", () => {
     expect(d.insertGame).not.toHaveBeenCalled();
   });
 
-  it("rejects URL whose extension is in query string but not pathname", async () => {
+  it("accepts URL whose archive extension is in the query string (CDN proxy style)", async () => {
     const d = deps();
-    const r = await submitCreateGame(
-      draft("https://x.example.com/download?file=g.zip"),
-      null,
-      d,
+    const url = "https://x.example.com/download?file=g.zip";
+    const r = await submitCreateGame(draft(url), null, d);
+    expect(r.ok).toBe(true);
+    expect(d.insertGame).toHaveBeenCalledWith(
+      expect.objectContaining({ file_path: url }),
     );
-    expect(r.ok).toBe(false);
-    if (!r.ok) expect(r.message).toBe(GAME_FILE_URL_ERRORS.BAD_EXTENSION);
-    expect(d.insertGame).not.toHaveBeenCalled();
   });
 
   it("accepts URL with query string when pathname has allowed extension", async () => {
