@@ -109,6 +109,7 @@ export const SHARE_HOSTS = [
   "files.catbox.moe",
   "fileditchfiles.me",
   "fileditch.com",
+  "vikingfile.com",
 ] as const;
 
 function isShareHost(hostname: string): boolean {
