@@ -235,6 +235,12 @@ function AdminPage() {
               icon={<Download className="h-3.5 w-3.5" />}
               label="Logs"
             />
+            <TabBtn
+              active={tab === "uploads"}
+              onClick={() => setTab("uploads")}
+              icon={<History className="h-3.5 w-3.5" />}
+              label="Uploads"
+            />
           </nav>
         </div>
       </header>
