@@ -589,7 +589,7 @@ function GamesTab() {
       };
 
       const onTusError = (err: Error) => {
-        if (aborted) return;
+        if (aborted || paused) return;
         const status =
           (err as import("tus-js-client").DetailedError).originalResponse?.getStatus?.() ?? 0;
         const msg = err.message ?? "";
