@@ -2311,29 +2311,40 @@ function GamesTab() {
 
               {sourceMode === "file" ? (
                 <div className="animate-fade-in">
-                  <input
-                    type="file"
+                  <DropZone
                     accept=".zip,.rar,.7z,.tar,.gz,.tgz"
-                    title={
-                      bucketLimitBytes && bucketLimitBytes < MAX_GAME_FILE_BYTES
-                        ? `អតិបរមា ${formatBytes(effectiveMaxBytes())} — កំណត់ដោយ bucket "game-files" (ដែនកំណត់ម៉ាស៊ីន ${formatBytes(MAX_GAME_FILE_BYTES)})`
-                        : `អតិបរមា ${formatBytes(effectiveMaxBytes())} — ដែនកំណត់ម៉ាស៊ីន`
-                    }
-                    onChange={(e) => {
-                      const f = e.target.files?.[0] ?? null;
+                    onFiles={(files) => {
+                      const f = files[0] ?? null;
                       const err = f ? validateFile(f) : null;
                       setDraftFileError(err);
                       setDraftFile(f);
                     }}
-                    className="w-full text-xs file:mr-2 file:rounded-full file:border-0 file:bg-primary file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-primary-foreground"
-                  />
-                  <p className="text-[10px] text-muted-foreground mt-1">
-                    អនុញ្ញាត zip, rar, 7z, tar, gz · ទំហំ 1MB ដល់{" "}
-                    <span className="font-semibold text-foreground">{formatBytes(effectiveMaxBytes())}</span>
-                    {bucketLimitBytes && bucketLimitBytes < MAX_GAME_FILE_BYTES ? (
-                      <span className="text-muted-foreground/70"> (ដែនកំណត់ bucket បច្ចុប្បន្ន)</span>
-                    ) : null}
-                  </p>
+                    className="rounded-lg border-2 border-dashed border-border p-3 hover:border-primary/60"
+                  >
+                    <input
+                      type="file"
+                      accept=".zip,.rar,.7z,.tar,.gz,.tgz"
+                      title={
+                        bucketLimitBytes && bucketLimitBytes < MAX_GAME_FILE_BYTES
+                          ? `អតិបរមា ${formatBytes(effectiveMaxBytes())} — កំណត់ដោយ bucket "game-files" (ដែនកំណត់ម៉ាស៊ីន ${formatBytes(MAX_GAME_FILE_BYTES)})`
+                          : `អតិបរមា ${formatBytes(effectiveMaxBytes())} — ដែនកំណត់ម៉ាស៊ីន`
+                      }
+                      onChange={(e) => {
+                        const f = e.target.files?.[0] ?? null;
+                        const err = f ? validateFile(f) : null;
+                        setDraftFileError(err);
+                        setDraftFile(f);
+                      }}
+                      className="w-full text-xs file:mr-2 file:rounded-full file:border-0 file:bg-primary file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-primary-foreground"
+                    />
+                    <p className="text-[10px] text-muted-foreground mt-1">
+                      អូសឯកសារ archive មកដាក់ ឬចុចជ្រើស · zip, rar, 7z, tar, gz · ទំហំ 1MB ដល់{" "}
+                      <span className="font-semibold text-foreground">{formatBytes(effectiveMaxBytes())}</span>
+                      {bucketLimitBytes && bucketLimitBytes < MAX_GAME_FILE_BYTES ? (
+                        <span className="text-muted-foreground/70"> (ដែនកំណត់ bucket បច្ចុប្បន្ន)</span>
+                      ) : null}
+                    </p>
+                  </DropZone>
                   {draftFile && (
                     <div className="mt-2 space-y-1">
                       <span className="text-[11px] text-foreground/90 block">
