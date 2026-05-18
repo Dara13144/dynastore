@@ -51,7 +51,12 @@ import {
 import { logUploadEvent } from "@/lib/upload-audit";
 import { DownloadLogsTab } from "@/components/admin/DownloadLogsTab";
 import { UploadAuditTab } from "@/components/admin/UploadAuditTab";
-import { DropZone, UploadProgressLine } from "@/components/admin/DropZone";
+import {
+  DropZone,
+  UploadProgressLine,
+  RejectedFilesBanner,
+  type RejectedFile,
+} from "@/components/admin/DropZone";
 import { DiagnosticsTab } from "@/components/admin/DiagnosticsTab";
 import { SplitFileGuideDialog } from "@/components/admin/SplitFileGuideDialog";
 import { isPlatformCapError } from "@/lib/chunk-plan";
