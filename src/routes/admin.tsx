@@ -2082,61 +2082,87 @@ function GamesTab() {
               <span className="block text-[10px] uppercase tracking-wider text-muted-foreground mb-1">
                 Screenshots (gallery)
               </span>
-              <div className="flex flex-wrap items-start gap-2">
-                {draft.screenshots.map((url, i) => (
-                  <div key={url + i} className="relative group">
-                    <img
-                      src={url}
-                      alt={`shot-${i}`}
-                      className="h-20 w-32 rounded-lg object-cover ring-1 ring-border"
+              <DropZone
+                accept="image/*"
+                multiple
+                className="rounded-lg p-1"
+                onFiles={async (files) => {
+                  const uploaded: string[] = [];
+                  for (const f of files) {
+                    const u = await runMediaUpload("screenshot", f, uploadScreenshot);
+                    if (u) uploaded.push(u);
+                  }
+                  if (uploaded.length) {
+                    setDraft((d) => ({ ...d, screenshots: [...d.screenshots, ...uploaded] }));
+                  }
+                }}
+              >
+                <div className="flex flex-wrap items-start gap-2">
+                  {draft.screenshots.map((url, i) => (
+                    <div key={url + i} className="relative group">
+                      <img
+                        src={url}
+                        alt={`shot-${i}`}
+                        className="h-20 w-32 rounded-lg object-cover ring-1 ring-border"
+                      />
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setDraft({
+                            ...draft,
+                            screenshots: draft.screenshots.filter((_, j) => j !== i),
+                          })
+                        }
+                        className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-destructive text-destructive-foreground text-[10px] grid place-items-center opacity-0 group-hover:opacity-100 transition"
+                        title="Remove"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                  <label className="h-20 w-32 cursor-pointer rounded-lg border-2 border-dashed border-border grid place-items-center text-[10px] text-muted-foreground hover:border-primary hover:text-primary text-center px-1">
+                    + បន្ថែម / អូសមកដាក់
+                    <input
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      className="hidden"
+                      onChange={async (e) => {
+                        const files = Array.from(e.target.files ?? []);
+                        e.target.value = "";
+                        const uploaded: string[] = [];
+                        for (const f of files) {
+                          const u = await runMediaUpload("screenshot", f, uploadScreenshot);
+                          if (u) uploaded.push(u);
+                        }
+                        if (uploaded.length) {
+                          setDraft((d) => ({
+                            ...d,
+                            screenshots: [...d.screenshots, ...uploaded],
+                          }));
+                        }
+                      }}
                     />
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setDraft({
-                          ...draft,
-                          screenshots: draft.screenshots.filter((_, j) => j !== i),
-                        })
-                      }
-                      className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-destructive text-destructive-foreground text-[10px] grid place-items-center opacity-0 group-hover:opacity-100 transition"
-                      title="Remove"
-                    >
-                      ×
-                    </button>
-                  </div>
-                ))}
-                <label className="h-20 w-32 cursor-pointer rounded-lg border-2 border-dashed border-border grid place-items-center text-[10px] text-muted-foreground hover:border-primary hover:text-primary">
-                  + បន្ថែម
-                  <input
-                    type="file"
-                    accept="image/*"
-                    multiple
-                    className="hidden"
-                    onChange={async (e) => {
-                      const files = Array.from(e.target.files ?? []);
-                      e.target.value = "";
-                      const uploaded: string[] = [];
-                      for (const f of files) {
-                        const u = await uploadScreenshot(f);
-                        if (u) uploaded.push(u);
-                      }
-                      if (uploaded.length) {
-                        setDraft((d) => ({
-                          ...d,
-                          screenshots: [...d.screenshots, ...uploaded],
-                        }));
-                      }
-                    }}
+                  </label>
+                </div>
+              </DropZone>
+              {mediaUploads
+                .filter((m) => m.kind === "screenshot")
+                .map((m) => (
+                  <UploadProgressLine
+                    key={m.id}
+                    name={m.name}
+                    status={m.status}
+                    message={m.message}
                   />
-                </label>
-              </div>
+                ))}
               <ScreenshotUrlAdder
                 onAdd={(url) =>
                   setDraft((d) => ({ ...d, screenshots: [...d.screenshots, url] }))
                 }
               />
               <p className="mt-1 text-[10px] text-muted-foreground">
-                អាចជ្រើសរើសច្រើនដង · max 10MB / រូប · ឬបិទភ្ជាប់ URL រូបភាព
+                អូសច្រើនរូបមកដាក់ · max 10MB / រូប · ឬបិទភ្ជាប់ URL រូបភាព
               </p>
             </div>
 
