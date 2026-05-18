@@ -352,7 +352,7 @@ function GamesTab() {
     speedBps: number;
     etaSec: number;
   } | null>(null);
-  type UploadStage = "idle" | "preparing" | "uploading" | "processing" | "done" | "error";
+  type UploadStage = "idle" | "preparing" | "uploading" | "paused" | "processing" | "done" | "error";
   const [uploadStage, setUploadStage] = useState<UploadStage>("idle");
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [uploadedInfo, setUploadedInfo] = useState<{
@@ -368,7 +368,11 @@ function GamesTab() {
     checksumSkippedReason?: string;
   } | null>(null);
   const [splitGuideOpen, setSplitGuideOpen] = useState(false);
-  const uploadRef = useRef<{ abort: () => void } | null>(null);
+  const uploadRef = useRef<{
+    abort: () => void;
+    pause?: () => void;
+    resume?: () => void;
+  } | null>(null);
 
   // Auto-open the split-file guide when an upload fails with a platform
   // per-upload cap (413 / ~50GB) error.
@@ -463,7 +467,7 @@ function GamesTab() {
 
   // Warn before closing/refreshing tab while an upload is in flight.
   useEffect(() => {
-    if (uploadStage !== "uploading" && uploadStage !== "processing") return;
+    if (uploadStage !== "uploading" && uploadStage !== "processing" && uploadStage !== "paused") return;
     const handler = (e: BeforeUnloadEvent) => {
       e.preventDefault();
       e.returnValue = "";
@@ -480,6 +484,16 @@ function GamesTab() {
     setUploadStage("idle");
     setUploadError(null);
     showToast("Upload បានបោះបង់");
+  };
+
+  const pauseUpload = () => {
+    if (!uploadRef.current?.pause) return;
+    uploadRef.current.pause();
+  };
+
+  const resumeUpload = () => {
+    if (!uploadRef.current?.resume) return;
+    uploadRef.current.resume();
   };
 
   const uploadFile = async (
@@ -552,6 +566,7 @@ function GamesTab() {
       let lastTs = performance.now();
       let lastSent = 0;
       let aborted = false;
+      let paused = false;
       let netRetryCount = 0;
       const MAX_NET_RETRIES = 50; // effectively unbounded — combined with online-event wait
       let currentUpload: import("tus-js-client").Upload | null = null;
@@ -574,7 +589,7 @@ function GamesTab() {
       };
 
       const onTusError = (err: Error) => {
-        if (aborted) return;
+        if (aborted || paused) return;
         const status =
           (err as import("tus-js-client").DetailedError).originalResponse?.getStatus?.() ?? 0;
         const msg = err.message ?? "";
@@ -690,6 +705,26 @@ function GamesTab() {
             cleanupPending();
             try { currentUpload?.abort(true); } catch { /* ignore */ }
             resolve(null);
+          },
+          pause: () => {
+            if (aborted || paused) return;
+            paused = true;
+            cleanupPending();
+            try { currentUpload?.abort(); } catch { /* ignore */ }
+            setUploadStage("paused");
+            setUploadError("ផ្អាកដោយដៃ — ចុច “បន្ត” ដើម្បីអាប់ឡូដបន្តពីចំណុចបច្ចុប្បន្ន");
+            showToast("Upload ត្រូវបានផ្អាក");
+          },
+          resume: () => {
+            if (aborted || !paused) return;
+            paused = false;
+            setUploadStage("uploading");
+            setUploadError(null);
+            // Reset speed/ETA baseline so resumed throughput is accurate.
+            lastTs = performance.now();
+            lastSent = 0;
+            buildAndStart();
+            showToast("Upload បានបន្ត");
           },
         };
 
@@ -1845,17 +1880,17 @@ function GamesTab() {
                         )}
                       </div>
 
-                      {(uploadStage === "uploading" || uploadStage === "processing" || uploadStage === "done") &&
+                      {(uploadStage === "uploading" || uploadStage === "paused" || uploadStage === "processing" || uploadStage === "done") &&
                         uploadPct !== null && (
                           <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
                             <div
-                              className={`h-full transition-all ${uploadStage === "done" ? "bg-emerald-500" : "bg-primary"}`}
+                              className={`h-full transition-all ${uploadStage === "done" ? "bg-emerald-500" : uploadStage === "paused" ? "bg-amber-500" : "bg-primary"}`}
                               style={{ width: `${uploadPct}%` }}
                             />
                           </div>
                         )}
 
-                      {uploadStage === "uploading" && uploadStats && (
+                      {(uploadStage === "uploading" || uploadStage === "paused") && uploadStats && (
                         <div className="flex items-center justify-between text-[10px] text-muted-foreground">
                           <span>
                             {uploadPct ?? 0}% ·{" "}
@@ -1873,13 +1908,35 @@ function GamesTab() {
                               </>
                             )}
                           </span>
-                          <button
-                            type="button"
-                            onClick={cancelUpload}
-                            className="rounded-full bg-destructive/15 px-2 py-0.5 text-[10px] font-semibold text-destructive hover:bg-destructive/25"
-                          >
-                            បោះបង់
-                          </button>
+                          <div className="flex items-center gap-1.5">
+                            {uploadStage === "uploading" && (
+                              <button
+                                type="button"
+                                onClick={pauseUpload}
+                                className="rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-semibold text-amber-600 hover:bg-amber-500/25"
+                                title="ផ្អាកបណ្តោះអាសន្ន — អាចបន្តពីចំណុចបច្ចុប្បន្ន"
+                              >
+                                ផ្អាក
+                              </button>
+                            )}
+                            {uploadStage === "paused" && (
+                              <button
+                                type="button"
+                                onClick={resumeUpload}
+                                className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-semibold text-emerald-600 hover:bg-emerald-500/25"
+                                title="បន្តពីចំណុចបច្ចុប្បន្ន"
+                              >
+                                បន្ត
+                              </button>
+                            )}
+                            <button
+                              type="button"
+                              onClick={cancelUpload}
+                              className="rounded-full bg-destructive/15 px-2 py-0.5 text-[10px] font-semibold text-destructive hover:bg-destructive/25"
+                            >
+                              បោះបង់
+                            </button>
+                          </div>
                         </div>
                       )}
 
