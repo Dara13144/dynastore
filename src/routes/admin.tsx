@@ -2117,11 +2117,59 @@ function GamesTab() {
                 )}
               </div>
               {draft.preview_video_url && (
-                <video
-                  src={draft.preview_video_url}
-                  controls
-                  className="mt-2 h-40 rounded-lg ring-1 ring-border"
-                />
+                <div>
+                  <video
+                    src={draft.preview_video_url}
+                    controls
+                    className="mt-2 h-40 rounded-lg ring-1 ring-border"
+                  />
+                  <div className="mt-1 flex items-center gap-2 text-[10px]">
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        const { createSignedMediaUrl } = await import("@/lib/signed-media-url");
+                        const r = await createSignedMediaUrl(
+                          draft.preview_video_url!,
+                          "game-images",
+                          { download: true },
+                        );
+                        if (!r.ok) {
+                          showToast(r.error!);
+                          return;
+                        }
+                        window.open(r.url!, "_blank", "noopener,noreferrer");
+                      }}
+                      className="text-emerald-400 hover:underline"
+                      title="ទាញយកវីដេអូ (signed URL, 1 ម៉ោង)"
+                    >
+                      ⬇ Download
+                    </button>
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        const { createSignedMediaUrl } = await import("@/lib/signed-media-url");
+                        const r = await createSignedMediaUrl(
+                          draft.preview_video_url!,
+                          "game-images",
+                        );
+                        if (!r.ok) {
+                          showToast(r.error!);
+                          return;
+                        }
+                        try {
+                          await navigator.clipboard.writeText(r.url!);
+                          showToast("បានចម្លង signed URL (ផុតក្នុង 1 ម៉ោង)");
+                        } catch {
+                          showToast("ចម្លងបរាជ័យ");
+                        }
+                      }}
+                      className="text-primary hover:underline"
+                      title="ចម្លង signed URL (1 ម៉ោង)"
+                    >
+                      ⧉ Copy URL
+                    </button>
+                  </div>
+                </div>
               )}
             </div>
 
