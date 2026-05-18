@@ -2075,8 +2075,13 @@ function GamesTab() {
                   />
                 </label>
               </div>
+              <ScreenshotUrlAdder
+                onAdd={(url) =>
+                  setDraft((d) => ({ ...d, screenshots: [...d.screenshots, url] }))
+                }
+              />
               <p className="mt-1 text-[10px] text-muted-foreground">
-                អាចជ្រើសរើសច្រើនដង · max 10MB / រូប
+                អាចជ្រើសរើសច្រើនដង · max 10MB / រូប · ឬបិទភ្ជាប់ URL រូបភាព
               </p>
             </div>
 
