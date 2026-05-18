@@ -2027,29 +2027,47 @@ function GamesTab() {
               <span className="block text-[10px] uppercase tracking-wider text-muted-foreground mb-1">
                 URL រូបភាព (cover)
               </span>
-              <div className="flex items-center gap-2">
-                <input
-                  value={draft.image_url ?? ""}
-                  placeholder="https://… ឬ ផ្ទុករូបឡើង"
-                  onChange={(e) => setDraft({ ...draft, image_url: e.target.value })}
-                  className="flex-1 rounded-lg bg-input px-3 py-2 text-xs outline-none ring-1 ring-border focus:ring-primary"
-                />
-                <label className="shrink-0 cursor-pointer rounded-full bg-primary/10 text-primary px-3 py-2 text-[11px] font-semibold hover:bg-primary/20">
-                  ផ្ទុករូប
+              <DropZone
+                accept="image/*"
+                onFiles={async (files) => {
+                  const url = await runMediaUpload("cover", files[0], uploadCoverImage);
+                  if (url) setDraft({ ...draft, image_url: url });
+                }}
+              >
+                <div className="flex items-center gap-2">
                   <input
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={async (e) => {
-                      const f = e.target.files?.[0];
-                      if (!f) return;
-                      const url = await uploadCoverImage(f);
-                      if (url) setDraft({ ...draft, image_url: url });
-                      e.target.value = "";
-                    }}
+                    value={draft.image_url ?? ""}
+                    placeholder="https://… ឬ អូសរូបមកដាក់ / ផ្ទុករូបឡើង"
+                    onChange={(e) => setDraft({ ...draft, image_url: e.target.value })}
+                    className="flex-1 rounded-lg bg-input px-3 py-2 text-xs outline-none ring-1 ring-border focus:ring-primary"
                   />
-                </label>
-              </div>
+                  <label className="shrink-0 cursor-pointer rounded-full bg-primary/10 text-primary px-3 py-2 text-[11px] font-semibold hover:bg-primary/20">
+                    ផ្ទុករូប
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={async (e) => {
+                        const f = e.target.files?.[0];
+                        if (!f) return;
+                        const url = await runMediaUpload("cover", f, uploadCoverImage);
+                        if (url) setDraft({ ...draft, image_url: url });
+                        e.target.value = "";
+                      }}
+                    />
+                  </label>
+                </div>
+              </DropZone>
+              {mediaUploads
+                .filter((m) => m.kind === "cover")
+                .map((m) => (
+                  <UploadProgressLine
+                    key={m.id}
+                    name={m.name}
+                    status={m.status}
+                    message={m.message}
+                  />
+                ))}
               {draft.image_url && (
                 <img
                   src={draft.image_url}
