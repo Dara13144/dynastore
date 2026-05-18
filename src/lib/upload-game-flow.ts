@@ -42,7 +42,7 @@ export interface RunUploadFlowResult {
   error?: string;
 }
 
-const DEFAULT_RESUMABLE_THRESHOLD = 2 * 1024 * 1024;
+const DEFAULT_RESUMABLE_THRESHOLD = 1 * 1024 * 1024;
 
 export function effectiveMaxBytes(bucketLimit: number | null): number {
   return bucketLimit && bucketLimit > 0
