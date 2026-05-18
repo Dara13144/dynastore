@@ -802,6 +802,7 @@ function GamesTab() {
     setBusy(true);
     setUploadError(null);
     setUploadedInfo(null);
+    setSignedUrl(null);
     if (!draftFile) setUploadStage("processing");
     const result = await submitCreateGame(
       {
