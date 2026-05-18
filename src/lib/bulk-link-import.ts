@@ -6,7 +6,7 @@
 //   • id\ttitle\tcategory\tprice\turl    (tab-delimited)
 //   • title,url                          (comma; minimal)
 // Empty lines and lines starting with '#' are ignored.
-import { validateGameFileUrl, ALLOWED_GAME_FILE_EXTS } from "./validate-game-file";
+import { normalizeShareUrl, ALLOWED_GAME_FILE_EXTS } from "./validate-game-file";
 
 export type ParsedLinkRow = {
   lineNumber: number;
