@@ -1543,6 +1543,22 @@ function GamesTab() {
           </div>
 
           {/* Items list */}
+          {batchRunning && batchAggregate.count > 0 && (
+            <div className="rounded-lg bg-card/60 p-2.5 ring-1 ring-primary/30 space-y-1.5">
+              <div className="flex items-center justify-between text-[11px] font-medium flex-wrap gap-2">
+                <span>
+                  Batch: {batchAggregate.done}/{batchAggregate.count} ឯកសារ
+                  {batchAggregate.errored > 0 && <span className="text-destructive"> · {batchAggregate.errored} បរាជ័យ</span>}
+                </span>
+                <span className="tabular-nums text-muted-foreground">
+                  {formatBytes(batchAggregate.sent)} / {formatBytes(batchAggregate.total)} · {fmtSpeed(batchAggregate.speedBps)} · ETA {fmtEta(batchAggregate.etaSec)}
+                </span>
+              </div>
+              <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+                <div className="h-full bg-primary transition-all" style={{ width: `${Math.min(100, batchAggregate.pct)}%` }} />
+              </div>
+            </div>
+          )}
           {batchItems.length > 0 && (
             <div className="space-y-1.5 max-h-96 overflow-y-auto pr-1">
               {batchItems.map((it) => {
