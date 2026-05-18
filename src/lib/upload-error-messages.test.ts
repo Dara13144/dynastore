@@ -18,17 +18,23 @@ describe("formatBytes — exact units", () => {
   });
 });
 
-describe("oversize messages — exact Khmer text", () => {
-  it("validateGameFile rejects > 1000GB with the static-cap message", () => {
+describe("oversize messages — detailed MiB/GiB text", () => {
+  it("validateGameFile rejects > 1000 GiB and explains the binary ceiling", () => {
     const big = { name: "huge.zip", size: 1001 * ONE_GB };
-    expect(validateGameFile(big)).toBe("ឯកសារធំពេក — អតិបរមា 1000GB");
+    const msg = validateGameFile(big)!;
+    expect(msg).toContain("ធំពេក");
+    expect(msg).toContain("1000 GiB");
+    expect(msg).toContain((1000 * ONE_GB).toLocaleString("en-US") + " bytes");
+    expect(msg).toContain("បំបែកជា parts");
   });
 
-  it("validateGameFile rejects files under 1MB with the min-size message", () => {
-    const small = { name: "tiny.zip", size: 500 * 1024 }; // 0.5 MB
-    expect(validateGameFile(small)).toBe(
-      "ឯកសារតូចពេក (0.49MB) — តម្រូវយ៉ាងតិច 1MB",
-    );
+  it("validateGameFile rejects files under 1 MiB and shows actual size in bytes", () => {
+    const small = { name: "tiny.zip", size: 500 * 1024 }; // 0.5 MiB
+    const msg = validateGameFile(small)!;
+    expect(msg).toContain("តូចពេក");
+    expect(msg).toContain((500 * 1024).toLocaleString("en-US") + " bytes");
+    expect(msg).toContain("1 MiB");
+    expect(msg).toContain("1,048,576 bytes");
   });
 
   it("oversizeForBucketMessage embeds both file size and effective max", () => {
