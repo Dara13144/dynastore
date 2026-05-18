@@ -1778,7 +1778,9 @@ function GamesTab() {
                 setBulkLinksRunning(false);
                 await loadGames();
                 const okCount = results.filter((r) => r.status === "ok").length;
-                showToast(`បាននាំចូល ${okCount}/${results.length} តំណ`);
+                const skipCount = bulkLinksParsed.filter((r) => r.skipped).length;
+                const suffix = skipCount > 0 ? ` · រំលង ${skipCount}` : "";
+                showToast(`បាននាំចូល ${okCount}/${results.length} តំណ${suffix}`);
               }}
               className="rounded-full bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground disabled:opacity-50"
             >
