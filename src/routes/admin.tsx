@@ -672,6 +672,7 @@ function GamesTab() {
           onShouldRetry: (err: import("tus-js-client").DetailedError) => {
             const status = err.originalResponse?.getStatus?.() ?? 0;
             if (status === 401 || status === 403) {
+              audit("token_refresh", { message: `status ${status}` });
               supabase.auth
                 .refreshSession()
                 .then(({ data }) => {
