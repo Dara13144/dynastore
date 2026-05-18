@@ -9,14 +9,12 @@ import {
 import { Button } from "@/components/ui/button";
 import { computeChunkPlan, PLATFORM_PER_UPLOAD_CAP } from "@/lib/chunk-plan";
 import { formatBytes } from "@/lib/upload-error-messages";
-import { Scissors, Cloud, Terminal, LinkIcon } from "lucide-react";
+import { Scissors, Terminal, LinkIcon } from "lucide-react";
 
 interface Props {
   open: boolean;
   onClose: () => void;
   fileSize?: number | null;
-  /** Optional callback so admin can jump to the S3 tab. */
-  onSwitchToExternal?: () => void;
   /** Optional callback so admin can jump to the External URL tab (no setup, no cap). */
   onSwitchToLibrary?: () => void;
 }
@@ -30,9 +28,9 @@ export function SplitFileGuideDialog({
   open,
   onClose,
   fileSize,
-  onSwitchToExternal,
   onSwitchToLibrary,
 }: Props) {
+  // (onSwitchToExternal removed alongside S3 cleanup)
   const cap = PLATFORM_PER_UPLOAD_CAP;
   const examples = [
     100 * 1024 ** 3,
@@ -112,7 +110,7 @@ export function SplitFileGuideDialog({
 
           <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-2.5 text-[11px] text-amber-700 dark:text-amber-300">
             <strong>Tip:</strong> Upload រាល់ part ជា game ដាច់ដោយឡែក
-            (Part 1 / Part 2 …) ឬប្ដូរទៅ <strong>AWS S3</strong> / <strong>External URL</strong>{" "}
+            (Part 1 / Part 2 …) ឬប្ដូរទៅ <strong>External URL</strong>{" "}
             ដើម្បីជៀស cap នេះទាំងស្រុង។
           </div>
         </div>
@@ -121,11 +119,6 @@ export function SplitFileGuideDialog({
           {onSwitchToLibrary && (
             <Button type="button" onClick={onSwitchToLibrary} className="bg-emerald-600 hover:bg-emerald-700 text-white">
               <LinkIcon className="h-3.5 w-3.5 mr-1.5" /> ប្រើ External URL (មិនបាច់បំបែក)
-            </Button>
-          )}
-          {onSwitchToExternal && (
-            <Button type="button" variant="outline" onClick={onSwitchToExternal}>
-              <Cloud className="h-3.5 w-3.5 mr-1.5" /> ប្ដូរទៅ AWS S3
             </Button>
           )}
           <Button type="button" variant="ghost" onClick={onClose}>យល់ហើយ</Button>

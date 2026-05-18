@@ -3,7 +3,6 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { getRequestHeader, getRequestIP } from "@tanstack/react-start/server";
-import { signS3ReadUrl } from "./external-storage.functions";
 
 export const getGameDownloadUrl = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -35,9 +34,7 @@ export const getGameDownloadUrl = createServerFn({ method: "POST" })
 
     const provider = (game as { storage_provider?: string }).storage_provider ?? "supabase";
     let url: string;
-    if (provider === "s3") {
-      url = await signS3ReadUrl(game.file_path);
-    } else if (provider === "external_url" || /^https?:\/\//i.test(game.file_path)) {
+    if (provider === "external_url" || /^https?:\/\//i.test(game.file_path)) {
       url = game.file_path;
     } else {
       const { data: signed, error } = await supabaseAdmin.storage
