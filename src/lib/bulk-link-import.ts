@@ -103,12 +103,13 @@ export function parseBulkLinks(input: string): ParsedLinkRow[] {
     }
 
     const row: ParsedLinkRow = { lineNumber: i + 1, raw: line, ok: false };
-    const urlErr = validateGameFileUrl(url);
-    if (urlErr) {
-      row.error = urlErr;
+    const norm = normalizeShareUrl(url);
+    if (!norm.ok) {
+      row.error = norm.error;
       out.push(row);
       return;
     }
+    url = norm.url;
     if (!id) id = deriveIdFromUrl(url);
     if (!title) title = id.replace(/[-_]+/g, " ").trim() || id;
     if (seenIds.has(id)) {
