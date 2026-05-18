@@ -51,6 +51,7 @@ import {
 import { logUploadEvent } from "@/lib/upload-audit";
 import { DownloadLogsTab } from "@/components/admin/DownloadLogsTab";
 import { UploadAuditTab } from "@/components/admin/UploadAuditTab";
+import { DropZone, UploadProgressLine } from "@/components/admin/DropZone";
 import { DiagnosticsTab } from "@/components/admin/DiagnosticsTab";
 import { SplitFileGuideDialog } from "@/components/admin/SplitFileGuideDialog";
 import { isPlatformCapError } from "@/lib/chunk-plan";
@@ -333,6 +334,22 @@ function GamesTab() {
   const [sourceMode, setSourceMode] = useState<"file" | "library">("file");
   const [signedUrl, setSignedUrl] = useState<{ url: string; expiresAt: number } | null>(null);
   const [signing, setSigning] = useState(false);
+
+  // Live status for cover / screenshot / video uploads (indeterminate progress).
+  type MediaUpload = {
+    id: string;
+    kind: "cover" | "screenshot" | "video";
+    name: string;
+    status: "uploading" | "done" | "error";
+    message?: string;
+  };
+  const [mediaUploads, setMediaUploads] = useState<MediaUpload[]>([]);
+  const pushMediaUpload = (u: MediaUpload) =>
+    setMediaUploads((prev) => [...prev.filter((p) => p.id !== u.id), u]);
+  const updateMediaUpload = (id: string, patch: Partial<MediaUpload>) =>
+    setMediaUploads((prev) => prev.map((p) => (p.id === id ? { ...p, ...patch } : p)));
+  const removeMediaUpload = (id: string) =>
+    setMediaUploads((prev) => prev.filter((p) => p.id !== id));
 
   // --- Batch multi-file upload state ---
   type BatchStatus = "pending" | "uploading" | "done" | "error" | "skipped";
@@ -928,6 +945,34 @@ function GamesTab() {
       return null;
     }
     return supabase.storage.from("game-images").getPublicUrl(path).data.publicUrl;
+  };
+
+  /** Wrap a media upload with live progress tracking shown in the dialog. */
+  const runMediaUpload = async (
+    kind: "cover" | "screenshot" | "video",
+    file: File,
+    fn: (f: File) => Promise<string | null>,
+  ): Promise<string | null> => {
+    const id = `${kind}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+    pushMediaUpload({ id, kind, name: file.name, status: "uploading" });
+    try {
+      const url = await fn(file);
+      if (url) {
+        updateMediaUpload(id, { status: "done" });
+        setTimeout(() => removeMediaUpload(id), 1200);
+      } else {
+        updateMediaUpload(id, { status: "error", message: "Upload បរាជ័យ" });
+        setTimeout(() => removeMediaUpload(id), 4000);
+      }
+      return url;
+    } catch (e) {
+      updateMediaUpload(id, {
+        status: "error",
+        message: e instanceof Error ? e.message : String(e),
+      });
+      setTimeout(() => removeMediaUpload(id), 4000);
+      return null;
+    }
   };
 
   const updateGame = async (id: string, patch: Partial<GameRow>) => {
@@ -1982,29 +2027,47 @@ function GamesTab() {
               <span className="block text-[10px] uppercase tracking-wider text-muted-foreground mb-1">
                 URL រូបភាព (cover)
               </span>
-              <div className="flex items-center gap-2">
-                <input
-                  value={draft.image_url ?? ""}
-                  placeholder="https://… ឬ ផ្ទុករូបឡើង"
-                  onChange={(e) => setDraft({ ...draft, image_url: e.target.value })}
-                  className="flex-1 rounded-lg bg-input px-3 py-2 text-xs outline-none ring-1 ring-border focus:ring-primary"
-                />
-                <label className="shrink-0 cursor-pointer rounded-full bg-primary/10 text-primary px-3 py-2 text-[11px] font-semibold hover:bg-primary/20">
-                  ផ្ទុករូប
+              <DropZone
+                accept="image/*"
+                onFiles={async (files) => {
+                  const url = await runMediaUpload("cover", files[0], uploadCoverImage);
+                  if (url) setDraft({ ...draft, image_url: url });
+                }}
+              >
+                <div className="flex items-center gap-2">
                   <input
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={async (e) => {
-                      const f = e.target.files?.[0];
-                      if (!f) return;
-                      const url = await uploadCoverImage(f);
-                      if (url) setDraft({ ...draft, image_url: url });
-                      e.target.value = "";
-                    }}
+                    value={draft.image_url ?? ""}
+                    placeholder="https://… ឬ អូសរូបមកដាក់ / ផ្ទុករូបឡើង"
+                    onChange={(e) => setDraft({ ...draft, image_url: e.target.value })}
+                    className="flex-1 rounded-lg bg-input px-3 py-2 text-xs outline-none ring-1 ring-border focus:ring-primary"
                   />
-                </label>
-              </div>
+                  <label className="shrink-0 cursor-pointer rounded-full bg-primary/10 text-primary px-3 py-2 text-[11px] font-semibold hover:bg-primary/20">
+                    ផ្ទុករូប
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={async (e) => {
+                        const f = e.target.files?.[0];
+                        if (!f) return;
+                        const url = await runMediaUpload("cover", f, uploadCoverImage);
+                        if (url) setDraft({ ...draft, image_url: url });
+                        e.target.value = "";
+                      }}
+                    />
+                  </label>
+                </div>
+              </DropZone>
+              {mediaUploads
+                .filter((m) => m.kind === "cover")
+                .map((m) => (
+                  <UploadProgressLine
+                    key={m.id}
+                    name={m.name}
+                    status={m.status}
+                    message={m.message}
+                  />
+                ))}
               {draft.image_url && (
                 <img
                   src={draft.image_url}
@@ -2019,61 +2082,87 @@ function GamesTab() {
               <span className="block text-[10px] uppercase tracking-wider text-muted-foreground mb-1">
                 Screenshots (gallery)
               </span>
-              <div className="flex flex-wrap items-start gap-2">
-                {draft.screenshots.map((url, i) => (
-                  <div key={url + i} className="relative group">
-                    <img
-                      src={url}
-                      alt={`shot-${i}`}
-                      className="h-20 w-32 rounded-lg object-cover ring-1 ring-border"
+              <DropZone
+                accept="image/*"
+                multiple
+                className="rounded-lg p-1"
+                onFiles={async (files) => {
+                  const uploaded: string[] = [];
+                  for (const f of files) {
+                    const u = await runMediaUpload("screenshot", f, uploadScreenshot);
+                    if (u) uploaded.push(u);
+                  }
+                  if (uploaded.length) {
+                    setDraft((d) => ({ ...d, screenshots: [...d.screenshots, ...uploaded] }));
+                  }
+                }}
+              >
+                <div className="flex flex-wrap items-start gap-2">
+                  {draft.screenshots.map((url, i) => (
+                    <div key={url + i} className="relative group">
+                      <img
+                        src={url}
+                        alt={`shot-${i}`}
+                        className="h-20 w-32 rounded-lg object-cover ring-1 ring-border"
+                      />
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setDraft({
+                            ...draft,
+                            screenshots: draft.screenshots.filter((_, j) => j !== i),
+                          })
+                        }
+                        className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-destructive text-destructive-foreground text-[10px] grid place-items-center opacity-0 group-hover:opacity-100 transition"
+                        title="Remove"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                  <label className="h-20 w-32 cursor-pointer rounded-lg border-2 border-dashed border-border grid place-items-center text-[10px] text-muted-foreground hover:border-primary hover:text-primary text-center px-1">
+                    + បន្ថែម / អូសមកដាក់
+                    <input
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      className="hidden"
+                      onChange={async (e) => {
+                        const files = Array.from(e.target.files ?? []);
+                        e.target.value = "";
+                        const uploaded: string[] = [];
+                        for (const f of files) {
+                          const u = await runMediaUpload("screenshot", f, uploadScreenshot);
+                          if (u) uploaded.push(u);
+                        }
+                        if (uploaded.length) {
+                          setDraft((d) => ({
+                            ...d,
+                            screenshots: [...d.screenshots, ...uploaded],
+                          }));
+                        }
+                      }}
                     />
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setDraft({
-                          ...draft,
-                          screenshots: draft.screenshots.filter((_, j) => j !== i),
-                        })
-                      }
-                      className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-destructive text-destructive-foreground text-[10px] grid place-items-center opacity-0 group-hover:opacity-100 transition"
-                      title="Remove"
-                    >
-                      ×
-                    </button>
-                  </div>
-                ))}
-                <label className="h-20 w-32 cursor-pointer rounded-lg border-2 border-dashed border-border grid place-items-center text-[10px] text-muted-foreground hover:border-primary hover:text-primary">
-                  + បន្ថែម
-                  <input
-                    type="file"
-                    accept="image/*"
-                    multiple
-                    className="hidden"
-                    onChange={async (e) => {
-                      const files = Array.from(e.target.files ?? []);
-                      e.target.value = "";
-                      const uploaded: string[] = [];
-                      for (const f of files) {
-                        const u = await uploadScreenshot(f);
-                        if (u) uploaded.push(u);
-                      }
-                      if (uploaded.length) {
-                        setDraft((d) => ({
-                          ...d,
-                          screenshots: [...d.screenshots, ...uploaded],
-                        }));
-                      }
-                    }}
+                  </label>
+                </div>
+              </DropZone>
+              {mediaUploads
+                .filter((m) => m.kind === "screenshot")
+                .map((m) => (
+                  <UploadProgressLine
+                    key={m.id}
+                    name={m.name}
+                    status={m.status}
+                    message={m.message}
                   />
-                </label>
-              </div>
+                ))}
               <ScreenshotUrlAdder
                 onAdd={(url) =>
                   setDraft((d) => ({ ...d, screenshots: [...d.screenshots, url] }))
                 }
               />
               <p className="mt-1 text-[10px] text-muted-foreground">
-                អាចជ្រើសរើសច្រើនដង · max 10MB / រូប · ឬបិទភ្ជាប់ URL រូបភាព
+                អូសច្រើនរូបមកដាក់ · max 10MB / រូប · ឬបិទភ្ជាប់ URL រូបភាព
               </p>
             </div>
 
@@ -2082,40 +2171,58 @@ function GamesTab() {
               <span className="block text-[10px] uppercase tracking-wider text-muted-foreground mb-1">
                 Preview video (trailer ~50MB)
               </span>
-              <div className="flex items-center gap-2">
-                <input
-                  value={draft.preview_video_url ?? ""}
-                  placeholder="https://… ឬ ផ្ទុកវីដេអូឡើង"
-                  onChange={(e) =>
-                    setDraft({ ...draft, preview_video_url: e.target.value || null })
-                  }
-                  className="flex-1 rounded-lg bg-input px-3 py-2 text-xs outline-none ring-1 ring-border focus:ring-primary"
-                />
-                <label className="shrink-0 cursor-pointer rounded-full bg-primary/10 text-primary px-3 py-2 text-[11px] font-semibold hover:bg-primary/20">
-                  ផ្ទុកវីដេអូ
+              <DropZone
+                accept="video/*"
+                onFiles={async (files) => {
+                  const url = await runMediaUpload("video", files[0], uploadPreviewVideo);
+                  if (url) setDraft({ ...draft, preview_video_url: url });
+                }}
+              >
+                <div className="flex items-center gap-2">
                   <input
-                    type="file"
-                    accept="video/*"
-                    className="hidden"
-                    onChange={async (e) => {
-                      const f = e.target.files?.[0];
-                      if (!f) return;
-                      const url = await uploadPreviewVideo(f);
-                      if (url) setDraft({ ...draft, preview_video_url: url });
-                      e.target.value = "";
-                    }}
+                    value={draft.preview_video_url ?? ""}
+                    placeholder="https://… ឬ អូសវីដេអូមកដាក់"
+                    onChange={(e) =>
+                      setDraft({ ...draft, preview_video_url: e.target.value || null })
+                    }
+                    className="flex-1 rounded-lg bg-input px-3 py-2 text-xs outline-none ring-1 ring-border focus:ring-primary"
                   />
-                </label>
-                {draft.preview_video_url && (
-                  <button
-                    type="button"
-                    onClick={() => setDraft({ ...draft, preview_video_url: null })}
-                    className="rounded-full bg-muted/60 px-3 py-2 text-[11px] text-muted-foreground hover:text-foreground"
-                  >
-                    Clear
-                  </button>
-                )}
-              </div>
+                  <label className="shrink-0 cursor-pointer rounded-full bg-primary/10 text-primary px-3 py-2 text-[11px] font-semibold hover:bg-primary/20">
+                    ផ្ទុកវីដេអូ
+                    <input
+                      type="file"
+                      accept="video/*"
+                      className="hidden"
+                      onChange={async (e) => {
+                        const f = e.target.files?.[0];
+                        if (!f) return;
+                        const url = await runMediaUpload("video", f, uploadPreviewVideo);
+                        if (url) setDraft({ ...draft, preview_video_url: url });
+                        e.target.value = "";
+                      }}
+                    />
+                  </label>
+                  {draft.preview_video_url && (
+                    <button
+                      type="button"
+                      onClick={() => setDraft({ ...draft, preview_video_url: null })}
+                      className="rounded-full bg-muted/60 px-3 py-2 text-[11px] text-muted-foreground hover:text-foreground"
+                    >
+                      Clear
+                    </button>
+                  )}
+                </div>
+              </DropZone>
+              {mediaUploads
+                .filter((m) => m.kind === "video")
+                .map((m) => (
+                  <UploadProgressLine
+                    key={m.id}
+                    name={m.name}
+                    status={m.status}
+                    message={m.message}
+                  />
+                ))}
               {draft.preview_video_url && (
                 <div>
                   <video
@@ -2204,29 +2311,40 @@ function GamesTab() {
 
               {sourceMode === "file" ? (
                 <div className="animate-fade-in">
-                  <input
-                    type="file"
+                  <DropZone
                     accept=".zip,.rar,.7z,.tar,.gz,.tgz"
-                    title={
-                      bucketLimitBytes && bucketLimitBytes < MAX_GAME_FILE_BYTES
-                        ? `អតិបរមា ${formatBytes(effectiveMaxBytes())} — កំណត់ដោយ bucket "game-files" (ដែនកំណត់ម៉ាស៊ីន ${formatBytes(MAX_GAME_FILE_BYTES)})`
-                        : `អតិបរមា ${formatBytes(effectiveMaxBytes())} — ដែនកំណត់ម៉ាស៊ីន`
-                    }
-                    onChange={(e) => {
-                      const f = e.target.files?.[0] ?? null;
+                    onFiles={(files) => {
+                      const f = files[0] ?? null;
                       const err = f ? validateFile(f) : null;
                       setDraftFileError(err);
                       setDraftFile(f);
                     }}
-                    className="w-full text-xs file:mr-2 file:rounded-full file:border-0 file:bg-primary file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-primary-foreground"
-                  />
-                  <p className="text-[10px] text-muted-foreground mt-1">
-                    អនុញ្ញាត zip, rar, 7z, tar, gz · ទំហំ 1MB ដល់{" "}
-                    <span className="font-semibold text-foreground">{formatBytes(effectiveMaxBytes())}</span>
-                    {bucketLimitBytes && bucketLimitBytes < MAX_GAME_FILE_BYTES ? (
-                      <span className="text-muted-foreground/70"> (ដែនកំណត់ bucket បច្ចុប្បន្ន)</span>
-                    ) : null}
-                  </p>
+                    className="rounded-lg border-2 border-dashed border-border p-3 hover:border-primary/60"
+                  >
+                    <input
+                      type="file"
+                      accept=".zip,.rar,.7z,.tar,.gz,.tgz"
+                      title={
+                        bucketLimitBytes && bucketLimitBytes < MAX_GAME_FILE_BYTES
+                          ? `អតិបរមា ${formatBytes(effectiveMaxBytes())} — កំណត់ដោយ bucket "game-files" (ដែនកំណត់ម៉ាស៊ីន ${formatBytes(MAX_GAME_FILE_BYTES)})`
+                          : `អតិបរមា ${formatBytes(effectiveMaxBytes())} — ដែនកំណត់ម៉ាស៊ីន`
+                      }
+                      onChange={(e) => {
+                        const f = e.target.files?.[0] ?? null;
+                        const err = f ? validateFile(f) : null;
+                        setDraftFileError(err);
+                        setDraftFile(f);
+                      }}
+                      className="w-full text-xs file:mr-2 file:rounded-full file:border-0 file:bg-primary file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-primary-foreground"
+                    />
+                    <p className="text-[10px] text-muted-foreground mt-1">
+                      អូសឯកសារ archive មកដាក់ ឬចុចជ្រើស · zip, rar, 7z, tar, gz · ទំហំ 1MB ដល់{" "}
+                      <span className="font-semibold text-foreground">{formatBytes(effectiveMaxBytes())}</span>
+                      {bucketLimitBytes && bucketLimitBytes < MAX_GAME_FILE_BYTES ? (
+                        <span className="text-muted-foreground/70"> (ដែនកំណត់ bucket បច្ចុប្បន្ន)</span>
+                      ) : null}
+                    </p>
+                  </DropZone>
                   {draftFile && (
                     <div className="mt-2 space-y-1">
                       <span className="text-[11px] text-foreground/90 block">
