@@ -28,10 +28,10 @@ const DELIMS = /\t|\|/;
 export function deriveIdFromUrl(url: string): string {
   try {
     const u = new URL(url);
-    // Prefer pathname filename; fall back to any query value that looks like
-    // a file path (e.g. ?f=/alpha4/abc/game.rar).
+    // 1) Prefer a pathname segment that looks like an archive filename.
     let last = u.pathname.split("/").filter(Boolean).pop() ?? "";
     const looksLikeFile = ALLOWED_GAME_FILE_EXTS.some((ext) => last.toLowerCase().endsWith(ext));
+    // 2) Otherwise look in query values for an archive filename.
     if (!looksLikeFile) {
       for (const [, v] of u.searchParams) {
         const cand = v.split("/").filter(Boolean).pop() ?? "";
@@ -41,6 +41,9 @@ export function deriveIdFromUrl(url: string): string {
         }
       }
     }
+    // 3) Final fallback for share-page URLs without any filename — use the
+    //    last path segment as-is (e.g. uploadnow.io/files/FvFBmV6 → fvfbmv6).
+    if (!last) last = u.pathname.split("/").filter(Boolean).pop() ?? "";
     const base = ALLOWED_GAME_FILE_EXTS.reduce(
       (acc, ext) => (acc.toLowerCase().endsWith(ext) ? acc.slice(0, -ext.length) : acc),
       last,
