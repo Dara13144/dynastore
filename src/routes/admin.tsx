@@ -1660,80 +1660,118 @@ function GamesTab() {
                               </>
                             )}
                           </dl>
-                          {uploadedInfo.provider !== "external_url" && (
-                            <div className="pt-1 space-y-1.5 border-t border-emerald-500/20">
-                              <div className="flex flex-wrap items-center gap-1.5">
-                                <button
-                                  type="button"
-                                  disabled={signing}
-                                  onClick={async () => {
-                                    setSigning(true);
-                                    try {
-                                      const EXP = 60 * 15; // 15 min
-                                      let url: string;
-                                      if (uploadedInfo.provider === "supabase") {
-                                        const { data, error } = await supabase.storage
-                                          .from(uploadedInfo.bucket ?? "game-files")
-                                          .createSignedUrl(uploadedInfo.path, EXP, { download: true });
-                                        if (error || !data?.signedUrl) {
-                                          throw new Error(error?.message || "sign_failed");
-                                        }
-                                        url = data.signedUrl;
-                                      } else {
-                                        const r = await getS3SignedReadUrlFn({
-                                          data: { key: uploadedInfo.path },
-                                        });
-                                        url = r.url;
-                                      }
-                                      setSignedUrl({ url, expiresAt: Date.now() + EXP * 1000 });
-                                      showToast("បានបង្កើត Signed URL (15 នាទី)");
-                                    } catch (e) {
-                                      showToast(e instanceof Error ? e.message : "sign_failed");
-                                    } finally {
-                                      setSigning(false);
+                          {(() => {
+                            const supportsSigned =
+                              uploadedInfo.provider === "supabase" || uploadedInfo.provider === "s3";
+                            const isDone = uploadStage === "done";
+                            const canGenerate = isDone && supportsSigned;
+                            const hasSigned = !!signedUrl;
+                            const copyDownloadDisabled = !canGenerate || !hasSigned;
+                            const disabledReason = !isDone
+                              ? "រង់ចាំឯកសារដំណើរការរួច (status = done)"
+                              : !supportsSigned
+                              ? "Provider នេះមិនមាន Signed URL (external_url)"
+                              : !hasSigned
+                              ? "សូមបង្កើត Signed URL ជាមុនសិន"
+                              : "";
+                            return (
+                              <div className="pt-1 space-y-1.5 border-t border-emerald-500/20">
+                                <div className="flex flex-wrap items-center gap-1.5">
+                                  <button
+                                    type="button"
+                                    disabled={signing || !canGenerate}
+                                    title={
+                                      canGenerate
+                                        ? "បង្កើត Signed URL រយៈពេល 15 នាទី"
+                                        : disabledReason
                                     }
-                                  }}
-                                  className="rounded bg-emerald-600 px-2 py-1 text-[10px] font-semibold text-white hover:bg-emerald-700 disabled:opacity-50"
-                                >
-                                  {signing ? "កំពុងបង្កើត…" : signedUrl ? "បង្កើតថ្មី" : "បង្កើត Signed URL"}
-                                </button>
-                                {signedUrl && (
-                                  <>
+                                    onClick={async () => {
+                                      setSigning(true);
+                                      try {
+                                        const EXP = 60 * 15;
+                                        let url: string;
+                                        if (uploadedInfo.provider === "supabase") {
+                                          const { data, error } = await supabase.storage
+                                            .from(uploadedInfo.bucket ?? "game-files")
+                                            .createSignedUrl(uploadedInfo.path, EXP, { download: true });
+                                          if (error || !data?.signedUrl) {
+                                            throw new Error(error?.message || "sign_failed");
+                                          }
+                                          url = data.signedUrl;
+                                        } else {
+                                          const r = await getS3SignedReadUrlFn({
+                                            data: { key: uploadedInfo.path },
+                                          });
+                                          url = r.url;
+                                        }
+                                        setSignedUrl({ url, expiresAt: Date.now() + EXP * 1000 });
+                                        showToast("បានបង្កើត Signed URL (15 នាទី)");
+                                      } catch (e) {
+                                        showToast(e instanceof Error ? e.message : "sign_failed");
+                                      } finally {
+                                        setSigning(false);
+                                      }
+                                    }}
+                                    className="rounded bg-emerald-600 px-2 py-1 text-[10px] font-semibold text-white hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                                  >
+                                    {signing ? "កំពុងបង្កើត…" : hasSigned ? "បង្កើតថ្មី" : "បង្កើត Signed URL"}
+                                  </button>
+                                  <button
+                                    type="button"
+                                    disabled={copyDownloadDisabled}
+                                    title={copyDownloadDisabled ? disabledReason : "ចម្លងតំណ Signed URL"}
+                                    onClick={() => {
+                                      if (!signedUrl) return;
+                                      navigator.clipboard?.writeText(signedUrl.url);
+                                      showToast("បានចម្លងតំណ");
+                                    }}
+                                    className="rounded bg-muted px-2 py-1 text-[10px] font-semibold hover:bg-muted/70 disabled:opacity-40 disabled:cursor-not-allowed"
+                                  >
+                                    Copy
+                                  </button>
+                                  {copyDownloadDisabled ? (
                                     <button
                                       type="button"
-                                      onClick={() => {
-                                        navigator.clipboard?.writeText(signedUrl.url);
-                                        showToast("បានចម្លងតំណ");
-                                      }}
-                                      className="rounded bg-muted px-2 py-1 text-[10px] font-semibold hover:bg-muted/70"
+                                      disabled
+                                      title={disabledReason}
+                                      className="rounded bg-primary/60 px-2 py-1 text-[10px] font-semibold text-primary-foreground opacity-40 cursor-not-allowed"
                                     >
-                                      Copy
+                                      Download
                                     </button>
+                                  ) : (
                                     <a
-                                      href={signedUrl.url}
+                                      href={signedUrl!.url}
                                       target="_blank"
                                       rel="noopener noreferrer"
                                       download
+                                      title="ទាញយកឯកសារតាម Signed URL"
                                       className="rounded bg-primary px-2 py-1 text-[10px] font-semibold text-primary-foreground hover:bg-primary/90"
                                     >
                                       Download
                                     </a>
+                                  )}
+                                  {hasSigned && (
                                     <span className="text-[10px] text-muted-foreground">
-                                      ផុតកំណត់៖ {new Date(signedUrl.expiresAt).toLocaleTimeString()}
+                                      ផុតកំណត់៖ {new Date(signedUrl!.expiresAt).toLocaleTimeString()}
                                     </span>
-                                  </>
+                                  )}
+                                  {!supportsSigned && (
+                                    <span className="text-[10px] italic text-muted-foreground">
+                                      (external_url — គ្មាន Signed URL)
+                                    </span>
+                                  )}
+                                </div>
+                                {hasSigned && (
+                                  <code
+                                    className="block truncate rounded bg-muted/40 px-1.5 py-1 font-mono text-[10px]"
+                                    title={signedUrl!.url}
+                                  >
+                                    {signedUrl!.url}
+                                  </code>
                                 )}
                               </div>
-                              {signedUrl && (
-                                <code
-                                  className="block truncate rounded bg-muted/40 px-1.5 py-1 font-mono text-[10px]"
-                                  title={signedUrl.url}
-                                >
-                                  {signedUrl.url}
-                                </code>
-                              )}
-                            </div>
-                          )}
+                            );
+                          })()}
                         </div>
                       )}
 
