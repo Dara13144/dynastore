@@ -2091,6 +2091,10 @@ function GamesTab() {
                     message={m.message}
                   />
                 ))}
+              <RejectedFilesBanner
+                items={rejectedByKind.cover}
+                onClear={() => clearRejections("cover")}
+              />
               {draft.image_url && (
                 <img
                   src={draft.image_url}
