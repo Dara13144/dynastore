@@ -646,6 +646,7 @@ function GamesTab() {
         setUploadPct(null);
         setUploadStats(null);
         uploadRef.current = null;
+        audit("error", { message: friendly });
         showToast(`Upload: ${friendly}`);
         resolve(null);
       };
