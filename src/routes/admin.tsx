@@ -133,7 +133,7 @@ function AdminPage() {
   const { authed, loading } = useStore();
   const navigate = useNavigate();
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
-  const [tab, setTab] = useState<"dashboard" | "games" | "users" | "topups" | "content" | "tutorials" | "settings" | "logs" | "uploads">(
+  const [tab, setTab] = useState<"dashboard" | "games" | "users" | "topups" | "content" | "tutorials" | "settings" | "logs" | "uploads" | "diagnostics">(
     "dashboard",
   );
 
