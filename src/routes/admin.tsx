@@ -911,6 +911,132 @@ function GamesTab() {
   };
   const sortIcon = (k: typeof sortKey) => (sortKey === k ? (sortDir === "asc" ? " ▲" : " ▼") : "");
 
+  // --- Batch upload helpers ---
+  const slugifyName = (name: string): string => {
+    const noExt = name.replace(/\.(zip|rar|7z|tar|gz|tgz)$/i, "");
+    const base = noExt.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+    return (base || `game-${Date.now()}`).slice(0, 48);
+  };
+  const uniqueSlug = (base: string, taken: Set<string>): string => {
+    if (!taken.has(base)) return base;
+    let i = 2;
+    while (taken.has(`${base}-${i}`)) i++;
+    return `${base}-${i}`;
+  };
+
+  const updateBatchItem = (id: string, patch: Partial<BatchItem>) => {
+    setBatchItems((items) => items.map((it) => (it.id === id ? { ...it, ...patch } : it)));
+  };
+
+  // Mirror shared upload progress into the currently-running batch row.
+  useEffect(() => {
+    if (!batchRunning || !batchCurrentRef.current) return;
+    if (uploadPct == null) return;
+    updateBatchItem(batchCurrentRef.current, { pct: uploadPct });
+  }, [uploadPct, batchRunning]);
+
+  const addBatchFiles = (files: File[]) => {
+    const taken = new Set<string>([
+      ...games.map((g) => g.id),
+      ...batchItems.map((b) => b.slug),
+    ]);
+    const next: BatchItem[] = [];
+    for (const f of files) {
+      const base = slugifyName(f.name);
+      const slug = uniqueSlug(base, taken);
+      taken.add(slug);
+      const titleBase = f.name.replace(/\.(zip|rar|7z|tar|gz|tgz)$/i, "");
+      const preErr = validateFile(f);
+      next.push({
+        id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        file: f,
+        title: titleBase,
+        slug,
+        status: preErr ? "error" : "pending",
+        pct: 0,
+        message: preErr ?? undefined,
+      });
+    }
+    setBatchItems((prev) => [...prev, ...next]);
+  };
+
+  const removeBatchItem = (id: string) => {
+    if (batchRunning && batchCurrentRef.current === id) return;
+    setBatchItems((prev) => prev.filter((it) => it.id !== id));
+  };
+
+  const clearBatch = () => {
+    if (batchRunning) return;
+    setBatchItems([]);
+  };
+
+  const runBatch = async () => {
+    if (batchRunning) return;
+    const queue = batchItems.filter((it) => it.status === "pending");
+    if (queue.length === 0) {
+      showToast("គ្មានឯកសារត្រូវបង្ហោះ");
+      return;
+    }
+    setBatchRunning(true);
+    for (const item of queue) {
+      batchCurrentRef.current = item.id;
+      updateBatchItem(item.id, { status: "uploading", pct: 0, message: undefined });
+      setUploadError(null);
+      try {
+        const up = await uploadFile(item.slug, item.file);
+        if (!up) {
+          updateBatchItem(item.id, {
+            status: "error",
+            message: uploadError ?? "Upload បរាជ័យ",
+          });
+          continue;
+        }
+        // Insert game row directly via Supabase (RLS: admin only).
+        const { error: insErr } = await supabase.from("games").insert({
+          id: item.slug,
+          title: item.title || item.slug,
+          category: batchCategory || "Game",
+          description: "",
+          badge: null,
+          price_coins: batchPrice || 0,
+          visible: batchVisible,
+          image_url: null,
+          screenshots: [],
+          preview_video_url: null,
+          file_path: up.path,
+          file_size_bytes: up.size,
+          storage_provider: "supabase",
+        });
+        if (insErr) {
+          // Roll back uploaded object so it doesn't orphan.
+          await supabase.storage.from("game-files").remove([up.path]).catch(() => {});
+          updateBatchItem(item.id, { status: "error", message: insErr.message });
+          continue;
+        }
+        updateBatchItem(item.id, {
+          status: "done",
+          pct: 100,
+          path: up.path,
+          size: up.size,
+        });
+      } catch (e: any) {
+        updateBatchItem(item.id, {
+          status: "error",
+          message: e?.message ?? String(e),
+        });
+      }
+    }
+    batchCurrentRef.current = null;
+    setBatchRunning(false);
+    setUploadStage("idle");
+    setUploadPct(null);
+    setUploadStats(null);
+    await loadGames();
+    const okCount = batchItems.filter((it) => it.status === "done").length;
+    showToast(`Batch upload បានបញ្ចប់ — ${okCount}/${queue.length} ជោគជ័យ`);
+  };
+
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-3 flex-wrap">
