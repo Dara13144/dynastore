@@ -2049,7 +2049,10 @@ function GamesTab() {
               </span>
               <DropZone
                 accept="image/*"
+                validate={(f) => validateMediaFile(f, "image").error}
+                onReject={(r) => addRejections("cover", r)}
                 onFiles={async (files) => {
+                  clearRejections("cover");
                   const url = await runMediaUpload("cover", files[0], uploadCoverImage);
                   if (url) setDraft({ ...draft, image_url: url });
                 }}
