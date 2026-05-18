@@ -111,3 +111,51 @@ describe("bulk-link-import URL normalization", () => {
     expect(rows[0].ok).toBe(false);
   });
 });
+
+describe("dedupeAgainstExisting", () => {
+  it("marks rows whose id already exists in the system as skipped", () => {
+    const rows = parseBulkLinks(
+      "https://cdn.example.com/cool-game.zip\nhttps://cdn.example.com/new-game.zip",
+    );
+    const out = dedupeAgainstExisting(rows, { ids: ["cool-game"] });
+    expect(out[0].ok).toBe(false);
+    expect(out[0].skipped).toBe(true);
+    expect(out[0].skipReason).toContain("cool-game");
+    expect(out[1].ok).toBe(true);
+  });
+
+  it("marks rows whose URL already exists (case + www. insensitive)", () => {
+    const rows = parseBulkLinks("https://CDN.example.com/cool-game.zip");
+    const out = dedupeAgainstExisting(rows, {
+      urls: ["https://www.cdn.example.com/cool-game.zip"],
+    });
+    expect(out[0].ok).toBe(false);
+    expect(out[0].skipped).toBe(true);
+    expect(out[0].skipReason).toMatch(/URL/);
+  });
+
+  it("summarizeParse reports total/valid/invalid/skipped/importable", () => {
+    const rows = parseBulkLinks(
+      [
+        "https://cdn.example.com/a.zip",
+        "https://cdn.example.com/b.zip",
+        "not a url",
+      ].join("\n"),
+    );
+    const out = dedupeAgainstExisting(rows, { ids: ["a"] });
+    expect(summarizeParse(out)).toEqual({
+      total: 3,
+      valid: 1,
+      invalid: 1,
+      skipped: 1,
+      importable: 1,
+    });
+  });
+
+  it("leaves rows untouched when no existing set provided", () => {
+    const rows = parseBulkLinks("https://cdn.example.com/x.zip");
+    const out = dedupeAgainstExisting(rows, {});
+    expect(out[0].ok).toBe(true);
+    expect(out[0].skipped).toBeUndefined();
+  });
+});
