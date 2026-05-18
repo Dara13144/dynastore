@@ -288,9 +288,9 @@ describe("validateGameFileUrl - exact error messages", () => {
       "តំណត្រូវបញ្ចប់ដោយ .zip, .rar, .7z, .tar, .gz, .tgz",
     );
   });
-  it("rejects URL whose path has no extension", () => {
+  it("rejects URL whose path has no extension on an unsupported host", () => {
     expect(validateGameFileUrl("https://x.example.com/games/")).toBe(
-      GAME_FILE_URL_ERRORS.BAD_EXTENSION,
+      GAME_FILE_URL_ERRORS.UNSUPPORTED_HOST,
     );
   });
   it("accepts extension found in either pathname or query string", () => {
