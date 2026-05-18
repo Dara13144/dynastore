@@ -58,7 +58,7 @@ describe("bulk-link-import parser", () => {
     const rows = parseBulkLinks(
       "https://x.example/a.zip\nhttps://x.example/b.zip\ngarbage-line",
     );
-    expect(summarizeParse(rows)).toEqual({ total: 3, valid: 2, invalid: 1 });
+    expect(summarizeParse(rows)).toEqual({ total: 3, valid: 2, invalid: 1, skipped: 0, importable: 2 });
   });
 
   it("clamps negative or non-numeric prices to 0", () => {
