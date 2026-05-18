@@ -74,7 +74,11 @@ export const GAME_FILE_URL_ERRORS = {
   INVALID_URL: "តំណមិនត្រឹមត្រូវ",
   BAD_PROTOCOL: "តម្រូវ http ឬ https ប៉ុណ្ណោះ",
   BAD_EXTENSION: `តំណត្រូវបញ្ចប់ដោយ ${ALLOWED_GAME_FILE_EXTS.join(", ")}`,
+  UNSUPPORTED_HOST: "ប្រភពនេះមិនត្រូវបានគាំទ្រទេ",
+  TOO_LONG: "តំណវែងពេក (អតិបរមា 2048 តួអក្សរ)",
 } as const;
+
+export const MAX_URL_LENGTH = 2048;
 
 /**
  * Known file-sharing hosts that serve archives behind a share page URL
@@ -87,7 +91,9 @@ export const SHARE_HOSTS = [
   "mega.io",
   "drive.google.com",
   "pixeldrain.com",
+  "pixeldra.in",
   "gofile.io",
+  "gofile.to",
   "bunkr.ru",
   "bunkr.is",
   "bunkr.si",
@@ -100,9 +106,9 @@ export const SHARE_HOSTS = [
   "drop.download",
   "qiwi.gg",
   "buzzheavier.com",
-  "gofile.to",
   "files.catbox.moe",
-  "pixeldra.in",
+  "fileditchfiles.me",
+  "fileditch.com",
 ] as const;
 
 function isShareHost(hostname: string): boolean {
@@ -110,38 +116,86 @@ function isShareHost(hostname: string): boolean {
   return SHARE_HOSTS.some((d) => h === d || h.endsWith(`.${d}`));
 }
 
+const BAD_EXTS = [".exe", ".bin", ".msi", ".scr", ".bat", ".cmd", ".sh", ".apk", ".dmg", ".pkg"];
+
+function hasExt(haystack: string, exts: readonly string[]): boolean {
+  return exts.some(
+    (ext) =>
+      haystack.endsWith(ext) ||
+      haystack.includes(`${ext}?`) ||
+      haystack.includes(`${ext}&`) ||
+      haystack.includes(`${ext}#`),
+  );
+}
+
+// Tracking params stripped during normalization.
+const TRACKING_PARAM_RE = /^(utm_|mc_|_ga|_gl|fbclid$|gclid$|yclid$|msclkid$|ref$|ref_src$|si$)/i;
+
+export type NormalizedShareUrl =
+  | { ok: true; url: string; host: string; source: "direct" | "share" }
+  | { ok: false; error: string };
+
 /**
- * Validate an external link to a game archive.
- * Rules: non-empty, parseable URL, http/https only; path/query must end with
- * an allowed archive extension OR the host must be a known share-page host
- * that requires no extension (e.g. uploadnow.io/files/abcd).
+ * Validate AND normalize an external link. Lowercases host, strips `www.`,
+ * removes tracking params, collapses duplicate slashes, enforces protocol
+ * and a supported-sources allowlist, blocks dangerous executables, and caps
+ * length. Returns either { ok: true, url } or { ok: false, error }.
  */
-export function validateGameFileUrl(raw: string | null | undefined): string | null {
+export function normalizeShareUrl(raw: string | null | undefined): NormalizedShareUrl {
   const value = (raw ?? "").trim();
-  if (!value) return GAME_FILE_URL_ERRORS.EMPTY;
+  if (!value) return { ok: false, error: GAME_FILE_URL_ERRORS.EMPTY };
+  if (value.length > MAX_URL_LENGTH) return { ok: false, error: GAME_FILE_URL_ERRORS.TOO_LONG };
   let url: URL;
   try {
     url = new URL(value);
   } catch {
-    return GAME_FILE_URL_ERRORS.INVALID_URL;
+    return { ok: false, error: GAME_FILE_URL_ERRORS.INVALID_URL };
   }
   if (url.protocol !== "http:" && url.protocol !== "https:") {
-    return GAME_FILE_URL_ERRORS.BAD_PROTOCOL;
+    return { ok: false, error: GAME_FILE_URL_ERRORS.BAD_PROTOCOL };
   }
+  // Lowercase host; strip leading "www."
+  let host = url.hostname.toLowerCase();
+  if (host.startsWith("www.")) host = host.slice(4);
+  url.hostname = host;
+  // Reject obviously private/loopback hosts.
+  if (host === "localhost" || host.endsWith(".localhost") || host === "0.0.0.0") {
+    return { ok: false, error: GAME_FILE_URL_ERRORS.UNSUPPORTED_HOST };
+  }
+  // Collapse duplicate slashes in path.
+  url.pathname = url.pathname.replace(/\/{2,}/g, "/");
+  // Strip tracking parameters.
+  const toDelete: string[] = [];
+  url.searchParams.forEach((_v, k) => {
+    if (TRACKING_PARAM_RE.test(k)) toDelete.push(k);
+  });
+  for (const k of toDelete) url.searchParams.delete(k);
+  // Drop trailing "?" if no params remain.
+  if (!url.search) url.search = "";
+
   const haystack = (url.pathname + url.search + url.hash).toLowerCase();
-  // Hard-block dangerous executables even on share hosts.
-  const BAD_EXTS = [".exe", ".bin", ".msi", ".scr", ".bat", ".cmd", ".sh", ".apk"];
-  if (BAD_EXTS.some((ext) => haystack.endsWith(ext) || haystack.includes(`${ext}?`) || haystack.includes(`${ext}&`) || haystack.includes(`${ext}#`))) {
-    return GAME_FILE_URL_ERRORS.BAD_EXTENSION;
+  if (hasExt(haystack, BAD_EXTS)) {
+    return { ok: false, error: GAME_FILE_URL_ERRORS.BAD_EXTENSION };
   }
-  const hasExt = ALLOWED_GAME_FILE_EXTS.some(
-    (ext) => haystack.endsWith(ext) || haystack.includes(`${ext}?`) || haystack.includes(`${ext}&`) || haystack.includes(`${ext}#`),
-  );
-  if (hasExt) return null;
-  // No archive extension — accept only if host is a known share page that
-  // has a non-empty path (share id).
-  if (isShareHost(url.hostname) && url.pathname.replace(/\/+$/, "").length > 1) {
-    return null;
+  if (hasExt(haystack, ALLOWED_GAME_FILE_EXTS)) {
+    return { ok: true, url: url.toString(), host, source: "direct" };
   }
-  return GAME_FILE_URL_ERRORS.BAD_EXTENSION;
+  // No archive extension — accept only known share hosts with a non-empty path.
+  if (isShareHost(host) && url.pathname.replace(/\/+$/, "").length > 1) {
+    return { ok: true, url: url.toString(), host, source: "share" };
+  }
+  // Friendlier error: if the host is plainly not a share host, say so.
+  return {
+    ok: false,
+    error: isShareHost(host) ? GAME_FILE_URL_ERRORS.BAD_EXTENSION : GAME_FILE_URL_ERRORS.UNSUPPORTED_HOST,
+  };
+}
+
+/**
+ * Validate an external link to a game archive. Thin wrapper around
+ * `normalizeShareUrl` that returns only the error message (or null).
+ */
+export function validateGameFileUrl(raw: string | null | undefined): string | null {
+  const r = normalizeShareUrl(raw);
+  return r.ok ? null : r.error;
 }
