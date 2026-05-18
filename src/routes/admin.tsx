@@ -554,7 +554,7 @@ function GamesTab() {
       let aborted = false;
       let netRetryCount = 0;
       const MAX_NET_RETRIES = 50; // effectively unbounded — combined with online-event wait
-      let currentUpload: tus.Upload | null = null;
+      let currentUpload: import("tus-js-client").Upload | null = null;
       let pendingOnlineHandler: (() => void) | null = null;
       let pendingTimeout: ReturnType<typeof setTimeout> | null = null;
       const tusHeaders: Record<string, string> = {
