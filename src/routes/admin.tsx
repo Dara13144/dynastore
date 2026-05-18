@@ -2668,6 +2668,14 @@ function GameRowEditor({
       <td className="px-4 py-3 text-right">
         <div className="inline-flex gap-1">
           <button
+            disabled={busy}
+            onClick={() => setFullOpen(true)}
+            title="កែប្រែពេញលេញ"
+            className="rounded-full bg-accent/30 text-foreground px-2 py-1 text-[11px] font-semibold hover:bg-accent disabled:opacity-30"
+          >
+            <Pencil className="h-3 w-3" />
+          </button>
+          <button
             disabled={!dirty || busy}
             onClick={() =>
               onSave({
@@ -2691,7 +2699,253 @@ function GameRowEditor({
           </button>
         </div>
       </td>
+      <GameEditFullDialog
+        open={fullOpen}
+        onOpenChange={setFullOpen}
+        game={game}
+        busy={busy}
+        onSave={onSave}
+        onUploadCover={onUploadCover}
+      />
     </tr>
+  );
+}
+
+function GameEditFullDialog({
+  open,
+  onOpenChange,
+  game,
+  busy,
+  onSave,
+  onUploadCover,
+}: {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  game: GameRow;
+  busy: boolean;
+  onSave: (p: Partial<GameRow>) => void;
+  onUploadCover: (f: File) => Promise<string | null>;
+}) {
+  const [f, setF] = useState<GameRow>(game);
+  useEffect(() => {
+    if (open) setF(game);
+  }, [open, game]);
+
+  const setField = <K extends keyof GameRow>(k: K, v: GameRow[K]) =>
+    setF((p) => ({ ...p, [k]: v }));
+
+  const save = () => {
+    onSave({
+      title: f.title.trim() || game.title,
+      category: f.category.trim() || game.category,
+      badge: f.badge?.trim() ? f.badge.trim() : null,
+      description: f.description?.trim() ? f.description.trim() : null,
+      price_coins: Math.max(0, Number(f.price_coins) || 0),
+      image_url: f.image_url?.trim() ? f.image_url.trim() : null,
+      preview_video_url: f.preview_video_url?.trim() ? f.preview_video_url.trim() : null,
+      screenshots: (f.screenshots ?? []).map((s) => s.trim()).filter(Boolean),
+      visible: f.visible,
+    });
+    onOpenChange(false);
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Pencil className="h-4 w-4" /> កែប្រែហ្គេម
+          </DialogTitle>
+          <DialogDescription className="font-mono text-[11px]">{game.id}</DialogDescription>
+        </DialogHeader>
+
+        <div className="grid gap-3 text-xs">
+          <label className="space-y-1">
+            <span className="text-muted-foreground">ចំណងជើង</span>
+            <input
+              value={f.title}
+              onChange={(e) => setField("title", e.target.value)}
+              className="w-full rounded-lg bg-input px-3 py-2 outline-none ring-1 ring-border focus:ring-primary"
+            />
+          </label>
+
+          <div className="grid grid-cols-2 gap-3">
+            <label className="space-y-1">
+              <span className="text-muted-foreground">ប្រភេទ</span>
+              <input
+                value={f.category}
+                onChange={(e) => setField("category", e.target.value)}
+                className="w-full rounded-lg bg-input px-3 py-2 outline-none ring-1 ring-border focus:ring-primary"
+              />
+            </label>
+            <label className="space-y-1">
+              <span className="text-muted-foreground">តម្លៃ (coins)</span>
+              <input
+                type="number"
+                min={0}
+                value={f.price_coins}
+                onChange={(e) => setField("price_coins", Number(e.target.value) || 0)}
+                className="w-full rounded-lg bg-input px-3 py-2 outline-none ring-1 ring-border focus:ring-primary"
+              />
+            </label>
+          </div>
+
+          <label className="space-y-1">
+            <span className="text-muted-foreground">Badge (ស្លាក)</span>
+            <input
+              value={f.badge ?? ""}
+              placeholder="ឧ. NEW, HOT"
+              onChange={(e) => setField("badge", e.target.value)}
+              className="w-full rounded-lg bg-input px-3 py-2 outline-none ring-1 ring-border focus:ring-primary"
+            />
+          </label>
+
+          <label className="space-y-1">
+            <span className="text-muted-foreground">ការពិពណ៌នា</span>
+            <textarea
+              value={f.description ?? ""}
+              rows={4}
+              onChange={(e) => setField("description", e.target.value)}
+              className="w-full rounded-lg bg-input px-3 py-2 outline-none ring-1 ring-border focus:ring-primary resize-y"
+            />
+          </label>
+
+          <div className="space-y-1">
+            <span className="text-muted-foreground">URL រូបភាពគម្រប</span>
+            <div className="flex items-center gap-2">
+              <input
+                value={f.image_url ?? ""}
+                onChange={(e) => setField("image_url", e.target.value)}
+                className="flex-1 rounded-lg bg-input px-3 py-2 outline-none ring-1 ring-border focus:ring-primary"
+              />
+              <label className="shrink-0 cursor-pointer rounded-lg bg-primary/10 text-primary px-3 py-2 text-[11px] font-semibold hover:bg-primary/20">
+                📷 ផ្ទុក
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    const url = await onUploadCover(file);
+                    if (url) setField("image_url", url);
+                    e.target.value = "";
+                  }}
+                />
+              </label>
+            </div>
+            {f.image_url && (
+              <img
+                src={f.image_url}
+                alt=""
+                className="mt-2 h-24 w-auto rounded-lg ring-1 ring-border object-cover"
+                onError={(e) => ((e.currentTarget as HTMLImageElement).style.display = "none")}
+              />
+            )}
+          </div>
+
+          <label className="space-y-1">
+            <span className="text-muted-foreground">URL វីដេអូ preview</span>
+            <input
+              value={f.preview_video_url ?? ""}
+              placeholder="https://..."
+              onChange={(e) => setField("preview_video_url", e.target.value)}
+              className="w-full rounded-lg bg-input px-3 py-2 outline-none ring-1 ring-border focus:ring-primary"
+            />
+          </label>
+
+          <div className="space-y-1">
+            <div className="flex items-center justify-between">
+              <span className="text-muted-foreground">Screenshots (URLs)</span>
+              <button
+                type="button"
+                onClick={() => setField("screenshots", [...(f.screenshots ?? []), ""])}
+                className="text-[11px] text-primary hover:underline"
+              >
+                + បន្ថែម
+              </button>
+            </div>
+            <div className="space-y-1.5">
+              {(f.screenshots ?? []).map((s, i) => (
+                <div key={i} className="flex items-center gap-2">
+                  <input
+                    value={s}
+                    onChange={(e) => {
+                      const arr = [...(f.screenshots ?? [])];
+                      arr[i] = e.target.value;
+                      setField("screenshots", arr);
+                    }}
+                    placeholder={`screenshot ${i + 1}`}
+                    className="flex-1 rounded-lg bg-input px-3 py-2 outline-none ring-1 ring-border focus:ring-primary"
+                  />
+                  <label className="shrink-0 cursor-pointer rounded-lg bg-accent/40 px-2 py-2 text-[11px] hover:bg-accent">
+                    📷
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        const url = await onUploadCover(file);
+                        if (url) {
+                          const arr = [...(f.screenshots ?? [])];
+                          arr[i] = url;
+                          setField("screenshots", arr);
+                        }
+                        e.target.value = "";
+                      }}
+                    />
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const arr = [...(f.screenshots ?? [])];
+                      arr.splice(i, 1);
+                      setField("screenshots", arr);
+                    }}
+                    className="shrink-0 rounded-lg bg-destructive/10 text-destructive px-2 py-2"
+                  >
+                    <Trash2 className="h-3 w-3" />
+                  </button>
+                </div>
+              ))}
+              {(f.screenshots ?? []).length === 0 && (
+                <p className="text-[11px] text-muted-foreground">គ្មាន screenshot</p>
+              )}
+            </div>
+          </div>
+
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={f.visible}
+              onChange={(e) => setField("visible", e.target.checked)}
+              className="h-4 w-4"
+            />
+            <span>បង្ហាញជាសាធារណៈ</span>
+          </label>
+        </div>
+
+        <DialogFooter>
+          <button
+            type="button"
+            onClick={() => onOpenChange(false)}
+            className="rounded-full bg-muted px-4 py-2 text-xs font-semibold hover:bg-muted/70"
+          >
+            បោះបង់
+          </button>
+          <button
+            type="button"
+            disabled={busy}
+            onClick={save}
+            className="inline-flex items-center gap-1 rounded-full bg-primary text-primary-foreground px-4 py-2 text-xs font-semibold disabled:opacity-50"
+          >
+            <Save className="h-3.5 w-3.5" /> រក្សាទុក
+          </button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
