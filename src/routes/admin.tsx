@@ -467,7 +467,7 @@ function GamesTab() {
 
   // Warn before closing/refreshing tab while an upload is in flight.
   useEffect(() => {
-    if (uploadStage !== "uploading" && uploadStage !== "processing") return;
+    if (uploadStage !== "uploading" && uploadStage !== "processing" && uploadStage !== "paused") return;
     const handler = (e: BeforeUnloadEvent) => {
       e.preventDefault();
       e.returnValue = "";
