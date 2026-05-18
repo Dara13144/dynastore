@@ -851,10 +851,6 @@ function GamesTab() {
     setDraftFile(null);
     setDraftFileError(null);
     setDraftUrlError(null);
-    setS3UploadedKey(null);
-    setS3UploadedSize(null);
-    setS3Pct(null);
-    setS3Error(null);
     loadGames();
     showToast("បន្ថែមរួច");
     setTimeout(() => setUploadStage("idle"), 1500);
