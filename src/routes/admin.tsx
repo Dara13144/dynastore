@@ -1064,13 +1064,175 @@ function GamesTab() {
             {showDiagnostics ? "លាក់" : "បង្ហាញ"} Diagnostics
           </button>
         </div>
-        <button
-          onClick={() => setCreating((v) => !v)}
-          className="inline-flex items-center gap-1.5 rounded-full bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground"
-        >
-          <Plus className="h-3.5 w-3.5" /> បន្ថែមហ្គេម
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setBatchOpen((v) => !v)}
+            className="inline-flex items-center gap-1.5 rounded-full bg-muted/40 px-3 py-1.5 text-xs font-semibold text-foreground ring-1 ring-border hover:bg-muted/60"
+            title="បង្ហោះច្រើនឯកសារក្នុងដងតែមួយ"
+          >
+            <FileArchive className="h-3.5 w-3.5" /> Batch Upload
+          </button>
+          <button
+            onClick={() => setCreating((v) => !v)}
+            className="inline-flex items-center gap-1.5 rounded-full bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground"
+          >
+            <Plus className="h-3.5 w-3.5" /> បន្ថែមហ្គេម
+          </button>
+        </div>
       </div>
+
+      {batchOpen && (
+        <div className="rounded-2xl glass p-4 space-y-3 animate-scale-in origin-top border border-primary/20">
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <h3 className="font-semibold text-sm flex items-center gap-1.5">
+              <FileArchive className="h-4 w-4 text-primary" /> Batch Upload (ច្រើនឯកសារ)
+            </h3>
+            <span className="text-[10px] text-muted-foreground">
+              បង្ហោះម្តងមួយឯកសារ · ទំហំ 1MB–{formatBytes(effectiveMaxBytes())}
+            </span>
+          </div>
+
+          {/* Shared defaults for batch */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+            <label className="block">
+              <span className="block text-[10px] uppercase tracking-wider text-muted-foreground mb-1">ប្រភេទរួម</span>
+              <input
+                value={batchCategory}
+                onChange={(e) => setBatchCategory(e.target.value)}
+                disabled={batchRunning}
+                className="w-full rounded-lg bg-input px-3 py-2 text-xs outline-none ring-1 ring-border focus:ring-primary disabled:opacity-50"
+              />
+            </label>
+            <label className="block">
+              <span className="block text-[10px] uppercase tracking-wider text-muted-foreground mb-1">តម្លៃរួម (Balance)</span>
+              <input
+                type="number"
+                value={batchPrice ? String(batchPrice) : ""}
+                placeholder="0"
+                onChange={(e) => setBatchPrice(Number(e.target.value) || 0)}
+                disabled={batchRunning}
+                className="w-full rounded-lg bg-input px-3 py-2 text-xs outline-none ring-1 ring-border focus:ring-primary disabled:opacity-50"
+              />
+            </label>
+            <label className="flex items-end gap-2 text-xs">
+              <input
+                type="checkbox"
+                checked={batchVisible}
+                onChange={(e) => setBatchVisible(e.target.checked)}
+                disabled={batchRunning}
+                className="h-4 w-4"
+              />
+              បង្ហាញសាធារណៈ
+            </label>
+          </div>
+
+          {/* File picker */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <label className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 text-primary px-3 py-1.5 text-xs font-semibold cursor-pointer hover:bg-primary/20">
+              + ជ្រើសរើសឯកសារ
+              <input
+                type="file"
+                accept=".zip,.rar,.7z,.tar,.gz,.tgz"
+                multiple
+                disabled={batchRunning}
+                className="hidden"
+                onChange={(e) => {
+                  const files = Array.from(e.target.files ?? []);
+                  e.target.value = "";
+                  if (files.length) addBatchFiles(files);
+                }}
+              />
+            </label>
+            <button
+              type="button"
+              onClick={runBatch}
+              disabled={batchRunning || batchItems.filter((it) => it.status === "pending").length === 0}
+              className="inline-flex items-center gap-1.5 rounded-full bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground disabled:opacity-50"
+            >
+              {batchRunning ? "កំពុងបង្ហោះ…" : `ចាប់ផ្តើម Batch (${batchItems.filter((it) => it.status === "pending").length})`}
+            </button>
+            <button
+              type="button"
+              onClick={clearBatch}
+              disabled={batchRunning || batchItems.length === 0}
+              className="inline-flex items-center gap-1.5 rounded-full bg-muted/40 px-3 py-1.5 text-xs text-muted-foreground ring-1 ring-border disabled:opacity-50"
+            >
+              សម្អាត
+            </button>
+          </div>
+
+          {/* Items list */}
+          {batchItems.length > 0 && (
+            <div className="space-y-1.5 max-h-96 overflow-y-auto pr-1">
+              {batchItems.map((it) => {
+                const toneRing =
+                  it.status === "done"
+                    ? "ring-emerald-500/40"
+                    : it.status === "error"
+                      ? "ring-destructive/50"
+                      : it.status === "uploading"
+                        ? "ring-primary/50"
+                        : "ring-border";
+                const toneBar =
+                  it.status === "done"
+                    ? "bg-emerald-400"
+                    : it.status === "error"
+                      ? "bg-destructive"
+                      : "bg-primary";
+                return (
+                  <div key={it.id} className={`rounded-lg bg-card/50 p-2 ring-1 ${toneRing}`}>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-xs font-medium flex-1 truncate" title={it.file.name}>
+                        {it.file.name}
+                      </span>
+                      <span className="text-[10px] text-muted-foreground tabular-nums">
+                        {(it.file.size / 1024 / 1024).toFixed(1)} MB
+                      </span>
+                      <span className="text-[10px] font-mono text-muted-foreground" title="slug">
+                        {it.slug}
+                      </span>
+                      <span
+                        className={`text-[10px] font-semibold uppercase ${
+                          it.status === "done"
+                            ? "text-emerald-400"
+                            : it.status === "error"
+                              ? "text-destructive"
+                              : it.status === "uploading"
+                                ? "text-primary"
+                                : "text-muted-foreground"
+                        }`}
+                      >
+                        {it.status === "uploading" ? `${it.pct.toFixed(0)}%` : it.status}
+                      </span>
+                      {!batchRunning && it.status !== "uploading" && (
+                        <button
+                          type="button"
+                          onClick={() => removeBatchItem(it.id)}
+                          className="text-[10px] text-muted-foreground hover:text-destructive"
+                        >
+                          ×
+                        </button>
+                      )}
+                    </div>
+                    {(it.status === "uploading" || it.status === "done") && (
+                      <div className="mt-1 h-1 w-full overflow-hidden rounded-full bg-muted">
+                        <div
+                          className={`h-full ${toneBar} transition-all`}
+                          style={{ width: `${Math.min(100, it.pct)}%` }}
+                        />
+                      </div>
+                    )}
+                    {it.message && (
+                      <p className="mt-1 text-[10px] text-destructive">{it.message}</p>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
 
       {showDiagnostics && (
         <div className="rounded-2xl glass p-3 text-[11px] font-mono space-y-2 border border-amber-500/30 bg-amber-500/5">
