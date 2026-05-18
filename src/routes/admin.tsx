@@ -2207,7 +2207,10 @@ function GamesTab() {
               </span>
               <DropZone
                 accept="video/*"
+                validate={(f) => validateMediaFile(f, "video").error}
+                onReject={(r) => addRejections("video", r)}
                 onFiles={async (files) => {
+                  clearRejections("video");
                   const url = await runMediaUpload("video", files[0], uploadPreviewVideo);
                   if (url) setDraft({ ...draft, preview_video_url: url });
                 }}
