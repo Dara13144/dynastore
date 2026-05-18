@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { parseBulkLinks, deriveIdFromUrl, summarizeParse } from "./bulk-link-import";
+import { parseBulkLinks, deriveIdFromUrl, summarizeParse, dedupeAgainstExisting } from "./bulk-link-import";
 
 describe("bulk-link-import parser", () => {
   it("ignores blank lines and comments", () => {
