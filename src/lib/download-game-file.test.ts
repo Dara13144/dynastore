@@ -54,10 +54,10 @@ describe("resolveDownloadUrl - external link validation", () => {
     expect(signer).not.toHaveBeenCalled();
   });
 
-  it("rejects http(s) URLs with no file extension", async () => {
+  it("rejects http(s) URLs from unsupported hosts with no file extension", async () => {
     const signer = okSigner();
     const r = await resolveDownloadUrl("https://example.com/", signer);
-    expect(r).toEqual({ ok: false, error: GAME_FILE_URL_ERRORS.BAD_EXTENSION });
+    expect(r).toEqual({ ok: false, error: GAME_FILE_URL_ERRORS.UNSUPPORTED_HOST });
     expect(signer).not.toHaveBeenCalled();
   });
 
