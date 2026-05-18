@@ -2186,6 +2186,10 @@ function GamesTab() {
                     message={m.message}
                   />
                 ))}
+              <RejectedFilesBanner
+                items={rejectedByKind.screenshot}
+                onClear={() => clearRejections("screenshot")}
+              />
               <ScreenshotUrlAdder
                 onAdd={(url) =>
                   setDraft((d) => ({ ...d, screenshots: [...d.screenshots, url] }))
