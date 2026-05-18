@@ -1151,6 +1151,42 @@ function GamesTab() {
     updateBatchItem(batchCurrentRef.current, { pct: uploadPct });
   }, [uploadPct, batchRunning]);
 
+  // Aggregate batch progress: bytes done from finished items + live bytes of
+  // the currently uploading item, divided by total batch bytes.
+  const batchAggregate = (() => {
+    const total = batchItems.reduce((s, it) => s + (it.file.size || 0), 0);
+    let sent = 0;
+    for (const it of batchItems) {
+      if (it.status === "done") sent += it.file.size || 0;
+      else if (it.status === "uploading" && uploadStats) sent += Math.min(uploadStats.sent, it.file.size || 0);
+    }
+    const speedBps = uploadStats?.speedBps ?? 0;
+    const remaining = Math.max(0, total - sent);
+    const etaSec = speedBps > 0 ? remaining / speedBps : 0;
+    const pct = total > 0 ? (sent / total) * 100 : 0;
+    const done = batchItems.filter((it) => it.status === "done").length;
+    const errored = batchItems.filter((it) => it.status === "error").length;
+    return { total, sent, speedBps, etaSec, pct, done, errored, count: batchItems.length };
+  })();
+
+  const fmtSpeed = (bps: number) =>
+    bps >= 1024 * 1024
+      ? `${(bps / 1024 / 1024).toFixed(1)} MB/s`
+      : bps >= 1024
+        ? `${(bps / 1024).toFixed(0)} KB/s`
+        : `${bps.toFixed(0)} B/s`;
+  const fmtEta = (sec: number) => {
+    if (!Number.isFinite(sec) || sec <= 0) return "—";
+    const s = Math.round(sec);
+    if (s < 60) return `${s}វិ`;
+    const m = Math.floor(s / 60);
+    const rem = s % 60;
+    if (m < 60) return `${m}ន ${rem}វិ`;
+    const h = Math.floor(m / 60);
+    return `${h}ម៉ ${m % 60}ន`;
+  };
+
+
   const addBatchFiles = (files: File[]) => {
     const taken = new Set<string>([
       ...games.map((g) => g.id),
