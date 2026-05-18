@@ -13,23 +13,25 @@ cleanup() {
 trap cleanup EXIT
 
 run_case() {
-  local label="$1" size="$2" expect="$3"   # expect: ok | reject
+  local label="$1" size="$2" expect="$3" provider="${4:-supabase}" file_path="${5:-}"
   local id="${TEST_PREFIX}_$(echo "$label" | tr -c 'a-zA-Z0-9' '_')"
   local sql_size
   if [ "$size" = "NULL" ]; then sql_size="NULL"; else sql_size="$size"; fi
+  local sql_path
+  if [ -z "$file_path" ]; then sql_path="NULL"; else sql_path="'$(echo "$file_path" | sed "s/'/''/g")'"; fi
 
   local out
   out=$(psql -v ON_ERROR_STOP=1 -q -c \
-    "INSERT INTO public.games (id, title, category, price_coins, visible, file_size_bytes)
-     VALUES ('${id}', 't', 'c', 0, false, ${sql_size});" 2>&1)
+    "INSERT INTO public.games (id, title, category, price_coins, visible, file_size_bytes, storage_provider, file_path)
+     VALUES ('${id}', 't', 'c', 0, false, ${sql_size}, '${provider}', ${sql_path});" 2>&1)
   local rc=$?
 
   if [ "$expect" = "ok" ] && [ $rc -eq 0 ]; then
-    echo "PASS  $label  (size=$size accepted)"; PASS=$((PASS+1))
+    echo "PASS  $label  (size=$size provider=$provider accepted)"; PASS=$((PASS+1))
   elif [ "$expect" = "reject" ] && [ $rc -ne 0 ] && echo "$out" | grep -q "games_file_size_bytes_range"; then
-    echo "PASS  $label  (size=$size rejected by CHECK)"; PASS=$((PASS+1))
+    echo "PASS  $label  (size=$size provider=$provider rejected by CHECK)"; PASS=$((PASS+1))
   else
-    echo "FAIL  $label  (size=$size, rc=$rc, expect=$expect)"
+    echo "FAIL  $label  (size=$size provider=$provider, rc=$rc, expect=$expect)"
     echo "      $out"
     FAIL=$((FAIL+1))
   fi
