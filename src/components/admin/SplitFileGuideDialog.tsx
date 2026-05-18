@@ -110,7 +110,7 @@ export function SplitFileGuideDialog({
 
           <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-2.5 text-[11px] text-amber-700 dark:text-amber-300">
             <strong>Tip:</strong> Upload រាល់ part ជា game ដាច់ដោយឡែក
-            (Part 1 / Part 2 …) ឬប្ដូរទៅ <strong>AWS S3</strong> / <strong>External URL</strong>{" "}
+            (Part 1 / Part 2 …) ឬប្ដូរទៅ <strong>External URL</strong>{" "}
             ដើម្បីជៀស cap នេះទាំងស្រុង។
           </div>
         </div>
@@ -119,11 +119,6 @@ export function SplitFileGuideDialog({
           {onSwitchToLibrary && (
             <Button type="button" onClick={onSwitchToLibrary} className="bg-emerald-600 hover:bg-emerald-700 text-white">
               <LinkIcon className="h-3.5 w-3.5 mr-1.5" /> ប្រើ External URL (មិនបាច់បំបែក)
-            </Button>
-          )}
-          {onSwitchToExternal && (
-            <Button type="button" variant="outline" onClick={onSwitchToExternal}>
-              <Cloud className="h-3.5 w-3.5 mr-1.5" /> ប្ដូរទៅ AWS S3
             </Button>
           )}
           <Button type="button" variant="ghost" onClick={onClose}>យល់ហើយ</Button>
