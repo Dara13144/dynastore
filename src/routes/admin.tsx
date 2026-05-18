@@ -1578,6 +1578,136 @@ function GamesTab() {
         </div>
       )}
 
+      <Dialog open={bulkLinksOpen} onOpenChange={(o) => !bulkLinksRunning && setBulkLinksOpen(o)}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <LinkIcon className="h-4 w-4" /> Bulk Link Import
+            </DialogTitle>
+            <DialogDescription>
+              បិទភ្ជាប់តំណមួយក្នុងមួយជួរ ឬ <code>id|title|category|price|url</code>។ បន្ទាប់មក Parse → Import។
+            </DialogDescription>
+          </DialogHeader>
+          <textarea
+            value={bulkLinksText}
+            onChange={(e) => setBulkLinksText(e.target.value)}
+            disabled={bulkLinksRunning}
+            rows={8}
+            placeholder={"https://cdn.example.com/cool-game.zip\nacid|Acid Quest|RPG|150|https://x.example/acid.zip"}
+            className="w-full rounded-lg bg-input px-3 py-2 text-xs font-mono outline-none ring-1 ring-border focus:ring-primary disabled:opacity-50"
+          />
+          <div className="flex items-center justify-between gap-2 flex-wrap">
+            <button
+              type="button"
+              disabled={bulkLinksRunning || !bulkLinksText.trim()}
+              onClick={() => setBulkLinksParsed(parseBulkLinks(bulkLinksText))}
+              className="rounded-full bg-muted/40 px-3 py-1.5 text-xs font-semibold ring-1 ring-border hover:bg-muted/60 disabled:opacity-50"
+            >
+              Parse
+            </button>
+            {bulkLinksParsed.length > 0 && (() => {
+              const s = summarizeParse(bulkLinksParsed);
+              return (
+                <span className="text-[11px] text-muted-foreground">
+                  {s.valid}/{s.total} ត្រឹមត្រូវ · {s.invalid} ខុស
+                </span>
+              );
+            })()}
+          </div>
+          {bulkLinksParsed.length > 0 && (
+            <div className="max-h-56 overflow-auto rounded-lg ring-1 ring-border text-[11px]">
+              <table className="w-full">
+                <thead className="bg-muted/30 sticky top-0">
+                  <tr><th className="px-2 py-1 text-left">#</th><th className="px-2 py-1 text-left">id</th><th className="px-2 py-1 text-left">title</th><th className="px-2 py-1 text-left">price</th><th className="px-2 py-1 text-left">ស្ថានភាព</th></tr>
+                </thead>
+                <tbody>
+                  {bulkLinksParsed.map((r) => {
+                    const log = bulkLinksLog.find((l) => l.id === r.draft?.id);
+                    return (
+                      <tr key={r.lineNumber} className="border-t border-border/40">
+                        <td className="px-2 py-1 text-muted-foreground">{r.lineNumber}</td>
+                        <td className="px-2 py-1 font-mono">{r.draft?.id ?? "—"}</td>
+                        <td className="px-2 py-1 truncate max-w-[200px]">{r.draft?.title ?? r.raw}</td>
+                        <td className="px-2 py-1">{r.draft?.price_coins ?? "—"}</td>
+                        <td className={`px-2 py-1 ${r.ok ? (log?.status === "fail" ? "text-rose-400" : log?.status === "ok" ? "text-emerald-400" : "text-foreground") : "text-rose-400"}`}>
+                          {r.ok ? (log ? (log.status === "ok" ? "✓ បានបន្ថែម" : `✗ ${log.message ?? "បរាជ័យ"}`) : "រង់ចាំ") : r.error}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+          <DialogFooter>
+            <button
+              type="button"
+              onClick={() => setBulkLinksOpen(false)}
+              disabled={bulkLinksRunning}
+              className="rounded-full bg-muted/40 px-3 py-1.5 text-xs font-semibold ring-1 ring-border hover:bg-muted/60 disabled:opacity-50"
+            >
+              បិទ
+            </button>
+            <button
+              type="button"
+              disabled={
+                bulkLinksRunning ||
+                bulkLinksParsed.filter((r) => r.ok).length === 0
+              }
+              onClick={async () => {
+                setBulkLinksRunning(true);
+                setBulkLinksLog([]);
+                const results: Array<{ id: string; status: "ok" | "fail"; message?: string }> = [];
+                for (const row of bulkLinksParsed) {
+                  if (!row.ok || !row.draft) continue;
+                  const d = row.draft;
+                  const res = await submitCreateGame(
+                    {
+                      id: d.id,
+                      title: d.title,
+                      category: d.category,
+                      description: "",
+                      badge: "",
+                      price_coins: d.price_coins,
+                      visible: true,
+                      image_url: "",
+                      storage_provider: "external_url",
+                      external_file: { path: d.url, size: null },
+                    },
+                    null,
+                    {
+                      uploadFile: async () => null,
+                      insertGame: async (row) => {
+                        const { error } = await supabase.from("games").insert(row);
+                        return { error: error ? { message: error.message } : null };
+                      },
+                    },
+                  );
+                  results.push(
+                    res.ok
+                      ? { id: d.id, status: "ok" }
+                      : { id: d.id, status: "fail", message: res.message },
+                  );
+                  setBulkLinksLog([...results]);
+                }
+                setBulkLinksRunning(false);
+                await loadGames();
+                const okCount = results.filter((r) => r.status === "ok").length;
+                showToast(`បាននាំចូល ${okCount}/${results.length} តំណ`);
+              }}
+              className="rounded-full bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground disabled:opacity-50"
+            >
+              {bulkLinksRunning ? (
+                <span className="inline-flex items-center gap-1.5"><Loader2 className="h-3 w-3 animate-spin" /> កំពុងនាំចូល…</span>
+              ) : (
+                `នាំចូល ${bulkLinksParsed.filter((r) => r.ok).length} តំណ`
+              )}
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+
 
       {showDiagnostics && (
         <div className="rounded-2xl glass p-3 text-[11px] font-mono space-y-2 border border-amber-500/30 bg-amber-500/5">
