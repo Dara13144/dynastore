@@ -48,6 +48,7 @@ import {
 import { logUploadEvent } from "@/lib/upload-audit";
 import { DownloadLogsTab } from "@/components/admin/DownloadLogsTab";
 import { UploadAuditTab } from "@/components/admin/UploadAuditTab";
+import { DiagnosticsTab } from "@/components/admin/DiagnosticsTab";
 import { SplitFileGuideDialog } from "@/components/admin/SplitFileGuideDialog";
 import { isPlatformCapError } from "@/lib/chunk-plan";
 import { DashboardTab } from "@/components/admin/DashboardTab";
