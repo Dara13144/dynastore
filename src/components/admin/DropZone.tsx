@@ -3,12 +3,22 @@
 // dragging files over the zone highlights it, dropping triggers onFiles.
 import { useCallback, useRef, useState } from "react";
 
+export interface RejectedFile {
+  name: string;
+  size: number;
+  reason: string;
+}
+
 export interface DropZoneProps {
   /** MIME / extension filter, e.g. "image/*" or ".zip,.rar". */
   accept?: string;
   multiple?: boolean;
   disabled?: boolean;
   onFiles: (files: File[]) => void;
+  /** Optional per-file validation. Return error message string, or null when valid. */
+  validate?: (file: File) => string | null;
+  /** Called with files rejected by accept-filter OR by `validate`. */
+  onReject?: (rejections: RejectedFile[]) => void;
   className?: string;
   /** Visible content (button, tile, label, etc.). */
   children: React.ReactNode;
