@@ -2117,11 +2117,59 @@ function GamesTab() {
                 )}
               </div>
               {draft.preview_video_url && (
-                <video
-                  src={draft.preview_video_url}
-                  controls
-                  className="mt-2 h-40 rounded-lg ring-1 ring-border"
-                />
+                <div>
+                  <video
+                    src={draft.preview_video_url}
+                    controls
+                    className="mt-2 h-40 rounded-lg ring-1 ring-border"
+                  />
+                  <div className="mt-1 flex items-center gap-2 text-[10px]">
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        const { createSignedMediaUrl } = await import("@/lib/signed-media-url");
+                        const r = await createSignedMediaUrl(
+                          draft.preview_video_url!,
+                          "game-images",
+                          { download: true },
+                        );
+                        if (!r.ok) {
+                          showToast(r.error!);
+                          return;
+                        }
+                        window.open(r.url!, "_blank", "noopener,noreferrer");
+                      }}
+                      className="text-emerald-400 hover:underline"
+                      title="ទាញយកវីដេអូ (signed URL, 1 ម៉ោង)"
+                    >
+                      ⬇ Download
+                    </button>
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        const { createSignedMediaUrl } = await import("@/lib/signed-media-url");
+                        const r = await createSignedMediaUrl(
+                          draft.preview_video_url!,
+                          "game-images",
+                        );
+                        if (!r.ok) {
+                          showToast(r.error!);
+                          return;
+                        }
+                        try {
+                          await navigator.clipboard.writeText(r.url!);
+                          showToast("បានចម្លង signed URL (ផុតក្នុង 1 ម៉ោង)");
+                        } catch {
+                          showToast("ចម្លងបរាជ័យ");
+                        }
+                      }}
+                      className="text-primary hover:underline"
+                      title="ចម្លង signed URL (1 ម៉ោង)"
+                    >
+                      ⧉ Copy URL
+                    </button>
+                  </div>
+                </div>
               )}
             </div>
 
@@ -2945,28 +2993,50 @@ function GameRowEditor({
           <span className="text-[11px] text-muted-foreground">—</span>
         )}
         <div className="flex items-center justify-center gap-2 mt-1">
-          {game.file_path && (
-            <button
-              type="button"
-              onClick={async () => {
-                const { resolveDownloadUrl } = await import("@/lib/download-game-file");
-                const result = await resolveDownloadUrl(
-                  game.file_path,
-                  (path, exp, opts) =>
-                    supabase.storage.from("game-files").createSignedUrl(path, exp, opts),
-                  { forceDownload: true },
-                );
-                if (!result.ok) {
-                  onValidationError(result.error);
-                  return;
-                }
-                window.open(result.url, "_blank", "noopener,noreferrer");
-              }}
-              className="text-[10px] text-emerald-400 hover:underline"
-            >
-              ទាញយក
-            </button>
+          {game.file_path && !/^https?:\/\//i.test(game.file_path) && (
+            <>
+              <button
+                type="button"
+                onClick={async () => {
+                  const { createSignedMediaUrl } = await import("@/lib/signed-media-url");
+                  const r = await createSignedMediaUrl(game.file_path!, "game-files", {
+                    download: true,
+                  });
+                  if (!r.ok) {
+                    onValidationError(r.error!);
+                    return;
+                  }
+                  window.open(r.url!, "_blank", "noopener,noreferrer");
+                }}
+                className="text-[10px] text-emerald-400 hover:underline"
+                title="ទាញយកដោយប្រើ signed URL (មាន 1 ម៉ោង)"
+              >
+                ⬇ ទាញយក
+              </button>
+              <button
+                type="button"
+                onClick={async () => {
+                  const { createSignedMediaUrl } = await import("@/lib/signed-media-url");
+                  const r = await createSignedMediaUrl(game.file_path!, "game-files");
+                  if (!r.ok) {
+                    onValidationError(r.error!);
+                    return;
+                  }
+                  try {
+                    await navigator.clipboard.writeText(r.url!);
+                    onValidationError("បានចម្លង signed URL (ផុតក្នុង 1 ម៉ោង)");
+                  } catch {
+                    onValidationError("ចម្លងបរាជ័យ — សូមចម្លងដោយដៃ");
+                  }
+                }}
+                className="text-[10px] text-primary hover:underline"
+                title="ចម្លង signed URL (មាន 1 ម៉ោង)"
+              >
+                ⧉ Copy
+              </button>
+            </>
           )}
+
           <label title={`ផ្ទុកឯកសារ zip/rar/7z/tar/gz · អតិបរមា ${maxUploadLabel}`}>
             <span className="text-[10px] text-primary cursor-pointer hover:underline">
               {game.file_path ? "ប្តូរ" : "ផ្ទុកឡើង"}
