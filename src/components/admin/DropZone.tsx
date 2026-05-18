@@ -51,6 +51,8 @@ export function DropZone({
   multiple = false,
   disabled = false,
   onFiles,
+  validate,
+  onReject,
   className = "",
   children,
   title,
@@ -89,11 +91,30 @@ export function DropZone({
       if (disabled) return;
       const dropped = Array.from(e.dataTransfer.files ?? []);
       if (dropped.length === 0) return;
-      const filtered = filterByAccept(dropped, accept);
-      if (filtered.length === 0) return;
-      onFiles(multiple ? filtered : [filtered[0]]);
+      const accepted: File[] = [];
+      const rejected: RejectedFile[] = [];
+      const hint = acceptHint(accept);
+      for (const f of dropped) {
+        if (!acceptMatch(f, accept)) {
+          rejected.push({
+            name: f.name,
+            size: f.size,
+            reason: `ប្រភេទឯកសារមិនត្រឹមត្រូវ — តម្រូវ ${hint}`,
+          });
+          continue;
+        }
+        const err = validate ? validate(f) : null;
+        if (err) {
+          rejected.push({ name: f.name, size: f.size, reason: err });
+          continue;
+        }
+        accepted.push(f);
+      }
+      if (rejected.length) onReject?.(rejected);
+      if (accepted.length === 0) return;
+      onFiles(multiple ? accepted : [accepted[0]]);
     },
-    [accept, disabled, multiple, onFiles],
+    [accept, disabled, multiple, onFiles, validate, onReject],
   );
 
   return (
