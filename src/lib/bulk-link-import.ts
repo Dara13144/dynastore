@@ -28,7 +28,19 @@ const DELIMS = /\t|\|/;
 export function deriveIdFromUrl(url: string): string {
   try {
     const u = new URL(url);
-    const last = u.pathname.split("/").filter(Boolean).pop() ?? "";
+    // Prefer pathname filename; fall back to any query value that looks like
+    // a file path (e.g. ?f=/alpha4/abc/game.rar).
+    let last = u.pathname.split("/").filter(Boolean).pop() ?? "";
+    const looksLikeFile = ALLOWED_GAME_FILE_EXTS.some((ext) => last.toLowerCase().endsWith(ext));
+    if (!looksLikeFile) {
+      for (const [, v] of u.searchParams) {
+        const cand = v.split("/").filter(Boolean).pop() ?? "";
+        if (ALLOWED_GAME_FILE_EXTS.some((ext) => cand.toLowerCase().endsWith(ext))) {
+          last = cand;
+          break;
+        }
+      }
+    }
     const base = ALLOWED_GAME_FILE_EXTS.reduce(
       (acc, ext) => (acc.toLowerCase().endsWith(ext) ? acc.slice(0, -ext.length) : acc),
       last,
