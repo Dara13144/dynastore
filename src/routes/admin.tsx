@@ -1827,10 +1827,6 @@ function GamesTab() {
           setSourceMode("library");
           setSplitGuideOpen(false);
         }}
-        onSwitchToExternal={() => {
-          setSourceMode("s3");
-          setSplitGuideOpen(false);
-        }}
       />
     </div>
   );
