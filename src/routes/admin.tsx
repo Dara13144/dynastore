@@ -2113,7 +2113,10 @@ function GamesTab() {
                 accept="image/*"
                 multiple
                 className="rounded-lg p-1"
+                validate={(f) => validateMediaFile(f, "screenshot").error}
+                onReject={(r) => addRejections("screenshot", r)}
                 onFiles={async (files) => {
+                  clearRejections("screenshot");
                   const uploaded: string[] = [];
                   for (const f of files) {
                     const u = await runMediaUpload("screenshot", f, uploadScreenshot);
