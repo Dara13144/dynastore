@@ -1291,6 +1291,15 @@ function GamesTab() {
             </label>
             <button
               type="button"
+              onClick={runPreflightOnly}
+              disabled={batchRunning || batchItems.filter((it) => it.status === "pending").length === 0}
+              className="inline-flex items-center gap-1.5 rounded-full bg-muted/40 px-3 py-1.5 text-xs font-semibold text-foreground ring-1 ring-border disabled:opacity-50"
+              title="ពិនិត្យ slug + ទំហំឯកសារ មុនបង្ហោះ"
+            >
+              Preflight
+            </button>
+            <button
+              type="button"
               onClick={runBatch}
               disabled={batchRunning || batchItems.filter((it) => it.status === "pending").length === 0}
               className="inline-flex items-center gap-1.5 rounded-full bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground disabled:opacity-50"
