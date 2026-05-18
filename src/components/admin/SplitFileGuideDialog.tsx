@@ -28,9 +28,9 @@ export function SplitFileGuideDialog({
   open,
   onClose,
   fileSize,
-  onSwitchToExternal,
   onSwitchToLibrary,
 }: Props) {
+  // (onSwitchToExternal removed alongside S3 cleanup)
   const cap = PLATFORM_PER_UPLOAD_CAP;
   const examples = [
     100 * 1024 ** 3,
