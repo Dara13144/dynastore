@@ -578,6 +578,20 @@ function GamesTab() {
         "x-upsert": "true",
       };
 
+      // Audit helper: fire-and-forget, captures gameId + file metadata + latest offset.
+      const audit = (event_type: Parameters<typeof logUploadEvent>[0]["event_type"], extra?: { message?: string; attempt?: number }) => {
+        void logUploadEvent({
+          event_type,
+          game_id: gameId,
+          file_name: file.name,
+          file_size_bytes: file.size,
+          offset_bytes: lastSent,
+          attempt: extra?.attempt ?? (netRetryCount > 0 ? netRetryCount : null),
+          message: extra?.message ?? null,
+        });
+      };
+      audit("start");
+
       const cleanupPending = () => {
         if (pendingOnlineHandler) {
           try { window.removeEventListener("online", pendingOnlineHandler); } catch { /* ignore */ }
