@@ -45,6 +45,7 @@ import {
   friendlyUploadError as friendlyUploadErrorPure,
   oversizeForBucketMessage,
 } from "@/lib/upload-error-messages";
+import { logUploadEvent } from "@/lib/upload-audit";
 import { DownloadLogsTab } from "@/components/admin/DownloadLogsTab";
 import { SplitFileGuideDialog } from "@/components/admin/SplitFileGuideDialog";
 import { isPlatformCapError } from "@/lib/chunk-plan";
