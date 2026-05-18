@@ -1151,6 +1151,42 @@ function GamesTab() {
     updateBatchItem(batchCurrentRef.current, { pct: uploadPct });
   }, [uploadPct, batchRunning]);
 
+  // Aggregate batch progress: bytes done from finished items + live bytes of
+  // the currently uploading item, divided by total batch bytes.
+  const batchAggregate = (() => {
+    const total = batchItems.reduce((s, it) => s + (it.file.size || 0), 0);
+    let sent = 0;
+    for (const it of batchItems) {
+      if (it.status === "done") sent += it.file.size || 0;
+      else if (it.status === "uploading" && uploadStats) sent += Math.min(uploadStats.sent, it.file.size || 0);
+    }
+    const speedBps = uploadStats?.speedBps ?? 0;
+    const remaining = Math.max(0, total - sent);
+    const etaSec = speedBps > 0 ? remaining / speedBps : 0;
+    const pct = total > 0 ? (sent / total) * 100 : 0;
+    const done = batchItems.filter((it) => it.status === "done").length;
+    const errored = batchItems.filter((it) => it.status === "error").length;
+    return { total, sent, speedBps, etaSec, pct, done, errored, count: batchItems.length };
+  })();
+
+  const fmtSpeed = (bps: number) =>
+    bps >= 1024 * 1024
+      ? `${(bps / 1024 / 1024).toFixed(1)} MB/s`
+      : bps >= 1024
+        ? `${(bps / 1024).toFixed(0)} KB/s`
+        : `${bps.toFixed(0)} B/s`;
+  const fmtEta = (sec: number) => {
+    if (!Number.isFinite(sec) || sec <= 0) return "—";
+    const s = Math.round(sec);
+    if (s < 60) return `${s}វិ`;
+    const m = Math.floor(s / 60);
+    const rem = s % 60;
+    if (m < 60) return `${m}ន ${rem}វិ`;
+    const h = Math.floor(m / 60);
+    return `${h}ម៉ ${m % 60}ន`;
+  };
+
+
   const addBatchFiles = (files: File[]) => {
     const taken = new Set<string>([
       ...games.map((g) => g.id),
@@ -1507,6 +1543,22 @@ function GamesTab() {
           </div>
 
           {/* Items list */}
+          {batchRunning && batchAggregate.count > 0 && (
+            <div className="rounded-lg bg-card/60 p-2.5 ring-1 ring-primary/30 space-y-1.5">
+              <div className="flex items-center justify-between text-[11px] font-medium flex-wrap gap-2">
+                <span>
+                  Batch: {batchAggregate.done}/{batchAggregate.count} ឯកសារ
+                  {batchAggregate.errored > 0 && <span className="text-destructive"> · {batchAggregate.errored} បរាជ័យ</span>}
+                </span>
+                <span className="tabular-nums text-muted-foreground">
+                  {formatBytes(batchAggregate.sent)} / {formatBytes(batchAggregate.total)} · {fmtSpeed(batchAggregate.speedBps)} · ETA {fmtEta(batchAggregate.etaSec)}
+                </span>
+              </div>
+              <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+                <div className="h-full bg-primary transition-all" style={{ width: `${Math.min(100, batchAggregate.pct)}%` }} />
+              </div>
+            </div>
+          )}
           {batchItems.length > 0 && (
             <div className="space-y-1.5 max-h-96 overflow-y-auto pr-1">
               {batchItems.map((it) => {
@@ -1549,6 +1601,12 @@ function GamesTab() {
                       >
                         {it.status === "uploading" ? `${it.pct.toFixed(0)}%` : it.status}
                       </span>
+                      {it.status === "uploading" && uploadStats && (
+                        <span className="text-[10px] text-muted-foreground tabular-nums" title="ល្បឿន · ETA">
+                          {fmtSpeed(uploadStats.speedBps)} · ETA {fmtEta(uploadStats.etaSec)}
+                        </span>
+                      )}
+                      {/* end progress meta */}
                       {!batchRunning && it.status !== "uploading" && (
                         <button
                           type="button"
