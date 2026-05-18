@@ -46,6 +46,13 @@ run_case "exactly_1000gib"                  "1073741824000"             "ok"    
 run_case "above_1000gib_just_over"          "1073741824001"             "reject"
 run_case "way_above_1000gib"                "9999999999999"             "reject"
 
+
+# --- MiB/GiB semantics: prove binary thresholds, not decimal ---
+run_case "mib_semantics_1MB_decimal"        "1000000"                   "reject"   # 1 MB (10^6) < 1 MiB → must reject
+run_case "mib_semantics_999999"             "999999"                    "reject"
+run_case "gib_semantics_1000GB_decimal"     "1000000000000"             "ok"       # 1000 GB (10^12) < 1000 GiB → accept
+run_case "gib_semantics_1TiB"               "1099511627776"             "reject"   # 1 TiB > 1000 GiB → reject
+run_case "gib_semantics_999GiB"             "1072693248000"             "ok"       # 999 GiB → accept
 echo
 echo "=============================="
 echo "PASSED: $PASS    FAILED: $FAIL"
