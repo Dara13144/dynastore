@@ -486,6 +486,16 @@ function GamesTab() {
     showToast("Upload បានបោះបង់");
   };
 
+  const pauseUpload = () => {
+    if (!uploadRef.current?.pause) return;
+    uploadRef.current.pause();
+  };
+
+  const resumeUpload = () => {
+    if (!uploadRef.current?.resume) return;
+    uploadRef.current.resume();
+  };
+
   const uploadFile = async (
     gameId: string,
     file: File,
