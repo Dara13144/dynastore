@@ -158,7 +158,7 @@ describe("runUploadFlow — TUS upload near bucket limit", () => {
   });
 
   it("uses the direct (non-TUS) uploader for files at/under the 1MB threshold", async () => {
-    const file = fakeFile("tiny.zip", 0.8 * 1024 * 1024);
+    const file = fakeFile("tiny.zip", 1 * 1024 * 1024);
     const direct = vi.fn(async () => ({ error: null }));
     const resumable = simulatedTusUploader();
 
