@@ -396,6 +396,11 @@ function GamesTab() {
     mime: string;
     provider: "supabase" | "s3" | "external_url";
     bucket?: string;
+    uploadedAt?: string;
+    processedAt?: string;
+    checksum?: string;
+    checksumAlgo?: string;
+    checksumSkippedReason?: string;
   } | null>(null);
   const [splitGuideOpen, setSplitGuideOpen] = useState(false);
   const uploadRef = useRef<{ abort: () => void } | null>(null);
