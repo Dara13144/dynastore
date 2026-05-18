@@ -187,12 +187,12 @@ describe("TUS resume across offline → online", () => {
   });
 
   it("survives multiple offline → online cycles without ever exceeding file size in received bytes", async () => {
-    const fileSize = 512 * 1024; // 512 KiB
+    const fileSize = 4 * 1024 * 1024; // 4 MiB
     const file = fakeFile("flicker.zip", fileSize);
     const server = makeFakeTusServer();
 
-    // Drop the connection at 128 KiB, then again at 320 KiB, finally complete.
-    const dropOffsets = [128 * 1024, 320 * 1024];
+    // Drop the connection at 1 MiB, then again at 2.5 MiB, finally complete.
+    const dropOffsets = [1 * 1024 * 1024, Math.floor(2.5 * 1024 * 1024)];
     let attempt = 0;
     let path: string | undefined;
 
