@@ -28,19 +28,22 @@ export interface DropZoneProps {
   ariaLabel?: string;
 }
 
-function filterByAccept(files: File[], accept?: string): File[] {
-  if (!accept) return files;
+function acceptMatch(file: File, accept?: string): boolean {
+  if (!accept) return true;
   const parts = accept.split(",").map((p) => p.trim().toLowerCase()).filter(Boolean);
-  if (parts.length === 0) return files;
-  return files.filter((f) => {
-    const name = f.name.toLowerCase();
-    const type = f.type.toLowerCase();
-    return parts.some((p) => {
-      if (p.startsWith(".")) return name.endsWith(p);
-      if (p.endsWith("/*")) return type.startsWith(p.slice(0, -1));
-      return type === p;
-    });
+  if (parts.length === 0) return true;
+  const name = file.name.toLowerCase();
+  const type = file.type.toLowerCase();
+  return parts.some((p) => {
+    if (p.startsWith(".")) return name.endsWith(p);
+    if (p.endsWith("/*")) return type.startsWith(p.slice(0, -1));
+    return type === p;
   });
+}
+
+function acceptHint(accept?: string): string {
+  if (!accept) return "";
+  return accept;
 }
 
 export function DropZone({
