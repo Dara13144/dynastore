@@ -34,9 +34,7 @@ export const getGameDownloadUrl = createServerFn({ method: "POST" })
 
     const provider = (game as { storage_provider?: string }).storage_provider ?? "supabase";
     let url: string;
-    if (provider === "s3") {
-      url = await signS3ReadUrl(game.file_path);
-    } else if (provider === "external_url" || /^https?:\/\//i.test(game.file_path)) {
+    if (provider === "external_url" || /^https?:\/\//i.test(game.file_path)) {
       url = game.file_path;
     } else {
       const { data: signed, error } = await supabaseAdmin.storage
