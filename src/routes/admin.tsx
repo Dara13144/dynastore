@@ -1313,6 +1313,9 @@ function GamesTab() {
       }
     }
     batchCurrentRef.current = null;
+    batchPausedRef.current = false;
+    setBatchPaused(false);
+    batchResumeWaiterRef.current?.();
     setBatchRunning(false);
     setUploadStage("idle");
     setUploadPct(null);
