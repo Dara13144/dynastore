@@ -34,6 +34,9 @@ jobs:
             exit 1
           fi
 
+      - name: Verify @/components imports resolve to real exports
+        run: node scripts/check-component-imports.mjs
+
   test:
     name: Lint, Unit Tests & Build
     runs-on: ubuntu-latest
