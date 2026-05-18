@@ -2106,17 +2106,41 @@ function GameRowEditor({
       </td>
       <td className="px-4 py-3 text-center">
         {game.file_path ? (
-          <span
-            className="inline-flex items-center gap-1 text-[11px] text-emerald-400"
-            title={game.file_path}
-          >
-            <FileArchive className="h-3 w-3" />{" "}
-            {game.file_size_bytes
-              ? game.file_size_bytes >= 1024 ** 3
-                ? `${(game.file_size_bytes / 1024 ** 3).toFixed(2)}GB`
-                : `${(game.file_size_bytes / 1024 / 1024).toFixed(1)}MB`
-              : "ok"}
-          </span>
+          <div className="flex flex-col items-center gap-0.5">
+            <span
+              className="inline-flex items-center gap-1 text-[11px] text-emerald-400"
+              title={game.file_path}
+            >
+              <FileArchive className="h-3 w-3" />{" "}
+              {game.file_size_bytes
+                ? game.file_size_bytes >= 1024 ** 3
+                  ? `${(game.file_size_bytes / 1024 ** 3).toFixed(2)}GB`
+                  : `${(game.file_size_bytes / 1024 / 1024).toFixed(1)}MB`
+                : "ok"}
+            </span>
+            {/^https?:\/\//i.test(game.file_path) ? (
+              <a
+                href={game.file_path}
+                target="_blank"
+                rel="noopener noreferrer"
+                title={game.file_path}
+                className="block max-w-[180px] truncate text-[10px] text-primary hover:underline"
+              >
+                {game.file_path}
+              </a>
+            ) : (
+              <button
+                type="button"
+                title={`ចម្លង path: ${game.file_path}`}
+                onClick={() => {
+                  navigator.clipboard?.writeText(game.file_path ?? "");
+                }}
+                className="block max-w-[180px] truncate text-[10px] font-mono text-muted-foreground hover:text-primary hover:underline"
+              >
+                {game.file_path}
+              </button>
+            )}
+          </div>
         ) : (
           <span className="text-[11px] text-muted-foreground">—</span>
         )}
