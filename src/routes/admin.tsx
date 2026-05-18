@@ -1263,6 +1263,8 @@ function GamesTab() {
     }
     setBatchRunning(true);
     for (const item of queue) {
+      // Block here if user paused the queue between items.
+      await waitWhilePaused();
       batchCurrentRef.current = item.id;
       updateBatchItem(item.id, { status: "uploading", pct: 0, message: undefined });
       setUploadError(null);
