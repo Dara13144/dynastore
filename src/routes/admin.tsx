@@ -1255,7 +1255,6 @@ function GamesTab() {
                     setSourceMode("file");
                     setDraft({ ...draft, file_path: null });
                     setDraftUrlError(null);
-                    setS3UploadedKey(null);
                   }}
                   className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-semibold transition ${sourceMode === "file" ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}
                 >
@@ -1264,22 +1263,9 @@ function GamesTab() {
                 <button
                   type="button"
                   onClick={() => {
-                    setSourceMode("s3");
-                    setDraft({ ...draft, file_path: null });
-                    setDraftFile(null);
-                    setDraftFileError(null);
-                  }}
-                  className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-semibold transition ${sourceMode === "s3" ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}
-                >
-                  <Cloud className="h-3 w-3" /> AWS S3
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
                     setSourceMode("library");
                     setDraftFile(null);
                     setDraftFileError(null);
-                    setS3UploadedKey(null);
                   }}
                   className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-semibold transition ${sourceMode === "library" ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}
                 >
