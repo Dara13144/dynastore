@@ -619,17 +619,19 @@ function GamesTab() {
           setUploadError(
             `បាត់សញ្ញាបណ្ដាញ — រង់ចាំការតភ្ជាប់ឡើងវិញ ហើយបន្តពីចំណុចបច្ចុប្បន្ន (ព្យាយាម #${netRetryCount})`,
           );
+          audit("network_lost", { message: msg, attempt: netRetryCount });
           const offline = typeof navigator !== "undefined" && !navigator.onLine;
           const resumeNow = () => {
             cleanupPending();
             if (aborted) return;
+            audit("network_restored", { attempt: netRetryCount });
+            audit("retry", { attempt: netRetryCount });
             buildAndStart();
           };
           if (offline && typeof window !== "undefined") {
             pendingOnlineHandler = resumeNow;
             window.addEventListener("online", resumeNow, { once: true });
           } else {
-            // Exponential-ish backoff: 3s, 5s, 8s, ..., capped at 30s.
             const delay = Math.min(3000 + netRetryCount * 2000, 30000);
             pendingTimeout = setTimeout(resumeNow, delay);
           }
