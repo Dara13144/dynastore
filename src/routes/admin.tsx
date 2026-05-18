@@ -1606,8 +1606,7 @@ function GamesTab() {
                           {fmtSpeed(uploadStats.speedBps)} · ETA {fmtEta(uploadStats.etaSec)}
                         </span>
                       )}
-                      <span className="hidden">{/* spacer */}
-                      </span>
+                      {/* end progress meta */}
                       {!batchRunning && it.status !== "uploading" && (
                         <button
                           type="button"
