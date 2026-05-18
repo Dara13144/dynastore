@@ -39,6 +39,7 @@ import {
   adminSetUserRole,
 } from "@/lib/admin.functions";
 import { validateGameFile, validateGameFileUrl, MAX_GAME_FILE_BYTES } from "@/lib/validate-game-file";
+import { validateMediaFile } from "@/lib/validate-media-file";
 import { submitCreateGame } from "@/lib/create-game";
 import { parseBulkLinks, summarizeParse, dedupeAgainstExisting, type ParsedLinkRow } from "@/lib/bulk-link-import";
 import { getGameFilesBucketLimit } from "@/lib/bucket-limit.functions";
@@ -873,12 +874,9 @@ function GamesTab() {
   };
 
   const uploadCoverImage = async (file: File): Promise<string | null> => {
-    if (!file.type.startsWith("image/")) {
-      showToast("សូមជ្រើសរូបភាព");
-      return null;
-    }
-    if (file.size > 10 * 1024 * 1024) {
-      showToast("រូបភាពធំជាង 10MB");
+    const v = validateMediaFile(file, "image");
+    if (!v.ok) {
+      showToast(v.error!);
       return null;
     }
     const safe = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
@@ -887,7 +885,7 @@ function GamesTab() {
       .from("game-images")
       .upload(path, file, { upsert: true, contentType: file.type });
     if (error) {
-      showToast(`Upload: ${error.message}`);
+      showToast(`Upload បរាជ័យ: ${error.message}`);
       return null;
     }
     const { data } = supabase.storage.from("game-images").getPublicUrl(path);
@@ -896,12 +894,9 @@ function GamesTab() {
 
   /** Upload a screenshot/gallery image (same bucket as cover, separate folder). */
   const uploadScreenshot = async (file: File): Promise<string | null> => {
-    if (!file.type.startsWith("image/")) {
-      showToast("សូមជ្រើសរូបភាព");
-      return null;
-    }
-    if (file.size > 10 * 1024 * 1024) {
-      showToast("រូបភាពធំជាង 10MB");
+    const v = validateMediaFile(file, "screenshot");
+    if (!v.ok) {
+      showToast(v.error!);
       return null;
     }
     const safe = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
@@ -910,7 +905,7 @@ function GamesTab() {
       .from("game-images")
       .upload(path, file, { upsert: true, contentType: file.type });
     if (error) {
-      showToast(`Upload: ${error.message}`);
+      showToast(`Upload បរាជ័យ: ${error.message}`);
       return null;
     }
     return supabase.storage.from("game-images").getPublicUrl(path).data.publicUrl;
@@ -918,12 +913,9 @@ function GamesTab() {
 
   /** Upload a short preview/trailer video (capped to keep page fast). */
   const uploadPreviewVideo = async (file: File): Promise<string | null> => {
-    if (!file.type.startsWith("video/")) {
-      showToast("សូមជ្រើសវីដេអូ");
-      return null;
-    }
-    if (file.size > 50 * 1024 * 1024) {
-      showToast("វីដេអូធំជាង 50MB — សូមបង្ហាប់សិន");
+    const v = validateMediaFile(file, "video");
+    if (!v.ok) {
+      showToast(v.error!);
       return null;
     }
     const safe = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
@@ -932,7 +924,7 @@ function GamesTab() {
       .from("game-images")
       .upload(path, file, { upsert: true, contentType: file.type });
     if (error) {
-      showToast(`Upload: ${error.message}`);
+      showToast(`Upload បរាជ័យ: ${error.message}`);
       return null;
     }
     return supabase.storage.from("game-images").getPublicUrl(path).data.publicUrl;
