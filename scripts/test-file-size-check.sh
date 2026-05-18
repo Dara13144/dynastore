@@ -13,23 +13,25 @@ cleanup() {
 trap cleanup EXIT
 
 run_case() {
-  local label="$1" size="$2" expect="$3"   # expect: ok | reject
+  local label="$1" size="$2" expect="$3" provider="${4:-supabase}" file_path="${5:-}"
   local id="${TEST_PREFIX}_$(echo "$label" | tr -c 'a-zA-Z0-9' '_')"
   local sql_size
   if [ "$size" = "NULL" ]; then sql_size="NULL"; else sql_size="$size"; fi
+  local sql_path
+  if [ -z "$file_path" ]; then sql_path="NULL"; else sql_path="'$(echo "$file_path" | sed "s/'/''/g")'"; fi
 
   local out
   out=$(psql -v ON_ERROR_STOP=1 -q -c \
-    "INSERT INTO public.games (id, title, category, price_coins, visible, file_size_bytes)
-     VALUES ('${id}', 't', 'c', 0, false, ${sql_size});" 2>&1)
+    "INSERT INTO public.games (id, title, category, price_coins, visible, file_size_bytes, storage_provider, file_path)
+     VALUES ('${id}', 't', 'c', 0, false, ${sql_size}, '${provider}', ${sql_path});" 2>&1)
   local rc=$?
 
   if [ "$expect" = "ok" ] && [ $rc -eq 0 ]; then
-    echo "PASS  $label  (size=$size accepted)"; PASS=$((PASS+1))
+    echo "PASS  $label  (size=$size provider=$provider accepted)"; PASS=$((PASS+1))
   elif [ "$expect" = "reject" ] && [ $rc -ne 0 ] && echo "$out" | grep -q "games_file_size_bytes_range"; then
-    echo "PASS  $label  (size=$size rejected by CHECK)"; PASS=$((PASS+1))
+    echo "PASS  $label  (size=$size provider=$provider rejected by CHECK)"; PASS=$((PASS+1))
   else
-    echo "FAIL  $label  (size=$size, rc=$rc, expect=$expect)"
+    echo "FAIL  $label  (size=$size provider=$provider, rc=$rc, expect=$expect)"
     echo "      $out"
     FAIL=$((FAIL+1))
   fi
@@ -53,6 +55,21 @@ run_case "mib_semantics_999999"             "999999"                    "reject"
 run_case "gib_semantics_1000GB_decimal"     "1000000000000"             "ok"       # 1000 GB (10^12) < 1000 GiB → accept
 run_case "gib_semantics_1TiB"               "1099511627776"             "reject"   # 1 TiB > 1000 GiB → reject
 run_case "gib_semantics_999GiB"             "1072693248000"             "ok"       # 999 GiB → accept
+
+# --- External-link games: NULL size accepted; CHECK still bounds non-NULL sizes ---
+run_case "external_link_null_size"          "NULL"          "ok"      "external_url" "https://cdn.example.com/game.zip"
+run_case "external_link_null_size_http"     "NULL"          "ok"      "external_url" "http://files.example.com/a.rar"
+run_case "external_link_with_valid_size"    "1048576"       "ok"      "external_url" "https://cdn.example.com/g.zip"   # 1 MiB
+run_case "external_link_with_max_size"      "1073741824000" "ok"      "external_url" "https://cdn.example.com/g.zip"   # 1000 GiB
+run_case "external_link_below_min_rejected" "0"             "reject"  "external_url" "https://cdn.example.com/g.zip"
+run_case "external_link_just_under_rejected" "1048575"      "reject"  "external_url" "https://cdn.example.com/g.zip"
+run_case "external_link_above_max_rejected" "1073741824001" "reject"  "external_url" "https://cdn.example.com/g.zip"
+
+# --- File uploads (supabase provider): NULL accepted at DB layer; bounds enforced on non-NULL ---
+run_case "upload_with_path_null_size_ok"    "NULL"          "ok"      "supabase"     "games/abc.zip"
+run_case "upload_with_path_min_ok"          "1048576"       "ok"      "supabase"     "games/abc.zip"
+run_case "upload_with_path_below_min_rej"   "1048575"       "reject"  "supabase"     "games/abc.zip"
+run_case "upload_with_path_above_max_rej"   "1073741824001" "reject"  "supabase"     "games/abc.zip"
 echo
 echo "=============================="
 echo "PASSED: $PASS    FAILED: $FAIL"
