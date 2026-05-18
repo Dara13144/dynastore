@@ -383,6 +383,45 @@ function GamesTab() {
     resume?: () => void;
   } | null>(null);
 
+  // Admin-tunable TUS retry config (fetched once from app_settings on mount).
+  // Defaults match the prior hardcoded values so behavior is unchanged until
+  // an admin overrides them in Settings.
+  const retryCfgRef = useRef<{
+    maxNetRetries: number;
+    retryDelaysMs: number[];
+    backoffBaseMs: number;
+    backoffStepMs: number;
+    backoffCapMs: number;
+  }>({
+    maxNetRetries: 50,
+    retryDelaysMs: [0, 1000, 3000, 5000, 10000, 20000, 30000, 60000, 120000],
+    backoffBaseMs: 3000,
+    backoffStepMs: 2000,
+    backoffCapMs: 30000,
+  });
+  const fetchAppSettings = useServerFn(getAppSettings);
+  useEffect(() => {
+    (async () => {
+      try {
+        const s = (await fetchAppSettings({})) as Record<string, unknown>;
+        const delays = Array.isArray(s.tus_retry_delays_ms)
+          ? (s.tus_retry_delays_ms as unknown[])
+              .map((n) => Number(n))
+              .filter((n) => Number.isFinite(n) && n >= 0)
+          : retryCfgRef.current.retryDelaysMs;
+        retryCfgRef.current = {
+          maxNetRetries: Number(s.tus_max_net_retries) || retryCfgRef.current.maxNetRetries,
+          retryDelaysMs: delays.length ? delays : retryCfgRef.current.retryDelaysMs,
+          backoffBaseMs: Number(s.tus_backoff_base_ms) || retryCfgRef.current.backoffBaseMs,
+          backoffStepMs: Number(s.tus_backoff_step_ms) || retryCfgRef.current.backoffStepMs,
+          backoffCapMs: Number(s.tus_backoff_cap_ms) || retryCfgRef.current.backoffCapMs,
+        };
+      } catch {
+        /* keep defaults */
+      }
+    })();
+  }, [fetchAppSettings]);
+
   // Auto-open the split-file guide when an upload fails with a platform
   // per-upload cap (413 / ~50GB) error.
   useEffect(() => {
@@ -577,7 +616,7 @@ function GamesTab() {
       let aborted = false;
       let paused = false;
       let netRetryCount = 0;
-      const MAX_NET_RETRIES = 50; // effectively unbounded — combined with online-event wait
+      const MAX_NET_RETRIES = retryCfgRef.current.maxNetRetries;
       let currentUpload: import("tus-js-client").Upload | null = null;
       let pendingOnlineHandler: (() => void) | null = null;
       let pendingTimeout: ReturnType<typeof setTimeout> | null = null;
@@ -640,7 +679,8 @@ function GamesTab() {
             pendingOnlineHandler = resumeNow;
             window.addEventListener("online", resumeNow, { once: true });
           } else {
-            const delay = Math.min(3000 + netRetryCount * 2000, 30000);
+            const cfg = retryCfgRef.current;
+            const delay = Math.min(cfg.backoffBaseMs + netRetryCount * cfg.backoffStepMs, cfg.backoffCapMs);
             pendingTimeout = setTimeout(resumeNow, delay);
           }
           return;
@@ -662,7 +702,7 @@ function GamesTab() {
       const buildAndStart = () => {
         currentUpload = new tus.Upload(file, {
           endpoint: `${projectUrl}/storage/v1/upload/resumable`,
-          retryDelays: [0, 1000, 3000, 5000, 10000, 20000, 30000, 60000, 120000],
+          retryDelays: retryCfgRef.current.retryDelaysMs,
           headers: tusHeaders,
           uploadDataDuringCreation: true,
           removeFingerprintOnSuccess: true,
@@ -3026,9 +3066,15 @@ function UserRowEditor({
 type Settings = {
   coins_per_usd: number;
   tx_ttl_min: number;
+  tus_max_net_retries: number;
+  tus_retry_delays_ms: number[];
+  tus_backoff_base_ms: number;
+  tus_backoff_step_ms: number;
+  tus_backoff_cap_ms: number;
 };
 function SettingsTab() {
   const [s, setS] = useState<Settings | null>(null);
+  const [delaysText, setDelaysText] = useState("");
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
   const get = useServerFn(getAppSettings);
@@ -3037,8 +3083,21 @@ function SettingsTab() {
   useEffect(() => {
     (async () => {
       try {
-        const r = await get({});
-        setS(r as Settings);
+        const r = (await get({})) as Record<string, unknown>;
+        const delays = Array.isArray(r.tus_retry_delays_ms)
+          ? (r.tus_retry_delays_ms as unknown[]).map((n) => Number(n))
+          : [0, 1000, 3000, 5000, 10000, 20000, 30000, 60000, 120000];
+        const next: Settings = {
+          coins_per_usd: Number(r.coins_per_usd) || 1,
+          tx_ttl_min: Number(r.tx_ttl_min) || 5,
+          tus_max_net_retries: Number(r.tus_max_net_retries) || 50,
+          tus_retry_delays_ms: delays,
+          tus_backoff_base_ms: Number(r.tus_backoff_base_ms) || 3000,
+          tus_backoff_step_ms: Number(r.tus_backoff_step_ms) || 2000,
+          tus_backoff_cap_ms: Number(r.tus_backoff_cap_ms) || 30000,
+        };
+        setS(next);
+        setDelaysText(delays.join(", "));
       } catch (e) {
         setMsg(e instanceof Error ? e.message : "បរាជ័យ");
       }
@@ -3050,10 +3109,23 @@ function SettingsTab() {
     setBusy(true);
     setMsg(null);
     try {
+      const parsedDelays = delaysText
+        .split(/[,\s]+/)
+        .map((t) => t.trim())
+        .filter(Boolean)
+        .map((t) => Number(t));
+      if (!parsedDelays.length || parsedDelays.some((n) => !Number.isFinite(n) || n < 0 || n > 600_000)) {
+        throw new Error("Retry delays ត្រូវតែជាលេខពី 0 ដល់ 600000 ms");
+      }
       await upd({
         data: {
           coins_per_usd: Number(s.coins_per_usd) || 1,
           tx_ttl_min: Number(s.tx_ttl_min) || 5,
+          tus_max_net_retries: Number(s.tus_max_net_retries) || 0,
+          tus_retry_delays_ms: parsedDelays,
+          tus_backoff_base_ms: Number(s.tus_backoff_base_ms) || 0,
+          tus_backoff_step_ms: Number(s.tus_backoff_step_ms) || 0,
+          tus_backoff_cap_ms: Number(s.tus_backoff_cap_ms) || 0,
         },
       });
       setMsg("រក្សាទុករួច");
@@ -3092,6 +3164,47 @@ function SettingsTab() {
           />
         </div>
       </div>
+
+      <div className="rounded-2xl glass p-5 space-y-4">
+        <h3 className="font-semibold text-sm">Upload Retry (TUS)</h3>
+        <p className="text-xs text-muted-foreground">
+          កំណត់ចំនួនព្យាយាមអតិបរមា និងកម្រិត backoff សម្រាប់ការ resume នៅពេលដាច់បណ្ដាញ។
+          តម្លៃជាមីលីវិនាទី (ms)។
+        </p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <Field
+            label="Max network retries"
+            type="number"
+            value={String(s.tus_max_net_retries)}
+            onChange={(v) => setS({ ...s, tus_max_net_retries: Math.max(0, Number(v) || 0) })}
+          />
+          <Field
+            label="Backoff base (ms)"
+            type="number"
+            value={String(s.tus_backoff_base_ms)}
+            onChange={(v) => setS({ ...s, tus_backoff_base_ms: Math.max(0, Number(v) || 0) })}
+          />
+          <Field
+            label="Backoff step (ms)"
+            type="number"
+            value={String(s.tus_backoff_step_ms)}
+            onChange={(v) => setS({ ...s, tus_backoff_step_ms: Math.max(0, Number(v) || 0) })}
+          />
+          <Field
+            label="Backoff cap (ms)"
+            type="number"
+            value={String(s.tus_backoff_cap_ms)}
+            onChange={(v) => setS({ ...s, tus_backoff_cap_ms: Math.max(0, Number(v) || 0) })}
+          />
+        </div>
+        <Field
+          label="TUS retryDelays (ms, បំបែកដោយ , )"
+          type="text"
+          value={delaysText}
+          onChange={(v) => setDelaysText(v)}
+        />
+      </div>
+
       <div className="flex items-center gap-3">
         <button
           disabled={busy}

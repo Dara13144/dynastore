@@ -13,6 +13,8 @@ async function assertAdmin(userId: string) {
   if (!data) throw new Error("forbidden");
 }
 
+const DEFAULT_RETRY_DELAYS = [0, 1000, 3000, 5000, 10000, 20000, 30000, 60000, 120000];
+
 export const getAppSettings = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
@@ -23,8 +25,24 @@ export const getAppSettings = createServerFn({ method: "GET" })
       .eq("id", 1)
       .maybeSingle();
     if (error) throw new Error(error.message);
-    return data ?? { id: 1, coins_per_usd: 1, tx_ttl_min: 5 };
+    return (
+      data ?? {
+        id: 1,
+        coins_per_usd: 1,
+        tx_ttl_min: 5,
+        tus_max_net_retries: 50,
+        tus_retry_delays_ms: DEFAULT_RETRY_DELAYS,
+        tus_backoff_base_ms: 3000,
+        tus_backoff_step_ms: 2000,
+        tus_backoff_cap_ms: 30000,
+      }
+    );
   });
+
+const retryDelaysSchema = z
+  .array(z.number().int().min(0).max(600_000))
+  .min(1)
+  .max(20);
 
 export const updateAppSettings = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -33,6 +51,11 @@ export const updateAppSettings = createServerFn({ method: "POST" })
       .object({
         coins_per_usd: z.number().int().min(1).max(100000),
         tx_ttl_min: z.number().int().min(1).max(60),
+        tus_max_net_retries: z.number().int().min(0).max(500),
+        tus_retry_delays_ms: retryDelaysSchema,
+        tus_backoff_base_ms: z.number().int().min(0).max(600_000),
+        tus_backoff_step_ms: z.number().int().min(0).max(600_000),
+        tus_backoff_cap_ms: z.number().int().min(0).max(600_000),
       })
       .parse(i),
   )
@@ -43,13 +66,21 @@ export const updateAppSettings = createServerFn({ method: "POST" })
       .select("*")
       .eq("id", 1)
       .maybeSingle();
-    const fields: Array<keyof typeof data> = ["coins_per_usd", "tx_ttl_min"];
+    const fields: Array<keyof typeof data> = [
+      "coins_per_usd",
+      "tx_ttl_min",
+      "tus_max_net_retries",
+      "tus_retry_delays_ms",
+      "tus_backoff_base_ms",
+      "tus_backoff_step_ms",
+      "tus_backoff_cap_ms",
+    ];
     const auditRows = fields
       .map((f) => {
         const oldVal = prev ? (prev as Record<string, unknown>)[f] : null;
         const newVal = (data as Record<string, unknown>)[f] ?? null;
-        const oldStr = oldVal == null ? null : String(oldVal);
-        const newStr = newVal == null ? null : String(newVal);
+        const oldStr = oldVal == null ? null : JSON.stringify(oldVal);
+        const newStr = newVal == null ? null : JSON.stringify(newVal);
         return {
           field: String(f),
           old_value: oldStr,
