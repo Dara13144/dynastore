@@ -13,6 +13,10 @@ export type ParsedLinkRow = {
   raw: string;
   ok: boolean;
   error?: string;
+  /** True when the row was a valid parse but matches something that already exists. */
+  skipped?: boolean;
+  /** Human-readable reason for the skip (e.g. "id already exists"). */
+  skipReason?: string;
   draft?: {
     id: string;
     title: string;
@@ -20,6 +24,13 @@ export type ParsedLinkRow = {
     price_coins: number;
     url: string;
   };
+};
+
+export type ExistingSet = {
+  /** Existing game IDs. Lowercased before comparison. */
+  ids?: Iterable<string>;
+  /** Existing external URLs. Normalized before comparison. */
+  urls?: Iterable<string>;
 };
 
 const DELIMS = /\t|\|/;
