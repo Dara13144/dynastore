@@ -76,4 +76,10 @@ describe("bulk-link-import parser", () => {
     expect(rows[0].ok).toBe(true);
     expect(rows[0].draft?.id).toBe("interactv-scenarios-v100");
   });
+
+  it("accepts share-page URLs without file extension (uploadnow.io)", () => {
+    const rows = parseBulkLinks("https://uploadnow.io/files/FvFBmV6");
+    expect(rows[0].ok).toBe(true);
+    expect(rows[0].draft?.id).toBe("fvfbmv6");
+  });
 });
