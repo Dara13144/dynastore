@@ -1518,8 +1518,69 @@ function GamesTab() {
 
                       {uploadStage === "done" && uploadedInfo && (
                         <div className="rounded-md border border-emerald-500/30 bg-emerald-500/5 p-2.5 space-y-1.5">
-                          <div className="text-[10px] font-semibold uppercase tracking-wide text-emerald-600 dark:text-emerald-400">
-                            ឯកសារបានរក្សាទុក
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="text-[10px] font-semibold uppercase tracking-wide text-emerald-600 dark:text-emerald-400">
+                              ឯកសារបានរក្សាទុក
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const payload = {
+                                    path: uploadedInfo.path,
+                                    size: uploadedInfo.size,
+                                    mime: uploadedInfo.mime,
+                                    provider: uploadedInfo.provider,
+                                    bucket: uploadedInfo.bucket ?? null,
+                                    uploaded_at: uploadedInfo.uploadedAt ?? null,
+                                    processed_at: uploadedInfo.processedAt ?? null,
+                                    checksum: uploadedInfo.checksum ?? null,
+                                    checksum_algo: uploadedInfo.checksumAlgo ?? null,
+                                    checksum_skipped_reason: uploadedInfo.checksumSkippedReason ?? null,
+                                  };
+                                  navigator.clipboard?.writeText(JSON.stringify(payload, null, 2));
+                                  showToast("បានចម្លង JSON");
+                                }}
+                                className="rounded bg-muted px-2 py-0.5 text-[10px] font-semibold hover:bg-muted/70"
+                              >
+                                Copy JSON
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const payload = {
+                                    path: uploadedInfo.path,
+                                    size: uploadedInfo.size,
+                                    mime: uploadedInfo.mime,
+                                    provider: uploadedInfo.provider,
+                                    bucket: uploadedInfo.bucket ?? null,
+                                    uploaded_at: uploadedInfo.uploadedAt ?? null,
+                                    processed_at: uploadedInfo.processedAt ?? null,
+                                    checksum: uploadedInfo.checksum ?? null,
+                                    checksum_algo: uploadedInfo.checksumAlgo ?? null,
+                                    checksum_skipped_reason: uploadedInfo.checksumSkippedReason ?? null,
+                                  };
+                                  const blob = new Blob([JSON.stringify(payload, null, 2)], {
+                                    type: "application/json",
+                                  });
+                                  const url = URL.createObjectURL(blob);
+                                  const safe = (uploadedInfo.path.split("/").pop() || "metadata").replace(
+                                    /[^a-zA-Z0-9._-]/g,
+                                    "_",
+                                  );
+                                  const a = document.createElement("a");
+                                  a.href = url;
+                                  a.download = `${safe}.metadata.json`;
+                                  document.body.appendChild(a);
+                                  a.click();
+                                  a.remove();
+                                  setTimeout(() => URL.revokeObjectURL(url), 1000);
+                                }}
+                                className="rounded bg-emerald-600 px-2 py-0.5 text-[10px] font-semibold text-white hover:bg-emerald-700"
+                              >
+                                Export JSON
+                              </button>
+                            </div>
                           </div>
                           <dl className="grid grid-cols-[80px_1fr] gap-x-2 gap-y-1 text-[11px]">
                             <dt className="text-muted-foreground">Provider</dt>
