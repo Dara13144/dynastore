@@ -337,7 +337,7 @@ function GamesTab() {
     path: string;
     size: number;
     mime: string;
-    provider: "supabase" | "s3" | "external_url";
+    provider: "supabase" | "external_url";
     bucket?: string;
     uploadedAt?: string;
     processedAt?: string;
@@ -1569,8 +1569,7 @@ function GamesTab() {
                             )}
                           </dl>
                           {(() => {
-                            const supportsSigned =
-                              uploadedInfo.provider === "supabase" || uploadedInfo.provider === "s3";
+            const supportsSigned = uploadedInfo.provider === "supabase";
                             const isDone = uploadStage === "done";
                             const canGenerate = isDone && supportsSigned;
                             const hasSigned = !!signedUrl;

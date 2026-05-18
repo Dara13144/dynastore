@@ -18,9 +18,9 @@ export type GameDraft = {
   preview_video_url?: string | null;
   /** Optional external link to the game archive (alternative to uploading a file). */
   file_url?: string | null;
-  /** Which storage backend holds the file: supabase (default), s3, external_url. */
-  storage_provider?: "supabase" | "s3" | "external_url";
-  /** Pre-uploaded external file (e.g. S3 object key + size) skipping the bucket upload. */
+  /** Which storage backend holds the file: supabase (default) or external_url. */
+  storage_provider?: "supabase" | "external_url";
+  /** Pre-uploaded external file (path + size) skipping the bucket upload. */
   external_file?: { path: string; size: number | null } | null;
 };
 
@@ -40,7 +40,7 @@ export type CreateGameDeps = {
     image_url: string | null;
     file_path: string | null;
     file_size_bytes: number | null;
-    storage_provider?: "supabase" | "s3" | "external_url";
+    storage_provider?: "supabase" | "external_url";
     screenshots?: string[];
     preview_video_url?: string | null;
   }) => Promise<{ error: { message: string } | null }>;
@@ -75,13 +75,13 @@ export async function submitCreateGame(
   }
   let file_path: string | null = null;
   let file_size_bytes: number | null = null;
-  const provider: "supabase" | "s3" | "external_url" = draft.storage_provider ?? "supabase";
+  const provider: "supabase" | "external_url" = draft.storage_provider ?? "supabase";
   if (draftFile && provider === "supabase") {
     const up = await deps.uploadFile(draft.id.trim(), draftFile);
     if (!up) return { ok: false, reason: "upload_failed", message: "upload_failed" };
     file_path = up.path;
     file_size_bytes = up.size;
-  } else if (draft.external_file && (provider === "s3" || provider === "external_url")) {
+  } else if (draft.external_file && provider === "external_url") {
     file_path = draft.external_file.path;
     file_size_bytes = draft.external_file.size;
   } else if (draft.file_url && draft.file_url.trim()) {
