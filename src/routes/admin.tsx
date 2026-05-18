@@ -306,7 +306,29 @@ function GamesTab() {
   const [signedUrl, setSignedUrl] = useState<{ url: string; expiresAt: number } | null>(null);
   const [signing, setSigning] = useState(false);
 
+  // --- Batch multi-file upload state ---
+  type BatchStatus = "pending" | "uploading" | "done" | "error" | "skipped";
+  type BatchItem = {
+    id: string;
+    file: File;
+    title: string;
+    slug: string;
+    status: BatchStatus;
+    pct: number;
+    message?: string;
+    path?: string;
+    size?: number;
+  };
+  const [batchOpen, setBatchOpen] = useState(false);
+  const [batchItems, setBatchItems] = useState<BatchItem[]>([]);
+  const [batchRunning, setBatchRunning] = useState(false);
+  const [batchPrice, setBatchPrice] = useState<number>(0);
+  const [batchCategory, setBatchCategory] = useState<string>("Game");
+  const [batchVisible, setBatchVisible] = useState<boolean>(true);
+  const batchCurrentRef = useRef<string | null>(null);
+
   const showToast = (m: string) => {
+
     setToast(m);
     setTimeout(() => setToast(null), 2200);
   };
