@@ -2354,7 +2354,10 @@ function GamesTab() {
                 <div className="animate-fade-in">
                   <DropZone
                     accept=".zip,.rar,.7z,.tar,.gz,.tgz"
+                    validate={(f) => validateFile(f)}
+                    onReject={(r) => addRejections("archive", r)}
                     onFiles={(files) => {
+                      clearRejections("archive");
                       const f = files[0] ?? null;
                       const err = f ? validateFile(f) : null;
                       setDraftFileError(err);
