@@ -552,107 +552,168 @@ function GamesTab() {
       let lastTs = performance.now();
       let lastSent = 0;
       let aborted = false;
+      let netRetryCount = 0;
+      const MAX_NET_RETRIES = 50; // effectively unbounded — combined with online-event wait
+      let currentUpload: import("tus-js-client").Upload | null = null;
+      let pendingOnlineHandler: (() => void) | null = null;
+      let pendingTimeout: ReturnType<typeof setTimeout> | null = null;
       const tusHeaders: Record<string, string> = {
         authorization: `Bearer ${currentToken}`,
         "x-upsert": "true",
       };
-      const upload = new tus.Upload(file, {
-        endpoint: `${projectUrl}/storage/v1/upload/resumable`,
-        retryDelays: [0, 1000, 3000, 5000, 10000, 20000, 30000],
-        headers: tusHeaders,
-        uploadDataDuringCreation: true,
-        removeFingerprintOnSuccess: true,
-        metadata: {
-          bucketName: "game-files",
-          objectName: path,
-          contentType: file.type || "application/octet-stream",
-          cacheControl: "3600",
-        },
-        chunkSize,
-        parallelUploads: 1,
-        // Refresh the bearer token on auth failures so multi-hour uploads
-        // survive Supabase's 1-hour access-token TTL.
-        onShouldRetry: (err: import("tus-js-client").DetailedError) => {
-          const status = err.originalResponse?.getStatus?.() ?? 0;
-          if (status === 401 || status === 403) {
-            // fire-and-forget refresh; tus retries with updated headers.
-            supabase.auth
-              .refreshSession()
-              .then(({ data }) => {
-                const fresh = data.session?.access_token;
-                if (fresh) {
-                  currentToken = fresh;
-                  tusHeaders.authorization = `Bearer ${fresh}`;
-                }
-              })
-              .catch(() => {
-                /* will fail on next chunk and surface via onError */
-              });
-            return true;
-          }
-          // Default tus retry behavior for non-auth errors (network/5xx).
-          return status === 0 || (status >= 500 && status < 600);
-        },
-        onError: (err: Error) => {
-          if (aborted) return;
-          const friendly = friendlyUploadError(err.message, { fileSize: file.size });
-          setUploadStage("error");
-          setUploadError(friendly);
-          setUploadPct(null);
-          setUploadStats(null);
-          uploadRef.current = null;
-          showToast(`Upload: ${friendly}`);
-          resolve(null);
-        },
-        onProgress: (sent: number, total: number) => {
-          const now = performance.now();
-          const dt = (now - lastTs) / 1000;
-          if (dt >= 0.25 || sent === total) {
-            const speedBps = dt > 0 ? (sent - lastSent) / dt : 0;
-            const remaining = Math.max(total - sent, 0);
-            const etaSec = speedBps > 0 ? remaining / speedBps : 0;
-            setUploadPct(Math.round((sent / total) * 100));
-            setUploadStats({ sent, total, speedBps, etaSec });
-            lastTs = now;
-            lastSent = sent;
-          }
-        },
-        onSuccess: () => {
-          setUploadPct(100);
-          setUploadStats({ sent: file.size, total: file.size, speedBps: 0, etaSec: 0 });
-          uploadRef.current = null;
-          resolve({ path, size: file.size });
-        },
-      });
-      uploadRef.current = {
-        abort: () => {
-          aborted = true;
-          try {
-            upload.abort(true);
-          } catch {
-            /* ignore */
-          }
-          resolve(null);
-        },
+
+      const cleanupPending = () => {
+        if (pendingOnlineHandler) {
+          try { window.removeEventListener("online", pendingOnlineHandler); } catch { /* ignore */ }
+          pendingOnlineHandler = null;
+        }
+        if (pendingTimeout) {
+          clearTimeout(pendingTimeout);
+          pendingTimeout = null;
+        }
       };
-      upload
-        .findPreviousUploads()
-        .then((prev: import("tus-js-client").PreviousUpload[]) => {
-          if (aborted) return;
-          // Only resume previous uploads from the LAST 6 hours — older
-          // fingerprints often reference upload URLs whose server-side state
-          // (and bearer auth) has already expired, causing immediate 4xx.
-          const SIX_HOURS = 6 * 60 * 60 * 1000;
-          const fresh = prev.find((p) => {
-            const t = p.creationTime ? Date.parse(p.creationTime) : 0;
-            return t && Date.now() - t < SIX_HOURS;
-          });
-          if (fresh) upload.resumeFromPreviousUpload(fresh);
-          upload.start();
-        })
-        .catch(() => {
-          if (!aborted) upload.start();
+
+      const onTusError = (err: Error) => {
+        if (aborted) return;
+        const status =
+          (err as import("tus-js-client").DetailedError).originalResponse?.getStatus?.() ?? 0;
+        const msg = err.message ?? "";
+        const isNetwork =
+          status === 0 ||
+          /Failed to fetch|NetworkError|network|offline|timeout|ECONN|ENET|disconnected/i.test(msg) ||
+          (typeof navigator !== "undefined" && !navigator.onLine);
+
+        if (isNetwork && netRetryCount < MAX_NET_RETRIES) {
+          netRetryCount++;
+          setUploadStage("uploading");
+          setUploadError(
+            `បាត់សញ្ញាបណ្ដាញ — រង់ចាំការតភ្ជាប់ឡើងវិញ ហើយបន្តពីចំណុចបច្ចុប្បន្ន (ព្យាយាម #${netRetryCount})`,
+          );
+          const offline = typeof navigator !== "undefined" && !navigator.onLine;
+          const resumeNow = () => {
+            cleanupPending();
+            if (aborted) return;
+            buildAndStart();
+          };
+          if (offline && typeof window !== "undefined") {
+            pendingOnlineHandler = resumeNow;
+            window.addEventListener("online", resumeNow, { once: true });
+          } else {
+            // Exponential-ish backoff: 3s, 5s, 8s, ..., capped at 30s.
+            const delay = Math.min(3000 + netRetryCount * 2000, 30000);
+            pendingTimeout = setTimeout(resumeNow, delay);
+          }
+          return;
+        }
+
+        // Terminal failure — surface to user.
+        cleanupPending();
+        const friendly = friendlyUploadError(msg, { fileSize: file.size });
+        setUploadStage("error");
+        setUploadError(friendly);
+        setUploadPct(null);
+        setUploadStats(null);
+        uploadRef.current = null;
+        showToast(`Upload: ${friendly}`);
+        resolve(null);
+      };
+
+      const buildAndStart = () => {
+        currentUpload = new tus.Upload(file, {
+          endpoint: `${projectUrl}/storage/v1/upload/resumable`,
+          retryDelays: [0, 1000, 3000, 5000, 10000, 20000, 30000, 60000, 120000],
+          headers: tusHeaders,
+          uploadDataDuringCreation: true,
+          removeFingerprintOnSuccess: true,
+          metadata: {
+            bucketName: "game-files",
+            objectName: path,
+            contentType: file.type || "application/octet-stream",
+            cacheControl: "3600",
+          },
+          chunkSize,
+          parallelUploads: 1,
+          // Refresh the bearer token on auth failures so multi-hour uploads
+          // survive Supabase's 1-hour access-token TTL. Also retry on
+          // network-class errors so brief outages don't terminate the upload.
+          onShouldRetry: (err: import("tus-js-client").DetailedError) => {
+            const status = err.originalResponse?.getStatus?.() ?? 0;
+            if (status === 401 || status === 403) {
+              supabase.auth
+                .refreshSession()
+                .then(({ data }) => {
+                  const fresh = data.session?.access_token;
+                  if (fresh) {
+                    currentToken = fresh;
+                    tusHeaders.authorization = `Bearer ${fresh}`;
+                  }
+                })
+                .catch(() => { /* will surface via onError */ });
+              return true;
+            }
+            // network (status 0), gateway/5xx, or 408/429 → retry
+            return (
+              status === 0 ||
+              status === 408 ||
+              status === 429 ||
+              (status >= 500 && status < 600)
+            );
+          },
+          onError: onTusError,
+          onProgress: (sent: number, total: number) => {
+            const now = performance.now();
+            const dt = (now - lastTs) / 1000;
+            if (dt >= 0.25 || sent === total) {
+              const speedBps = dt > 0 ? (sent - lastSent) / dt : 0;
+              const remaining = Math.max(total - sent, 0);
+              const etaSec = speedBps > 0 ? remaining / speedBps : 0;
+              setUploadPct(Math.round((sent / total) * 100));
+              setUploadStats({ sent, total, speedBps, etaSec });
+              lastTs = now;
+              lastSent = sent;
+              // Clear stale reconnect message once data is flowing again.
+              if (netRetryCount > 0) setUploadError(null);
+            }
+          },
+          onSuccess: () => {
+            cleanupPending();
+            setUploadPct(100);
+            setUploadStats({ sent: file.size, total: file.size, speedBps: 0, etaSec: 0 });
+            uploadRef.current = null;
+            resolve({ path, size: file.size });
+          },
         });
+
+        uploadRef.current = {
+          abort: () => {
+            aborted = true;
+            cleanupPending();
+            try { currentUpload?.abort(true); } catch { /* ignore */ }
+            resolve(null);
+          },
+        };
+
+        currentUpload
+          .findPreviousUploads()
+          .then((prev: import("tus-js-client").PreviousUpload[]) => {
+            if (aborted || !currentUpload) return;
+            // Only resume previous uploads from the LAST 6 hours — older
+            // fingerprints often reference upload URLs whose server-side state
+            // (and bearer auth) has already expired, causing immediate 4xx.
+            const SIX_HOURS = 6 * 60 * 60 * 1000;
+            const fresh = prev.find((p) => {
+              const t = p.creationTime ? Date.parse(p.creationTime) : 0;
+              return t && Date.now() - t < SIX_HOURS;
+            });
+            if (fresh) currentUpload.resumeFromPreviousUpload(fresh);
+            currentUpload.start();
+          })
+          .catch(() => {
+            if (!aborted && currentUpload) currentUpload.start();
+          });
+      };
+
+      buildAndStart();
     });
   };
 
