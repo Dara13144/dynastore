@@ -51,7 +51,12 @@ import {
 import { logUploadEvent } from "@/lib/upload-audit";
 import { DownloadLogsTab } from "@/components/admin/DownloadLogsTab";
 import { UploadAuditTab } from "@/components/admin/UploadAuditTab";
-import { DropZone, UploadProgressLine } from "@/components/admin/DropZone";
+import {
+  DropZone,
+  UploadProgressLine,
+  RejectedFilesBanner,
+  type RejectedFile,
+} from "@/components/admin/DropZone";
 import { DiagnosticsTab } from "@/components/admin/DiagnosticsTab";
 import { SplitFileGuideDialog } from "@/components/admin/SplitFileGuideDialog";
 import { isPlatformCapError } from "@/lib/chunk-plan";
@@ -350,6 +355,21 @@ function GamesTab() {
     setMediaUploads((prev) => prev.map((p) => (p.id === id ? { ...p, ...patch } : p)));
   const removeMediaUpload = (id: string) =>
     setMediaUploads((prev) => prev.filter((p) => p.id !== id));
+
+  // Files rejected by DropZone (wrong type / oversize) per upload slot.
+  const [rejectedByKind, setRejectedByKind] = useState<{
+    cover: RejectedFile[];
+    screenshot: RejectedFile[];
+    video: RejectedFile[];
+    archive: RejectedFile[];
+  }>({ cover: [], screenshot: [], video: [], archive: [] });
+  const addRejections = (
+    kind: "cover" | "screenshot" | "video" | "archive",
+    items: RejectedFile[],
+  ) =>
+    setRejectedByKind((prev) => ({ ...prev, [kind]: [...prev[kind], ...items] }));
+  const clearRejections = (kind: "cover" | "screenshot" | "video" | "archive") =>
+    setRejectedByKind((prev) => ({ ...prev, [kind]: [] }));
 
   // --- Batch multi-file upload state ---
   type BatchStatus = "pending" | "uploading" | "done" | "error" | "skipped";
@@ -2029,7 +2049,10 @@ function GamesTab() {
               </span>
               <DropZone
                 accept="image/*"
+                validate={(f) => validateMediaFile(f, "image").error}
+                onReject={(r) => addRejections("cover", r)}
                 onFiles={async (files) => {
+                  clearRejections("cover");
                   const url = await runMediaUpload("cover", files[0], uploadCoverImage);
                   if (url) setDraft({ ...draft, image_url: url });
                 }}
@@ -2068,6 +2091,10 @@ function GamesTab() {
                     message={m.message}
                   />
                 ))}
+              <RejectedFilesBanner
+                items={rejectedByKind.cover}
+                onClear={() => clearRejections("cover")}
+              />
               {draft.image_url && (
                 <img
                   src={draft.image_url}
@@ -2086,7 +2113,10 @@ function GamesTab() {
                 accept="image/*"
                 multiple
                 className="rounded-lg p-1"
+                validate={(f) => validateMediaFile(f, "screenshot").error}
+                onReject={(r) => addRejections("screenshot", r)}
                 onFiles={async (files) => {
+                  clearRejections("screenshot");
                   const uploaded: string[] = [];
                   for (const f of files) {
                     const u = await runMediaUpload("screenshot", f, uploadScreenshot);
@@ -2156,6 +2186,10 @@ function GamesTab() {
                     message={m.message}
                   />
                 ))}
+              <RejectedFilesBanner
+                items={rejectedByKind.screenshot}
+                onClear={() => clearRejections("screenshot")}
+              />
               <ScreenshotUrlAdder
                 onAdd={(url) =>
                   setDraft((d) => ({ ...d, screenshots: [...d.screenshots, url] }))
@@ -2173,7 +2207,10 @@ function GamesTab() {
               </span>
               <DropZone
                 accept="video/*"
+                validate={(f) => validateMediaFile(f, "video").error}
+                onReject={(r) => addRejections("video", r)}
                 onFiles={async (files) => {
+                  clearRejections("video");
                   const url = await runMediaUpload("video", files[0], uploadPreviewVideo);
                   if (url) setDraft({ ...draft, preview_video_url: url });
                 }}
@@ -2223,6 +2260,10 @@ function GamesTab() {
                     message={m.message}
                   />
                 ))}
+              <RejectedFilesBanner
+                items={rejectedByKind.video}
+                onClear={() => clearRejections("video")}
+              />
               {draft.preview_video_url && (
                 <div>
                   <video
@@ -2313,7 +2354,10 @@ function GamesTab() {
                 <div className="animate-fade-in">
                   <DropZone
                     accept=".zip,.rar,.7z,.tar,.gz,.tgz"
+                    validate={(f) => validateFile(f)}
+                    onReject={(r) => addRejections("archive", r)}
                     onFiles={(files) => {
+                      clearRejections("archive");
                       const f = files[0] ?? null;
                       const err = f ? validateFile(f) : null;
                       setDraftFileError(err);
@@ -2345,6 +2389,10 @@ function GamesTab() {
                       ) : null}
                     </p>
                   </DropZone>
+                  <RejectedFilesBanner
+                    items={rejectedByKind.archive}
+                    onClear={() => clearRejections("archive")}
+                  />
                   {draftFile && (
                     <div className="mt-2 space-y-1">
                       <span className="text-[11px] text-foreground/90 block">
