@@ -19,6 +19,11 @@ export type Database = {
           bakong_account_id: string | null
           coins_per_usd: number
           id: number
+          tus_backoff_base_ms: number
+          tus_backoff_cap_ms: number
+          tus_backoff_step_ms: number
+          tus_max_net_retries: number
+          tus_retry_delays_ms: Json
           tx_ttl_min: number
           updated_at: string
         }
@@ -26,6 +31,11 @@ export type Database = {
           bakong_account_id?: string | null
           coins_per_usd?: number
           id?: number
+          tus_backoff_base_ms?: number
+          tus_backoff_cap_ms?: number
+          tus_backoff_step_ms?: number
+          tus_max_net_retries?: number
+          tus_retry_delays_ms?: Json
           tx_ttl_min?: number
           updated_at?: string
         }
@@ -33,6 +43,11 @@ export type Database = {
           bakong_account_id?: string | null
           coins_per_usd?: number
           id?: number
+          tus_backoff_base_ms?: number
+          tus_backoff_cap_ms?: number
+          tus_backoff_step_ms?: number
+          tus_max_net_retries?: number
+          tus_retry_delays_ms?: Json
           tx_ttl_min?: number
           updated_at?: string
         }
