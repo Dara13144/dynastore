@@ -757,12 +757,8 @@ function GamesTab() {
         screenshots: draft.screenshots ?? [],
         preview_video_url: draft.preview_video_url ?? null,
         file_url: sourceMode === "library" ? (draft.file_path ?? null) : null,
-        storage_provider:
-          sourceMode === "s3" ? "s3" : sourceMode === "library" ? "external_url" : "supabase",
-        external_file:
-          sourceMode === "s3" && s3UploadedKey
-            ? { path: s3UploadedKey, size: s3UploadedSize }
-            : null,
+        storage_provider: sourceMode === "library" ? "external_url" : "supabase",
+        external_file: null,
       },
       sourceMode === "file" ? draftFile : null,
       {
