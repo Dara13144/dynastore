@@ -1031,11 +1031,96 @@ function GamesTab() {
     setBatchItems([]);
   };
 
+  /**
+   * Preflight validation: re-check every pending item before any upload starts.
+   *  - file size within bounds (validateFile)
+   *  - slug non-empty / well-formed
+   *  - slug unique within the batch
+   *  - slug not already present in DB (live query against public.games.id)
+   * Marks failing items as "error" with a clear message and returns the count
+   * of items still valid to upload. Returns -1 if a fatal DB error occurred.
+   */
+  const preflightBatch = async (): Promise<number> => {
+    const pending = batchItems.filter((it) => it.status === "pending");
+    if (pending.length === 0) return 0;
+
+    // 1. Local checks: size + slug shape + intra-batch duplicates
+    const seen = new Map<string, string>(); // slug -> first item id
+    const localErrors = new Map<string, string>(); // item id -> message
+    for (const it of pending) {
+      const sizeErr = validateFile(it.file);
+      if (sizeErr) {
+        localErrors.set(it.id, sizeErr);
+        continue;
+      }
+      const slug = (it.slug || "").trim();
+      if (!slug || !/^[a-z0-9][a-z0-9-]{0,63}$/.test(slug)) {
+        localErrors.set(it.id, `Slug មិនត្រឹមត្រូវ: "${it.slug}" (a-z, 0-9, "-", ≤64 តួ)`);
+        continue;
+      }
+      const firstId = seen.get(slug);
+      if (firstId) {
+        localErrors.set(it.id, `Slug ស្ទួនក្នុង batch: "${slug}"`);
+      } else {
+        seen.set(slug, it.id);
+      }
+    }
+
+    // 2. DB check: any of the still-valid slugs already exist?
+    const slugsToCheck = pending
+      .filter((it) => !localErrors.has(it.id))
+      .map((it) => it.slug);
+    if (slugsToCheck.length > 0) {
+      const { data, error } = await supabase
+        .from("games")
+        .select("id")
+        .in("id", slugsToCheck);
+      if (error) {
+        showToast(`Preflight បរាជ័យ: ${error.message}`);
+        return -1;
+      }
+      const taken = new Set((data ?? []).map((r) => r.id));
+      for (const it of pending) {
+        if (localErrors.has(it.id)) continue;
+        if (taken.has(it.slug)) {
+          localErrors.set(it.id, `Slug មានក្នុង DB រួចហើយ: "${it.slug}"`);
+        }
+      }
+    }
+
+    // 3. Apply errors in one state update
+    if (localErrors.size > 0) {
+      setBatchItems((items) =>
+        items.map((it) =>
+          localErrors.has(it.id)
+            ? { ...it, status: "error" as BatchStatus, pct: 0, message: localErrors.get(it.id) }
+            : it,
+        ),
+      );
+    }
+    return pending.length - localErrors.size;
+  };
+
+  const runPreflightOnly = async () => {
+    if (batchRunning) return;
+    const ok = await preflightBatch();
+    if (ok < 0) return;
+    const failed = batchItems.filter((it) => it.status === "pending").length - ok;
+    showToast(
+      ok === 0 && failed === 0
+        ? "គ្មានឯកសារត្រូវពិនិត្យ"
+        : `Preflight: ${ok} OK • ${failed} មានបញ្ហា`,
+    );
+  };
+
   const runBatch = async () => {
     if (batchRunning) return;
+    // Preflight first — refuses to start if any item fails validation.
+    const okCountPre = await preflightBatch();
+    if (okCountPre < 0) return; // DB error already toasted
     const queue = batchItems.filter((it) => it.status === "pending");
     if (queue.length === 0) {
-      showToast("គ្មានឯកសារត្រូវបង្ហោះ");
+      showToast("គ្មានឯកសារត្រឹមត្រូវសម្រាប់បង្ហោះ — សូមពិនិត្យ errors");
       return;
     }
     setBatchRunning(true);
