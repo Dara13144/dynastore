@@ -39,6 +39,7 @@ import {
   adminSetUserRole,
 } from "@/lib/admin.functions";
 import { validateGameFile, validateGameFileUrl, MAX_GAME_FILE_BYTES } from "@/lib/validate-game-file";
+import { validateMediaFile } from "@/lib/validate-media-file";
 import { submitCreateGame } from "@/lib/create-game";
 import { parseBulkLinks, summarizeParse, dedupeAgainstExisting, type ParsedLinkRow } from "@/lib/bulk-link-import";
 import { getGameFilesBucketLimit } from "@/lib/bucket-limit.functions";
