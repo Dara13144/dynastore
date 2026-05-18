@@ -92,8 +92,13 @@ export function validateGameFileUrl(raw: string | null | undefined): string | nu
   if (url.protocol !== "http:" && url.protocol !== "https:") {
     return GAME_FILE_URL_ERRORS.BAD_PROTOCOL;
   }
-  const path = url.pathname.toLowerCase();
-  const ok = ALLOWED_GAME_FILE_EXTS.some((ext) => path.endsWith(ext));
+  // Accept the extension when it appears in the pathname, query string, or
+  // fragment — many CDN/proxy links (e.g. file.php?f=/path/x.rar) carry the
+  // real filename in the query rather than the pathname.
+  const haystack = (url.pathname + url.search + url.hash).toLowerCase();
+  const ok = ALLOWED_GAME_FILE_EXTS.some(
+    (ext) => haystack.endsWith(ext) || haystack.includes(`${ext}?`) || haystack.includes(`${ext}&`) || haystack.includes(`${ext}#`),
+  );
   if (!ok) return GAME_FILE_URL_ERRORS.BAD_EXTENSION;
   return null;
 }
