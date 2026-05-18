@@ -133,6 +133,7 @@ describe("TUS resume across offline → online", () => {
       gameId: "g_resume",
       file,
       bucketLimitBytes: 1024 * 1024 * 1024,
+        resumableThresholdBytes: 0,
       uploader: { direct: vi.fn(), resumable: flakyResumable },
       submit: vi.fn(),
       onStage: (s) => firstStages.push(s),
@@ -156,6 +157,7 @@ describe("TUS resume across offline → online", () => {
       gameId: "g_resume",
       file,
       bucketLimitBytes: 1024 * 1024 * 1024,
+        resumableThresholdBytes: 0,
       uploader: { direct: vi.fn(), resumable: cleanResumable },
       submit,
     });
@@ -215,6 +217,7 @@ describe("TUS resume across offline → online", () => {
         gameId: "g_flicker",
         file,
         bucketLimitBytes: 1024 * 1024 * 1024,
+        resumableThresholdBytes: 0,
         uploader: { direct: vi.fn(), resumable: uploader },
         submit: vi.fn(async () => {}),
       });
