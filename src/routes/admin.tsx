@@ -1869,6 +1869,15 @@ function GamesTab() {
                       <span className="text-muted-foreground/70"> (ដែនកំណត់ bucket បច្ចុប្បន្ន)</span>
                     ) : null}
                   </p>
+                  {draftFile && (
+                    <div className="mt-2 space-y-1">
+                      <span className="text-[11px] text-foreground/90 block">
+                        <span className="font-semibold">{draftFile.name}</span>
+                        {" · "}
+                        {(draftFile.size / 1024 / 1024).toFixed(2)} MiB
+                      </span>
+                    </div>
+                  )}
                   {draftFile && !draftFileError && (() => {
                     const max = effectiveMaxBytes();
                     const pct = Math.min(100, (draftFile.size / max) * 100);
@@ -1886,9 +1895,6 @@ function GamesTab() {
                           : "text-emerald-400";
                     return (
                       <div className="mt-1 space-y-1">
-                        <span className="text-[10px] text-emerald-400 block">
-                          {draftFile.name} · {(draftFile.size / 1024 / 1024).toFixed(2)} MB
-                        </span>
                         <div
                           className="h-1 w-full overflow-hidden rounded-full bg-muted"
                           role="progressbar"
@@ -1908,8 +1914,24 @@ function GamesTab() {
                       </div>
                     );
                   })()}
-                  {draftFileError && (
-                    <span className="text-[10px] text-destructive mt-1 block">{draftFileError}</span>
+                  {draftFile && draftFileError && (
+                    <div
+                      className="mt-2 rounded-lg border border-destructive/40 bg-destructive/5 p-2.5 text-destructive"
+                      role="alert"
+                      aria-live="polite"
+                    >
+                      <div className="flex items-start gap-1.5">
+                        <X className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+                        <div className="space-y-1 min-w-0">
+                          <div className="text-[11px] font-semibold">
+                            ឯកសារមិនត្រឹមត្រូវ
+                          </div>
+                          <div className="text-[11px] leading-relaxed break-words whitespace-pre-wrap">
+                            {draftFileError}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                   )}
                   {uploadStage !== "idle" && (
                     <div
