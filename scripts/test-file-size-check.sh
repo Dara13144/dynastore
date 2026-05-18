@@ -55,6 +55,21 @@ run_case "mib_semantics_999999"             "999999"                    "reject"
 run_case "gib_semantics_1000GB_decimal"     "1000000000000"             "ok"       # 1000 GB (10^12) < 1000 GiB → accept
 run_case "gib_semantics_1TiB"               "1099511627776"             "reject"   # 1 TiB > 1000 GiB → reject
 run_case "gib_semantics_999GiB"             "1072693248000"             "ok"       # 999 GiB → accept
+
+# --- External-link games: NULL size accepted; CHECK still bounds non-NULL sizes ---
+run_case "external_link_null_size"          "NULL"          "ok"      "external_url" "https://cdn.example.com/game.zip"
+run_case "external_link_null_size_http"     "NULL"          "ok"      "external_url" "http://files.example.com/a.rar"
+run_case "external_link_with_valid_size"    "1048576"       "ok"      "external_url" "https://cdn.example.com/g.zip"   # 1 MiB
+run_case "external_link_with_max_size"      "1073741824000" "ok"      "external_url" "https://cdn.example.com/g.zip"   # 1000 GiB
+run_case "external_link_below_min_rejected" "0"             "reject"  "external_url" "https://cdn.example.com/g.zip"
+run_case "external_link_just_under_rejected" "1048575"      "reject"  "external_url" "https://cdn.example.com/g.zip"
+run_case "external_link_above_max_rejected" "1073741824001" "reject"  "external_url" "https://cdn.example.com/g.zip"
+
+# --- File uploads (supabase provider): NULL accepted at DB layer; bounds enforced on non-NULL ---
+run_case "upload_with_path_null_size_ok"    "NULL"          "ok"      "supabase"     "games/abc.zip"
+run_case "upload_with_path_min_ok"          "1048576"       "ok"      "supabase"     "games/abc.zip"
+run_case "upload_with_path_below_min_rej"   "1048575"       "reject"  "supabase"     "games/abc.zip"
+run_case "upload_with_path_above_max_rej"   "1073741824001" "reject"  "supabase"     "games/abc.zip"
 echo
 echo "=============================="
 echo "PASSED: $PASS    FAILED: $FAIL"
