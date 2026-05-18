@@ -526,6 +526,48 @@ export type Database = {
         }
         Relationships: []
       }
+      upload_audit_log: {
+        Row: {
+          attempt: number | null
+          created_at: string
+          event_type: string
+          file_name: string | null
+          file_size_bytes: number | null
+          game_id: string | null
+          id: string
+          message: string | null
+          offset_bytes: number | null
+          online: boolean | null
+          user_id: string
+        }
+        Insert: {
+          attempt?: number | null
+          created_at?: string
+          event_type: string
+          file_name?: string | null
+          file_size_bytes?: number | null
+          game_id?: string | null
+          id?: string
+          message?: string | null
+          offset_bytes?: number | null
+          online?: boolean | null
+          user_id: string
+        }
+        Update: {
+          attempt?: number | null
+          created_at?: string
+          event_type?: string
+          file_name?: string | null
+          file_size_bytes?: number | null
+          game_id?: string | null
+          id?: string
+          message?: string | null
+          offset_bytes?: number | null
+          online?: boolean | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
