@@ -83,3 +83,31 @@ describe("bulk-link-import parser", () => {
     expect(rows[0].draft?.id).toBe("fvfbmv6");
   });
 });
+
+describe("bulk-link-import URL normalization", () => {
+  it("strips tracking params (utm_*, fbclid, gclid)", () => {
+    const rows = parseBulkLinks(
+      "https://cdn.example.com/game.zip?utm_source=x&utm_medium=y&fbclid=abc&keep=1",
+    );
+    expect(rows[0].ok).toBe(true);
+    expect(rows[0].draft?.url).toBe("https://cdn.example.com/game.zip?keep=1");
+  });
+
+  it("lowercases host and strips leading www.", () => {
+    const rows = parseBulkLinks("https://WWW.Cdn.Example.COM/My-Game.zip");
+    expect(rows[0].ok).toBe(true);
+    expect(rows[0].draft?.url).toBe("https://cdn.example.com/My-Game.zip");
+  });
+
+  it("rejects URLs from unsupported hosts with no archive extension", () => {
+    const rows = parseBulkLinks("https://random.example.com/page");
+    expect(rows[0].ok).toBe(false);
+    expect(rows[0].error).toBe("ប្រភពនេះមិនត្រូវបានគាំទ្រទេ");
+  });
+
+  it("rejects URLs longer than 2048 chars", () => {
+    const long = "https://example.com/" + "a".repeat(2100) + ".zip";
+    const rows = parseBulkLinks(long);
+    expect(rows[0].ok).toBe(false);
+  });
+});
