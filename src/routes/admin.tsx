@@ -45,7 +45,9 @@ import {
   friendlyUploadError as friendlyUploadErrorPure,
   oversizeForBucketMessage,
 } from "@/lib/upload-error-messages";
+import { logUploadEvent } from "@/lib/upload-audit";
 import { DownloadLogsTab } from "@/components/admin/DownloadLogsTab";
+import { UploadAuditTab } from "@/components/admin/UploadAuditTab";
 import { SplitFileGuideDialog } from "@/components/admin/SplitFileGuideDialog";
 import { isPlatformCapError } from "@/lib/chunk-plan";
 import { DashboardTab } from "@/components/admin/DashboardTab";
@@ -122,7 +124,7 @@ function AdminPage() {
   const { authed, loading } = useStore();
   const navigate = useNavigate();
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
-  const [tab, setTab] = useState<"dashboard" | "games" | "users" | "topups" | "content" | "tutorials" | "settings" | "logs">(
+  const [tab, setTab] = useState<"dashboard" | "games" | "users" | "topups" | "content" | "tutorials" | "settings" | "logs" | "uploads">(
     "dashboard",
   );
 
@@ -233,6 +235,12 @@ function AdminPage() {
               icon={<Download className="h-3.5 w-3.5" />}
               label="Logs"
             />
+            <TabBtn
+              active={tab === "uploads"}
+              onClick={() => setTab("uploads")}
+              icon={<History className="h-3.5 w-3.5" />}
+              label="Uploads"
+            />
           </nav>
         </div>
       </header>
@@ -246,6 +254,7 @@ function AdminPage() {
         {tab === "tutorials" && <TutorialsTab />}
         {tab === "settings" && <SettingsTab />}
         {tab === "logs" && <DownloadLogsTab />}
+        {tab === "uploads" && <UploadAuditTab />}
       </main>
     </div>
   );
@@ -577,6 +586,20 @@ function GamesTab() {
         "x-upsert": "true",
       };
 
+      // Audit helper: fire-and-forget, captures gameId + file metadata + latest offset.
+      const audit = (event_type: Parameters<typeof logUploadEvent>[0]["event_type"], extra?: { message?: string; attempt?: number }) => {
+        void logUploadEvent({
+          event_type,
+          game_id: gameId,
+          file_name: file.name,
+          file_size_bytes: file.size,
+          offset_bytes: lastSent,
+          attempt: extra?.attempt ?? (netRetryCount > 0 ? netRetryCount : null),
+          message: extra?.message ?? null,
+        });
+      };
+      audit("start");
+
       const cleanupPending = () => {
         if (pendingOnlineHandler) {
           try { window.removeEventListener("online", pendingOnlineHandler); } catch { /* ignore */ }
@@ -604,17 +627,19 @@ function GamesTab() {
           setUploadError(
             `បាត់សញ្ញាបណ្ដាញ — រង់ចាំការតភ្ជាប់ឡើងវិញ ហើយបន្តពីចំណុចបច្ចុប្បន្ន (ព្យាយាម #${netRetryCount})`,
           );
+          audit("network_lost", { message: msg, attempt: netRetryCount });
           const offline = typeof navigator !== "undefined" && !navigator.onLine;
           const resumeNow = () => {
             cleanupPending();
             if (aborted) return;
+            audit("network_restored", { attempt: netRetryCount });
+            audit("retry", { attempt: netRetryCount });
             buildAndStart();
           };
           if (offline && typeof window !== "undefined") {
             pendingOnlineHandler = resumeNow;
             window.addEventListener("online", resumeNow, { once: true });
           } else {
-            // Exponential-ish backoff: 3s, 5s, 8s, ..., capped at 30s.
             const delay = Math.min(3000 + netRetryCount * 2000, 30000);
             pendingTimeout = setTimeout(resumeNow, delay);
           }
@@ -629,6 +654,7 @@ function GamesTab() {
         setUploadPct(null);
         setUploadStats(null);
         uploadRef.current = null;
+        audit("error", { message: friendly });
         showToast(`Upload: ${friendly}`);
         resolve(null);
       };
@@ -654,6 +680,7 @@ function GamesTab() {
           onShouldRetry: (err: import("tus-js-client").DetailedError) => {
             const status = err.originalResponse?.getStatus?.() ?? 0;
             if (status === 401 || status === 403) {
+              audit("token_refresh", { message: `status ${status}` });
               supabase.auth
                 .refreshSession()
                 .then(({ data }) => {
@@ -695,6 +722,8 @@ function GamesTab() {
             setUploadPct(100);
             setUploadStats({ sent: file.size, total: file.size, speedBps: 0, etaSec: 0 });
             uploadRef.current = null;
+            lastSent = file.size;
+            audit("success");
             resolve({ path, size: file.size });
           },
         });
@@ -703,6 +732,7 @@ function GamesTab() {
           abort: () => {
             aborted = true;
             cleanupPending();
+            audit("abort");
             try { currentUpload?.abort(true); } catch { /* ignore */ }
             resolve(null);
           },
@@ -713,6 +743,7 @@ function GamesTab() {
             try { currentUpload?.abort(); } catch { /* ignore */ }
             setUploadStage("paused");
             setUploadError("ផ្អាកដោយដៃ — ចុច “បន្ត” ដើម្បីអាប់ឡូដបន្តពីចំណុចបច្ចុប្បន្ន");
+            audit("pause");
             showToast("Upload ត្រូវបានផ្អាក");
           },
           resume: () => {
@@ -720,9 +751,9 @@ function GamesTab() {
             paused = false;
             setUploadStage("uploading");
             setUploadError(null);
-            // Reset speed/ETA baseline so resumed throughput is accurate.
             lastTs = performance.now();
-            lastSent = 0;
+            // Keep lastSent so audit offsets remain monotonic across the resume.
+            audit("resume");
             buildAndStart();
             showToast("Upload បានបន្ត");
           },
