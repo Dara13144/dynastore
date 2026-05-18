@@ -88,6 +88,27 @@ export const getS3SignedUploadUrl = createServerFn({ method: "POST" })
     return { uploadUrl: url, method, expiresIn, key: data.key };
   });
 
+export const getS3SignedReadUrl = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i) =>
+    z
+      .object({
+        key: z.string().min(1).max(512).regex(SAFE_KEY),
+      })
+      .parse(i),
+  )
+  .handler(async ({ data, context }) => {
+    const { data: role } = await supabaseAdmin
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", context.userId)
+      .eq("role", "admin")
+      .maybeSingle();
+    if (!role) throw new Error("forbidden");
+    const { url, expiresIn } = await signS3Url("read", data.key);
+    return { url, expiresIn };
+  });
+
 export const getS3Status = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
