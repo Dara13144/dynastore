@@ -679,7 +679,8 @@ function GamesTab() {
             pendingOnlineHandler = resumeNow;
             window.addEventListener("online", resumeNow, { once: true });
           } else {
-            const delay = Math.min(3000 + netRetryCount * 2000, 30000);
+            const cfg = retryCfgRef.current;
+            const delay = Math.min(cfg.backoffBaseMs + netRetryCount * cfg.backoffStepMs, cfg.backoffCapMs);
             pendingTimeout = setTimeout(resumeNow, delay);
           }
           return;
