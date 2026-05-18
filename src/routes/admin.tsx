@@ -1908,13 +1908,35 @@ function GamesTab() {
                               </>
                             )}
                           </span>
-                          <button
-                            type="button"
-                            onClick={cancelUpload}
-                            className="rounded-full bg-destructive/15 px-2 py-0.5 text-[10px] font-semibold text-destructive hover:bg-destructive/25"
-                          >
-                            បោះបង់
-                          </button>
+                          <div className="flex items-center gap-1.5">
+                            {uploadStage === "uploading" && (
+                              <button
+                                type="button"
+                                onClick={pauseUpload}
+                                className="rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-semibold text-amber-600 hover:bg-amber-500/25"
+                                title="ផ្អាកបណ្តោះអាសន្ន — អាចបន្តពីចំណុចបច្ចុប្បន្ន"
+                              >
+                                ផ្អាក
+                              </button>
+                            )}
+                            {uploadStage === "paused" && (
+                              <button
+                                type="button"
+                                onClick={resumeUpload}
+                                className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-semibold text-emerald-600 hover:bg-emerald-500/25"
+                                title="បន្តពីចំណុចបច្ចុប្បន្ន"
+                              >
+                                បន្ត
+                              </button>
+                            )}
+                            <button
+                              type="button"
+                              onClick={cancelUpload}
+                              className="rounded-full bg-destructive/15 px-2 py-0.5 text-[10px] font-semibold text-destructive hover:bg-destructive/25"
+                            >
+                              បោះបង់
+                            </button>
+                          </div>
                         </div>
                       )}
 
