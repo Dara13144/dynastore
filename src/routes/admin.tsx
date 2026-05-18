@@ -271,6 +271,7 @@ function AdminPage() {
         {tab === "settings" && <SettingsTab />}
         {tab === "logs" && <DownloadLogsTab />}
         {tab === "uploads" && <UploadAuditTab />}
+        {tab === "diagnostics" && <DiagnosticsTab />}
       </main>
     </div>
   );
