@@ -1880,17 +1880,17 @@ function GamesTab() {
                         )}
                       </div>
 
-                      {(uploadStage === "uploading" || uploadStage === "processing" || uploadStage === "done") &&
+                      {(uploadStage === "uploading" || uploadStage === "paused" || uploadStage === "processing" || uploadStage === "done") &&
                         uploadPct !== null && (
                           <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
                             <div
-                              className={`h-full transition-all ${uploadStage === "done" ? "bg-emerald-500" : "bg-primary"}`}
+                              className={`h-full transition-all ${uploadStage === "done" ? "bg-emerald-500" : uploadStage === "paused" ? "bg-amber-500" : "bg-primary"}`}
                               style={{ width: `${uploadPct}%` }}
                             />
                           </div>
                         )}
 
-                      {uploadStage === "uploading" && uploadStats && (
+                      {(uploadStage === "uploading" || uploadStage === "paused") && uploadStats && (
                         <div className="flex items-center justify-between text-[10px] text-muted-foreground">
                           <span>
                             {uploadPct ?? 0}% ·{" "}
