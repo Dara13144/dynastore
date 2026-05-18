@@ -44,7 +44,7 @@ const fmtPct = (offset: number | null, total: number | null): string => {
 
 const eventBadge = (
   ev: string,
-): { icon: JSX.Element; cls: string; label: string } => {
+): { icon: ReactNode; cls: string; label: string } => {
   const base = "h-3 w-3";
   switch (ev) {
     case "start":
