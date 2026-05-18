@@ -2829,6 +2829,8 @@ function ScreenshotUrlAdder({ onAdd }: { onAdd: (url: string) => void }) {
     </div>
   );
 }
+
+function GameRowEditor({
   game,
   busy,
   onSave,
