@@ -52,7 +52,7 @@ import { DashboardTab } from "@/components/admin/DashboardTab";
 import { TutorialsTab } from "@/components/admin/TutorialsTab";
 import { adminListTopupRequests, adminApproveTopup, adminRejectTopup } from "@/lib/topup.functions";
 import { getKhqrSettings, setKhqrAccountId, previewKhqr } from "@/lib/khqr-settings.functions";
-import { getS3SignedUploadUrl, getS3Status } from "@/lib/external-storage.functions";
+import { getS3SignedUploadUrl, getS3SignedReadUrl, getS3Status } from "@/lib/external-storage.functions";
 import { Cloud, HardDrive } from "lucide-react";
 import QRCode from "react-qr-code";
 import {
