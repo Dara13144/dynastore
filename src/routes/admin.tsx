@@ -714,6 +714,8 @@ function GamesTab() {
             setUploadPct(100);
             setUploadStats({ sent: file.size, total: file.size, speedBps: 0, etaSec: 0 });
             uploadRef.current = null;
+            lastSent = file.size;
+            audit("success");
             resolve({ path, size: file.size });
           },
         });
@@ -722,6 +724,7 @@ function GamesTab() {
           abort: () => {
             aborted = true;
             cleanupPending();
+            audit("abort");
             try { currentUpload?.abort(true); } catch { /* ignore */ }
             resolve(null);
           },
@@ -732,6 +735,7 @@ function GamesTab() {
             try { currentUpload?.abort(); } catch { /* ignore */ }
             setUploadStage("paused");
             setUploadError("ផ្អាកដោយដៃ — ចុច “បន្ត” ដើម្បីអាប់ឡូដបន្តពីចំណុចបច្ចុប្បន្ន");
+            audit("pause");
             showToast("Upload ត្រូវបានផ្អាក");
           },
           resume: () => {
@@ -739,9 +743,9 @@ function GamesTab() {
             paused = false;
             setUploadStage("uploading");
             setUploadError(null);
-            // Reset speed/ETA baseline so resumed throughput is accurate.
             lastTs = performance.now();
-            lastSent = 0;
+            // Keep lastSent so audit offsets remain monotonic across the resume.
+            audit("resume");
             buildAndStart();
             showToast("Upload បានបន្ត");
           },
