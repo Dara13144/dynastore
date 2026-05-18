@@ -1379,6 +1379,15 @@ function GamesTab() {
             <FileArchive className="h-3.5 w-3.5" /> Batch Upload
           </button>
           <button
+            onClick={() => {
+              setBulkLinksOpen(true);
+              setBulkLinksLog([]);
+            }}
+            className="inline-flex items-center gap-1.5 rounded-full bg-muted/40 px-3 py-1.5 text-xs font-semibold text-foreground ring-1 ring-border hover:bg-muted/60"
+            title="នាំចូលច្រើនតំណពី Google Drive / Mega / etc."
+          >
+            <LinkIcon className="h-3.5 w-3.5" /> Bulk Link Import
+          <button
             onClick={() => setCreating((v) => !v)}
             className="inline-flex items-center gap-1.5 rounded-full bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground"
           >
