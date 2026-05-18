@@ -55,6 +55,7 @@ import {
   DropZone,
   UploadProgressLine,
   RejectedFilesBanner,
+  UploadOverallSummary,
   type RejectedFile,
 } from "@/components/admin/DropZone";
 import { DiagnosticsTab } from "@/components/admin/DiagnosticsTab";
