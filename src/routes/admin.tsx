@@ -312,7 +312,10 @@ function GamesTab() {
   const [s3Busy, setS3Busy] = useState(false);
   const s3XhrRef = useRef<XMLHttpRequest | null>(null);
   const getS3SignedUploadUrlFn = useServerFn(getS3SignedUploadUrl);
+  const getS3SignedReadUrlFn = useServerFn(getS3SignedReadUrl);
   const getS3StatusFn = useServerFn(getS3Status);
+  const [signedUrl, setSignedUrl] = useState<{ url: string; expiresAt: number } | null>(null);
+  const [signing, setSigning] = useState(false);
   useEffect(() => {
     getS3StatusFn({})
       .then((r) => setS3Connected(r.connected))
