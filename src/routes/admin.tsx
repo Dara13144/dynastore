@@ -975,7 +975,7 @@ function GamesTab() {
     }
   };
 
-
+  const updateGame = async (id: string, patch: Partial<GameRow>) => {
     setBusy(true);
     const { error } = await supabase.from("games").update(patch).eq("id", id);
     setBusy(false);
