@@ -947,7 +947,35 @@ function GamesTab() {
     return supabase.storage.from("game-images").getPublicUrl(path).data.publicUrl;
   };
 
-  const updateGame = async (id: string, patch: Partial<GameRow>) => {
+  /** Wrap a media upload with live progress tracking shown in the dialog. */
+  const runMediaUpload = async (
+    kind: "cover" | "screenshot" | "video",
+    file: File,
+    fn: (f: File) => Promise<string | null>,
+  ): Promise<string | null> => {
+    const id = `${kind}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+    pushMediaUpload({ id, kind, name: file.name, status: "uploading" });
+    try {
+      const url = await fn(file);
+      if (url) {
+        updateMediaUpload(id, { status: "done" });
+        setTimeout(() => removeMediaUpload(id), 1200);
+      } else {
+        updateMediaUpload(id, { status: "error", message: "Upload បរាជ័យ" });
+        setTimeout(() => removeMediaUpload(id), 4000);
+      }
+      return url;
+    } catch (e) {
+      updateMediaUpload(id, {
+        status: "error",
+        message: e instanceof Error ? e.message : String(e),
+      });
+      setTimeout(() => removeMediaUpload(id), 4000);
+      return null;
+    }
+  };
+
+
     setBusy(true);
     const { error } = await supabase.from("games").update(patch).eq("id", id);
     setBusy(false);
