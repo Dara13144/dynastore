@@ -1601,6 +1601,13 @@ function GamesTab() {
                       >
                         {it.status === "uploading" ? `${it.pct.toFixed(0)}%` : it.status}
                       </span>
+                      {it.status === "uploading" && uploadStats && (
+                        <span className="text-[10px] text-muted-foreground tabular-nums" title="ល្បឿន · ETA">
+                          {fmtSpeed(uploadStats.speedBps)} · ETA {fmtEta(uploadStats.etaSec)}
+                        </span>
+                      )}
+                      <span className="hidden">{/* spacer */}
+                      </span>
                       {!batchRunning && it.status !== "uploading" && (
                         <button
                           type="button"
