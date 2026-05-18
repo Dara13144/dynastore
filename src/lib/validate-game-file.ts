@@ -77,8 +77,44 @@ export const GAME_FILE_URL_ERRORS = {
 } as const;
 
 /**
+ * Known file-sharing hosts that serve archives behind a share page URL
+ * (no file extension in the URL). These are accepted as-is.
+ */
+export const SHARE_HOSTS = [
+  "uploadnow.io",
+  "mediafire.com",
+  "mega.nz",
+  "mega.io",
+  "drive.google.com",
+  "pixeldrain.com",
+  "gofile.io",
+  "bunkr.ru",
+  "bunkr.is",
+  "bunkr.si",
+  "krakenfiles.com",
+  "sendspace.com",
+  "1fichier.com",
+  "workupload.com",
+  "anonfiles.com",
+  "dropbox.com",
+  "drop.download",
+  "qiwi.gg",
+  "buzzheavier.com",
+  "gofile.to",
+  "files.catbox.moe",
+  "pixeldra.in",
+] as const;
+
+function isShareHost(hostname: string): boolean {
+  const h = hostname.toLowerCase();
+  return SHARE_HOSTS.some((d) => h === d || h.endsWith(`.${d}`));
+}
+
+/**
  * Validate an external link to a game archive.
- * Rules: non-empty, parseable URL, http/https only, pathname ends with an allowed extension.
+ * Rules: non-empty, parseable URL, http/https only; path/query must end with
+ * an allowed archive extension OR the host must be a known share-page host
+ * that requires no extension (e.g. uploadnow.io/files/abcd).
  */
 export function validateGameFileUrl(raw: string | null | undefined): string | null {
   const value = (raw ?? "").trim();
@@ -92,13 +128,20 @@ export function validateGameFileUrl(raw: string | null | undefined): string | nu
   if (url.protocol !== "http:" && url.protocol !== "https:") {
     return GAME_FILE_URL_ERRORS.BAD_PROTOCOL;
   }
-  // Accept the extension when it appears in the pathname, query string, or
-  // fragment — many CDN/proxy links (e.g. file.php?f=/path/x.rar) carry the
-  // real filename in the query rather than the pathname.
   const haystack = (url.pathname + url.search + url.hash).toLowerCase();
-  const ok = ALLOWED_GAME_FILE_EXTS.some(
+  // Hard-block dangerous executables even on share hosts.
+  const BAD_EXTS = [".exe", ".bin", ".msi", ".scr", ".bat", ".cmd", ".sh", ".apk"];
+  if (BAD_EXTS.some((ext) => haystack.endsWith(ext) || haystack.includes(`${ext}?`) || haystack.includes(`${ext}&`) || haystack.includes(`${ext}#`))) {
+    return GAME_FILE_URL_ERRORS.BAD_EXTENSION;
+  }
+  const hasExt = ALLOWED_GAME_FILE_EXTS.some(
     (ext) => haystack.endsWith(ext) || haystack.includes(`${ext}?`) || haystack.includes(`${ext}&`) || haystack.includes(`${ext}#`),
   );
-  if (!ok) return GAME_FILE_URL_ERRORS.BAD_EXTENSION;
-  return null;
+  if (hasExt) return null;
+  // No archive extension — accept only if host is a known share page that
+  // has a non-empty path (share id).
+  if (isShareHost(url.hostname) && url.pathname.replace(/\/+$/, "").length > 1) {
+    return null;
+  }
+  return GAME_FILE_URL_ERRORS.BAD_EXTENSION;
 }
