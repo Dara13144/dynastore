@@ -47,7 +47,10 @@ export function validateMediaFile(
   const max = kind === "video" ? MAX_VIDEO_BYTES : kind === "screenshot" ? MAX_SCREENSHOT_BYTES : MAX_IMAGE_BYTES;
   const kindLabelKh = kind === "video" ? "វីដេអូ" : kind === "screenshot" ? "រូប screenshot" : "រូបភាព";
 
-  const mimeOk = file.type ? mimes.includes(file.type as (typeof mimes)[number]) || (isImage ? file.type.startsWith("image/") : file.type.startsWith("video/")) : true;
+  const mimeOk = file.type
+    ? (mimes as readonly string[]).includes(file.type) ||
+      (isImage ? file.type.startsWith("image/") : file.type.startsWith("video/"))
+    : true;
   const extOk = hasExt(file.name, exts);
 
   if (!mimeOk && !extOk) {
