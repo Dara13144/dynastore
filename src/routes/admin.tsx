@@ -27,6 +27,7 @@ import {
   Download,
   Link as LinkIcon,
   LayoutDashboard,
+  Activity,
 } from "lucide-react";
 import { StoreProvider } from "@/lib/store";
 import {
@@ -48,6 +49,7 @@ import {
 import { logUploadEvent } from "@/lib/upload-audit";
 import { DownloadLogsTab } from "@/components/admin/DownloadLogsTab";
 import { UploadAuditTab } from "@/components/admin/UploadAuditTab";
+import { DiagnosticsTab } from "@/components/admin/DiagnosticsTab";
 import { SplitFileGuideDialog } from "@/components/admin/SplitFileGuideDialog";
 import { isPlatformCapError } from "@/lib/chunk-plan";
 import { DashboardTab } from "@/components/admin/DashboardTab";
@@ -132,7 +134,7 @@ function AdminPage() {
   const { authed, loading } = useStore();
   const navigate = useNavigate();
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
-  const [tab, setTab] = useState<"dashboard" | "games" | "users" | "topups" | "content" | "tutorials" | "settings" | "logs" | "uploads">(
+  const [tab, setTab] = useState<"dashboard" | "games" | "users" | "topups" | "content" | "tutorials" | "settings" | "logs" | "uploads" | "diagnostics">(
     "dashboard",
   );
 
@@ -249,6 +251,12 @@ function AdminPage() {
               icon={<History className="h-3.5 w-3.5" />}
               label="Uploads"
             />
+            <TabBtn
+              active={tab === "diagnostics"}
+              onClick={() => setTab("diagnostics")}
+              icon={<Activity className="h-3.5 w-3.5" />}
+              label="Diagnostics"
+            />
           </nav>
         </div>
       </header>
@@ -263,6 +271,7 @@ function AdminPage() {
         {tab === "settings" && <SettingsTab />}
         {tab === "logs" && <DownloadLogsTab />}
         {tab === "uploads" && <UploadAuditTab />}
+        {tab === "diagnostics" && <DiagnosticsTab />}
       </main>
     </div>
   );
