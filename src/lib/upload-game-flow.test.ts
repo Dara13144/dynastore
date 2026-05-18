@@ -157,8 +157,8 @@ describe("runUploadFlow — TUS upload near bucket limit", () => {
     expect(stages).toEqual(["preparing", "uploading", "processing", "error"]);
   });
 
-  it("uses the direct (non-TUS) uploader for files at/under the 2MB threshold", async () => {
-    const file = fakeFile("tiny.zip", 1.5 * 1024 * 1024);
+  it("uses the direct (non-TUS) uploader for files at/under the 1MB threshold", async () => {
+    const file = fakeFile("tiny.zip", 0.8 * 1024 * 1024);
     const direct = vi.fn(async () => ({ error: null }));
     const resumable = simulatedTusUploader();
 
@@ -173,6 +173,24 @@ describe("runUploadFlow — TUS upload near bucket limit", () => {
     expect(result.ok).toBe(true);
     expect(direct).toHaveBeenCalledTimes(1);
     expect(resumable).not.toHaveBeenCalled();
+  });
+
+  it("uses the TUS resumable uploader for files just over the 1MB threshold", async () => {
+    const file = fakeFile("medium.zip", 1.5 * 1024 * 1024);
+    const direct = vi.fn(async () => ({ error: null }));
+    const resumable = simulatedTusUploader();
+
+    const result = await runUploadFlow({
+      gameId: "g_med",
+      file,
+      bucketLimitBytes: 1024 * 1024 * 1024,
+      uploader: { direct, resumable },
+      submit: vi.fn(),
+    });
+
+    expect(result.ok).toBe(true);
+    expect(direct).not.toHaveBeenCalled();
+    expect(resumable).toHaveBeenCalledTimes(1);
   });
 
   it("effectiveMaxBytes clamps to the smaller of bucket limit and static MAX", () => {
