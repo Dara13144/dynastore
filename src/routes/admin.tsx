@@ -702,7 +702,7 @@ function GamesTab() {
       const buildAndStart = () => {
         currentUpload = new tus.Upload(file, {
           endpoint: `${projectUrl}/storage/v1/upload/resumable`,
-          retryDelays: [0, 1000, 3000, 5000, 10000, 20000, 30000, 60000, 120000],
+          retryDelays: retryCfgRef.current.retryDelaysMs,
           headers: tusHeaders,
           uploadDataDuringCreation: true,
           removeFingerprintOnSuccess: true,
