@@ -7,12 +7,12 @@ export type DiagCheck = {
   ok: boolean;
   ms: number;
   message: string;
-  detail?: Record<string, unknown>;
+  detail?: Record<string, string | number | null>;
 };
 
 async function timed<T>(
   name: string,
-  run: () => Promise<{ ok: boolean; message: string; detail?: Record<string, unknown> }>,
+  run: () => Promise<{ ok: boolean; message: string; detail?: Record<string, string | number | null> }>,
 ): Promise<DiagCheck> {
   const t0 = Date.now();
   try {
