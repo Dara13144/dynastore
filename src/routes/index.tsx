@@ -213,12 +213,17 @@ function Hero() {
               alt="KHQR — Dyna Store"
               className="w-full h-auto rounded-lg"
             />
-            <div className="mt-2 text-center text-xs font-semibold text-black">
-              http://www.dynastore.xyz/
-            </div>
-            <div className="mt-1 text-center text-xs text-muted-foreground">
+            <div className="mt-2 text-center text-xs text-muted-foreground">
               Scan here
             </div>
+            <a
+              href="http://www.dynastore.xyz/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-2 inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground shadow-sm hover:bg-primary/90 transition-colors"
+            >
+              http://www.dynastore.xyz/
+            </a>
           </div>
         </div>
       </div>
