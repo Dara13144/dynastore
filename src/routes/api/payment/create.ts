@@ -38,30 +38,35 @@ export const Route = createFileRoute("/api/payment/create")({
           }
 
           const paymentId = randomUUID();
-          const billNumber = `BILL-${Date.now()}`;
-          log("building KHQR", { paymentId, billNumber, amount });
+          let billNumber: string;
+          let khqr: string;
+          let md5: string;
 
-          if (typeof buildKhqr !== "function") {
-            throw new Error(
-              `[/api/payment/create] buildKhqr is ${typeof buildKhqr} — export missing from "@/lib/bakong.server" (src/lib/bakong.server.ts). Restart dev server / check the file's exports.`,
-            );
+          if (isIkhodeEnabled()) {
+            log("generating KHQR via iKhode bridge", { paymentId, amount });
+            const bridge = await generateIkhodeKhqr(amount);
+            billNumber = bridge.bill_number;
+            khqr = bridge.qr_string;
+            md5 = bridge.md5;
+          } else {
+            billNumber = `BILL-${Date.now()}`;
+            log("building local KHQR", { paymentId, billNumber, amount });
+            if (typeof buildKhqr !== "function" || typeof md5Hex !== "function") {
+              throw new Error(
+                `[/api/payment/create] buildKhqr/md5Hex missing from "@/lib/bakong.server".`,
+              );
+            }
+            const accountId = await getEffectiveBakongAccountId();
+            khqr = buildKhqr(amount, billNumber, accountId);
+            md5 = md5Hex(khqr);
           }
-          if (typeof md5Hex !== "function") {
-            throw new Error(
-              `[/api/payment/create] md5Hex is ${typeof md5Hex} — export missing from "@/lib/bakong.server" (src/lib/bakong.server.ts).`,
-            );
-          }
-          const accountId = await getEffectiveBakongAccountId();
-          const khqr = buildKhqr(amount, billNumber, accountId);
-          const md5 = md5Hex(khqr);
-          log("KHQR built", {
+          log("KHQR ready", {
             paymentId,
+            billNumber,
             khqrLength: khqr.length,
-            khqrHead: khqr.slice(0, 40),
-            khqrTail: khqr.slice(-12),
             md5,
-            md5Length: md5.length,
           });
+
 
           const qrImage = await QRCode.toDataURL(khqr, { width: 400, margin: 2 });
           log("QR image generated", { paymentId, qrImageBytes: qrImage.length });
