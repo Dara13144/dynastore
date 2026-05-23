@@ -124,8 +124,9 @@ export class BakongApiError extends Error {
 
 export async function checkTransactionByMd5(md5: string) {
   const token = process.env.BAKONG_DEVELOPER_TOKEN;
+  const base = (process.env.BAKONG_API ?? "https://api-bakong.nbc.gov.kh/v1").replace(/\/+$/, "");
 
-  const res = await fetch("https://api-bakong.nbc.gov.kh/v1/check_transaction_by_md5", {
+  const res = await fetch(`${base}/check_transaction_by_md5`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
