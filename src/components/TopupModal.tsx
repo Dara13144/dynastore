@@ -115,7 +115,7 @@ export function TopupModal({ onClose, onToast }: Props) {
   const qrBoxRef = useRef<HTMLDivElement>(null);
   const autoQrBoxRef = useRef<HTMLDivElement>(null);
 
-  const [mode] = useState<Mode>("manual");
+  const [mode, setMode] = useState<Mode>("auto");
   const [staticQr, setStaticQr] = useState<string | null>(null);
   const [rate, setRate] = useState(1);
   const [amount, setAmount] = useState<number>(1);
@@ -513,6 +513,34 @@ export function TopupModal({ onClose, onToast }: Props) {
               $1 = {rate.toLocaleString()} coins
             </span>
           </p>
+
+          {/* Mode switcher: auto KHQR (instant) vs manual slip upload */}
+          <div className="grid grid-cols-2 gap-2 rounded-full bg-muted p-1 ring-1 ring-border">
+            <button
+              type="button"
+              onClick={() => setMode("auto")}
+              className={`rounded-full px-3 py-2 text-xs font-semibold transition ${
+                mode === "auto"
+                  ? "bg-primary text-primary-foreground shadow"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              ⚡ ស្វ័យប្រវត្តិ (KHQR)
+            </button>
+            <button
+              type="button"
+              onClick={() => setMode("manual")}
+              className={`rounded-full px-3 py-2 text-xs font-semibold transition ${
+                mode === "manual"
+                  ? "bg-primary text-primary-foreground shadow"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              📄 ផ្ញើបង្កាន់ដៃ
+            </button>
+          </div>
+
+
 
           {/* Amount input (shared) */}
           {(mode === "manual" || autoStatus === "idle") && (
