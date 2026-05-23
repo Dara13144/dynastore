@@ -123,6 +123,38 @@ export class BakongApiError extends Error {
 }
 
 export async function checkTransactionByMd5(md5: string) {
+  // Prefer the iKhode KHQR Bridge (https://khqr.ikhode.com) when an API key
+  // is configured. It proxies NBC Bakong and refreshes the developer token
+  // automatically, so we don't need to manage BAKONG_DEVELOPER_TOKEN rotation.
+  const ikhodeKey = (process.env.IKHODE_API_KEY ?? "").trim();
+  if (ikhodeKey) {
+    const url = new URL("https://khqr-api.ikhode.com/api/check-payment-status");
+    url.searchParams.set("md5", md5);
+    url.searchParams.set("api_key", ikhodeKey);
+    const res = await fetch(url.toString(), {
+      method: "GET",
+      headers: { Accept: "application/json" },
+    });
+    if (res.status === 401 || res.status === 403) {
+      throw new BakongApiError("auth_error", `iKhode auth_error (${res.status})`, res.status);
+    }
+    if (!res.ok) {
+      throw new BakongApiError("upstream_error", `iKhode HTTP ${res.status}`, res.status);
+    }
+    const body = (await res.json()) as { md5?: string; status?: string };
+    const status = String(body?.status ?? "").toUpperCase();
+    if (status === "PAID" || status === "SUCCESS" || status === "SUCCESSFUL") {
+      // Emulate the NBC Bakong response envelope expected by call sites.
+      return {
+        responseCode: 0,
+        responseMessage: "Success.",
+        data: { md5, hash: md5, amount: undefined as number | undefined },
+      };
+    }
+    return { responseCode: 1, responseMessage: status || "UNPAID", data: null };
+  }
+
+  // Fallback: direct NBC Bakong API (legacy path).
   const token = process.env.BAKONG_DEVELOPER_TOKEN;
   const base = (process.env.BAKONG_API ?? "https://api-bakong.nbc.gov.kh/v1").replace(/\/+$/, "");
 
@@ -135,5 +167,13 @@ export async function checkTransactionByMd5(md5: string) {
     body: JSON.stringify({ md5 }),
   });
 
+  if (res.status === 401 || res.status === 403) {
+    throw new BakongApiError("auth_error", `Bakong auth_error (${res.status})`, res.status);
+  }
+  if (!res.ok) {
+    throw new BakongApiError("upstream_error", `Bakong HTTP ${res.status}`, res.status);
+  }
+
   return res.json();
 }
+
