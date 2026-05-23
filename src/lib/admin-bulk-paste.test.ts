@@ -45,9 +45,9 @@ describe("admin dialog — single vikingfile.com URL field", () => {
     );
   });
 
-  it("rejects an empty string and pure whitespace", () => {
-    expect(validateGameFileUrl("")).toBe(GAME_FILE_URL_ERRORS.INVALID_URL);
-    expect(validateGameFileUrl("    ")).toBe(GAME_FILE_URL_ERRORS.INVALID_URL);
+  it("rejects an empty string and pure whitespace as EMPTY", () => {
+    expect(validateGameFileUrl("")).toBe(GAME_FILE_URL_ERRORS.EMPTY);
+    expect(validateGameFileUrl("    ")).toBe(GAME_FILE_URL_ERRORS.EMPTY);
   });
 
   it("rejects a non-share host with UNSUPPORTED_HOST", () => {
