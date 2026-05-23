@@ -610,13 +610,6 @@ export function TopupModal({ onClose, onToast }: Props) {
                     <div className="text-[10px] text-muted-foreground">
                       ស្គេន QR តាម Bakong/ABA/Wing → coins នឹងបញ្ចូលដោយស្វ័យប្រវត្តិ
                     </div>
-                    <div className="mt-1 inline-flex items-center gap-1.5 text-[10px] text-primary/80">
-                      <span className="relative flex h-1.5 w-1.5">
-                        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-75"></span>
-                        <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-primary"></span>
-                      </span>
-                      និត្យ MD5 រៀងរាល់ 5 វិនាទី
-                    </div>
                   </div>
                   <button
                     onClick={downloadAutoQrPng}
