@@ -120,20 +120,23 @@ describe("SHARE_HOSTS extra messy input — bulk import", () => {
     expect(rows.every((r) => r.ok)).toBe(true);
   });
 
-  it("rejects URLs with embedded user:pass@ credentials as invalid", () => {
-    // The share-host allowlist does not match against userinfo, but credentials
-    // in a paste are almost certainly junk; the parser should not silently
-    // import them as a valid draft.
-    const input = "https://attacker:pwd@vikingfile.com/f/credLine";
-    const rows = parseBulkLinks(input);
-    expect(rows).toHaveLength(1);
-    // Either it's marked invalid OR it normalizes with the userinfo stripped;
-    // either way the resulting draft URL must NOT carry credentials.
-    if (rows[0].ok) {
-      expect(rows[0].draft!.url).not.toMatch(/@/);
-    } else {
-      expect(rows[0].error).toBeTruthy();
-    }
+  it("identifies the real host even when user:pass@ credentials are present", () => {
+    // Operators sometimes paste URLs with leftover basic-auth credentials.
+    // The normalizer must resolve the share host from the real hostname,
+    // not from the userinfo segment — i.e. it must NOT be fooled by a host
+    // hidden in "attacker:vikingfile.com@evil.example/...".
+    const realHost = parseBulkLinks(
+      "https://attacker:pwd@vikingfile.com/f/credLine",
+    );
+    expect(realHost).toHaveLength(1);
+    expect(realHost[0].ok).toBe(true);
+
+    const spoofed = parseBulkLinks(
+      "https://attacker:vikingfile.com@evil.example/f/credLine",
+    );
+    expect(spoofed).toHaveLength(1);
+    expect(spoofed[0].ok).toBe(false);
+    expect(spoofed[0].error).toBe(GAME_FILE_URL_ERRORS.UNSUPPORTED_HOST);
   });
 
   it("detects duplicate URLs that only differ by tracking params + fragment", () => {
