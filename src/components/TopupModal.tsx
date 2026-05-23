@@ -561,12 +561,6 @@ export function TopupModal({ onClose, onToast }: Props) {
                       className="w-full h-auto rounded-lg"
                     />
                   </div>
-                  <button
-                    onClick={startAuto}
-                    className="w-full inline-flex items-center justify-center gap-2 rounded-full bg-primary text-primary-foreground py-3 text-sm font-bold hover:opacity-90"
-                  >
-                    <Zap className="h-4 w-4" /> Generate KHQR & Pay
-                  </button>
                 </>
               )}
               {autoStatus === "creating" && (
