@@ -31,6 +31,7 @@ import payAba from "@/assets/pay-aba.jpg";
 import payAcleda from "@/assets/pay-acleda.png";
 import payWing from "@/assets/pay-wing.png";
 import heroKhqr from "@/assets/static-khqr.png";
+import promoBanner from "@/assets/promo-banner.png";
 
 export const Route = createFileRoute("/")({
   head: () => ({
