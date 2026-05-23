@@ -322,20 +322,31 @@ export const createBakongTopup = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const rate = await coinsPerUsd();
     const coins = Math.round(data.amount_usd * rate);
-    const billNumber = `DS${Date.now().toString(36).toUpperCase()}${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
-    if (typeof buildKhqr !== "function") {
-      throw new Error(
-        `[createBakongTopup] buildKhqr is ${typeof buildKhqr} — export missing from "@/lib/bakong.server" (src/lib/bakong.server.ts). Restart dev server / check the file's exports.`,
-      );
+
+    let billNumber: string;
+    let qr: string;
+    let md5: string;
+
+    if (isIkhodeEnabled()) {
+      // Route through iKhode KHQR Bridge — it registers the transaction with
+      // NBC Bakong and returns the canonical qr_string + md5 used for status
+      // polling. No local token management needed.
+      const bridge = await generateIkhodeKhqr(data.amount_usd);
+      billNumber = bridge.bill_number;
+      qr = bridge.qr_string;
+      md5 = bridge.md5;
+    } else {
+      billNumber = `DS${Date.now().toString(36).toUpperCase()}${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
+      if (typeof buildKhqr !== "function" || typeof md5Hex !== "function") {
+        throw new Error(
+          `[createBakongTopup] buildKhqr/md5Hex missing from "@/lib/bakong.server".`,
+        );
+      }
+      const accountId = await getEffectiveBakongAccountId();
+      qr = buildKhqr(data.amount_usd, billNumber, accountId);
+      md5 = md5Hex(qr);
     }
-    if (typeof md5Hex !== "function") {
-      throw new Error(
-        `[createBakongTopup] md5Hex is ${typeof md5Hex} — export missing from "@/lib/bakong.server" (src/lib/bakong.server.ts).`,
-      );
-    }
-    const accountId = await getEffectiveBakongAccountId();
-    const qr = buildKhqr(data.amount_usd, billNumber, accountId);
-    const md5 = md5Hex(qr);
+
     const expiresAt = new Date(Date.now() + BAKONG_TTL_SEC * 1000).toISOString();
 
     const { data: row, error } = await supabaseAdmin
