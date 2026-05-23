@@ -30,6 +30,7 @@ import iconFacebook from "@/assets/social-facebook.png";
 import payAba from "@/assets/pay-aba.jpg";
 import payAcleda from "@/assets/pay-acleda.png";
 import payWing from "@/assets/pay-wing.png";
+import heroKhqr from "@/assets/static-khqr.png";
 
 export const Route = createFileRoute("/")({
   head: () => ({
