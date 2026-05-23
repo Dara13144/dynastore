@@ -122,12 +122,16 @@ describe("admin dialog — bulk paste box (mixed list)", () => {
   });
 
   it("flags the in-paste duplicate as an error (same derived id)", () => {
-    const dup = rows.filter((x) => x.raw === "https://vikingfile.com/f/AAAAAA111");
-    expect(dup).toHaveLength(2);
-    // First occurrence wins, second is rejected with a "ស្ទួន" (duplicate) error.
-    expect(dup[0].ok).toBe(true);
-    expect(dup[1].ok).toBe(false);
-    expect(dup[1].error).toMatch(/ស្ទួន/);
+    // Both lines produce id "aaaaaa111" from the URL; the second occurrence
+    // (the bare URL row) is rejected with a "ស្ទួន" (duplicate) error.
+    const twoCol = rows.find((x) => x.raw.startsWith("Cool Demo,"))!;
+    const bareDup = rows.find(
+      (x) => x.raw === "https://vikingfile.com/f/AAAAAA111",
+    )!;
+    expect(twoCol.ok).toBe(true);
+    expect(twoCol.draft?.id).toBe("aaaaaa111");
+    expect(bareDup.ok).toBe(false);
+    expect(bareDup.error).toMatch(/ស្ទួន/);
   });
 
   it("rejects 'totally not a url' with an INVALID_URL message", () => {
