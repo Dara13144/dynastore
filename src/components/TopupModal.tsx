@@ -209,17 +209,17 @@ export function TopupModal({ onClose, onToast }: Props) {
                   : "បណ្តាញមិនល្អ — កំពុងព្យាយាមម្តងទៀត…";
             onToast(msg);
           }
-          // Backoff: 8s → 13s → 18s → 20s (cap)
-          schedule(Math.min(20000, 3000 + failures * 5000));
+          // Backoff: 10s → 15s → 20s (cap)
+          schedule(Math.min(20000, 5000 + failures * 5000));
           return;
         }
 
-        // pending, healthy — reset counter and continue at 3s
+        // pending, healthy — reset counter and continue at 5s
         if (failures > 0) {
           failures = 0;
           warnedFailure = false;
         }
-        schedule(3000);
+        schedule(5000);
       } catch (e) {
         if (cancelled) return;
         // Hard errors from the server — message contains "not_found",
