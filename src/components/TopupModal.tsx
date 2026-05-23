@@ -22,6 +22,7 @@ import {
   verifyBakongTopup,
 } from "@/lib/topup.functions";
 import khqrSeal from "@/assets/khqr-seal.png";
+import staticKhqrImg from "@/assets/static-khqr.png";
 import { TutorialVideo } from "@/components/TutorialVideo";
 
 type Props = { onClose: () => void; onToast: (m: string) => void };
@@ -552,12 +553,21 @@ export function TopupModal({ onClose, onToast }: Props) {
           {mode === "auto" && (
             <>
               {autoStatus === "idle" && (
-                <button
-                  onClick={startAuto}
-                  className="w-full inline-flex items-center justify-center gap-2 rounded-full bg-primary text-primary-foreground py-3 text-sm font-bold hover:opacity-90"
-                >
-                  <Zap className="h-4 w-4" /> Generate KHQR & Pay
-                </button>
+                <>
+                  <div className="mx-auto w-full max-w-[280px] rounded-2xl bg-white p-3 shadow-md ring-1 ring-black/5">
+                    <img
+                      src={staticKhqrImg}
+                      alt="KHQR"
+                      className="w-full h-auto rounded-lg"
+                    />
+                  </div>
+                  <button
+                    onClick={startAuto}
+                    className="w-full inline-flex items-center justify-center gap-2 rounded-full bg-primary text-primary-foreground py-3 text-sm font-bold hover:opacity-90"
+                  >
+                    <Zap className="h-4 w-4" /> Generate KHQR & Pay
+                  </button>
+                </>
               )}
               {autoStatus === "creating" && (
                 <div className="flex justify-center py-6">
