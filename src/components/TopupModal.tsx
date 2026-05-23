@@ -22,6 +22,7 @@ import {
   verifyBakongTopup,
 } from "@/lib/topup.functions";
 import khqrSeal from "@/assets/khqr-seal.png";
+import staticKhqrImg from "@/assets/static-khqr.png";
 import { TutorialVideo } from "@/components/TutorialVideo";
 
 type Props = { onClose: () => void; onToast: (m: string) => void };
