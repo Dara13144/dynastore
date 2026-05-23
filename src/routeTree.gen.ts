@@ -19,6 +19,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as GamesIdRouteImport } from './routes/games.$id'
 import { Route as AdminKhqrDebugRouteImport } from './routes/admin.khqr-debug'
 import { Route as ApiPaymentCreateRouteImport } from './routes/api/payment/create'
+import { Route as ApiPublicHooksVerifyBakongTopupsRouteImport } from './routes/api/public/hooks/verify-bakong-topups'
 import { Route as ApiPublicHooksExpireBakongTopupsRouteImport } from './routes/api/public/hooks/expire-bakong-topups'
 import { Route as ApiPaymentStatusIdRouteImport } from './routes/api/payment/status.$id'
 
@@ -72,6 +73,12 @@ const ApiPaymentCreateRoute = ApiPaymentCreateRouteImport.update({
   path: '/api/payment/create',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicHooksVerifyBakongTopupsRoute =
+  ApiPublicHooksVerifyBakongTopupsRouteImport.update({
+    id: '/api/public/hooks/verify-bakong-topups',
+    path: '/api/public/hooks/verify-bakong-topups',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicHooksExpireBakongTopupsRoute =
   ApiPublicHooksExpireBakongTopupsRouteImport.update({
     id: '/api/public/hooks/expire-bakong-topups',
@@ -97,6 +104,7 @@ export interface FileRoutesByFullPath {
   '/api/payment/create': typeof ApiPaymentCreateRoute
   '/api/payment/status/$id': typeof ApiPaymentStatusIdRoute
   '/api/public/hooks/expire-bakong-topups': typeof ApiPublicHooksExpireBakongTopupsRoute
+  '/api/public/hooks/verify-bakong-topups': typeof ApiPublicHooksVerifyBakongTopupsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -111,6 +119,7 @@ export interface FileRoutesByTo {
   '/api/payment/create': typeof ApiPaymentCreateRoute
   '/api/payment/status/$id': typeof ApiPaymentStatusIdRoute
   '/api/public/hooks/expire-bakong-topups': typeof ApiPublicHooksExpireBakongTopupsRoute
+  '/api/public/hooks/verify-bakong-topups': typeof ApiPublicHooksVerifyBakongTopupsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -126,6 +135,7 @@ export interface FileRoutesById {
   '/api/payment/create': typeof ApiPaymentCreateRoute
   '/api/payment/status/$id': typeof ApiPaymentStatusIdRoute
   '/api/public/hooks/expire-bakong-topups': typeof ApiPublicHooksExpireBakongTopupsRoute
+  '/api/public/hooks/verify-bakong-topups': typeof ApiPublicHooksVerifyBakongTopupsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -142,6 +152,7 @@ export interface FileRouteTypes {
     | '/api/payment/create'
     | '/api/payment/status/$id'
     | '/api/public/hooks/expire-bakong-topups'
+    | '/api/public/hooks/verify-bakong-topups'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -156,6 +167,7 @@ export interface FileRouteTypes {
     | '/api/payment/create'
     | '/api/payment/status/$id'
     | '/api/public/hooks/expire-bakong-topups'
+    | '/api/public/hooks/verify-bakong-topups'
   id:
     | '__root__'
     | '/'
@@ -170,6 +182,7 @@ export interface FileRouteTypes {
     | '/api/payment/create'
     | '/api/payment/status/$id'
     | '/api/public/hooks/expire-bakong-topups'
+    | '/api/public/hooks/verify-bakong-topups'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -184,6 +197,7 @@ export interface RootRouteChildren {
   ApiPaymentCreateRoute: typeof ApiPaymentCreateRoute
   ApiPaymentStatusIdRoute: typeof ApiPaymentStatusIdRoute
   ApiPublicHooksExpireBakongTopupsRoute: typeof ApiPublicHooksExpireBakongTopupsRoute
+  ApiPublicHooksVerifyBakongTopupsRoute: typeof ApiPublicHooksVerifyBakongTopupsRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -258,6 +272,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPaymentCreateRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/hooks/verify-bakong-topups': {
+      id: '/api/public/hooks/verify-bakong-topups'
+      path: '/api/public/hooks/verify-bakong-topups'
+      fullPath: '/api/public/hooks/verify-bakong-topups'
+      preLoaderRoute: typeof ApiPublicHooksVerifyBakongTopupsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/hooks/expire-bakong-topups': {
       id: '/api/public/hooks/expire-bakong-topups'
       path: '/api/public/hooks/expire-bakong-topups'
@@ -297,6 +318,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPaymentCreateRoute: ApiPaymentCreateRoute,
   ApiPaymentStatusIdRoute: ApiPaymentStatusIdRoute,
   ApiPublicHooksExpireBakongTopupsRoute: ApiPublicHooksExpireBakongTopupsRoute,
+  ApiPublicHooksVerifyBakongTopupsRoute: ApiPublicHooksVerifyBakongTopupsRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
