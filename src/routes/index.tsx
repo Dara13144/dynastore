@@ -31,6 +31,7 @@ import payAba from "@/assets/pay-aba.jpg";
 import payAcleda from "@/assets/pay-acleda.png";
 import payWing from "@/assets/pay-wing.png";
 import heroKhqr from "@/assets/static-khqr.png";
+import promoBanner from "@/assets/promo-banner.png";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -393,31 +394,13 @@ function GameCard({ game, onToast }: { game: Game; onToast: (m: string) => void 
 }
 
 function DealsBanner() {
-  const [promo, setPromo] = useState<{ title: string; subtitle: string | null } | null>(null);
-  useEffect(() => {
-    supabase
-      .from("promotions")
-      .select("title, subtitle")
-      .eq("visible", true)
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle()
-      .then(({ data }) => {
-        if (data) setPromo(data);
-      });
-  }, []);
-  if (!promo) return null;
   return (
     <section id="deals" className="container mx-auto px-4 py-8">
-      <div
-        className="rounded-3xl p-8 md:p-10 text-center"
-        style={{ background: "var(--gradient-hero)" }}
-      >
-        <h3 className="font-display text-2xl md:text-3xl text-primary-foreground">{promo.title}</h3>
-        {promo.subtitle && (
-          <p className="text-sm md:text-base text-primary-foreground/80 mt-2">{promo.subtitle}</p>
-        )}
-      </div>
+      <img
+        src={promoBanner}
+        alt="Promotion"
+        className="w-full h-auto rounded-3xl"
+      />
     </section>
   );
 }
