@@ -214,7 +214,10 @@ function Hero() {
               className="w-full h-auto rounded-lg"
             />
             <div className="mt-2 text-center text-xs font-semibold text-black">
-              ស្គេនដើម្បីបញ្ចូល Balance
+              http://www.dynastore.xyz/
+            </div>
+            <div className="mt-1 text-center text-xs text-muted-foreground">
+              Scan here
             </div>
           </div>
         </div>
