@@ -207,7 +207,7 @@ function Hero() {
           ទិញហ្គេម PC/Console ភ្លាមៗដោយ Balance របស់អ្នក។
         </p>
         <div className="mt-8 flex justify-center">
-          <div className="rounded-2xl bg-white p-3 shadow-xl ring-1 ring-black/10 max-w-[240px]">
+          <div className="rounded-2xl bg-white p-5 shadow-xl ring-1 ring-black/10 w-full max-w-[440px]">
             <img
               src={heroKhqr}
               alt="KHQR — Dyna Store"
