@@ -14,6 +14,8 @@ import {
   BakongApiError,
   getEffectiveBakongAccountId,
 } from "@/lib/bakong.server";
+import { generateIkhodeKhqr, isIkhodeEnabled } from "@/lib/ikhode.server";
+
 
 // Static KHQR payload for DynaStore (Bakong account: ben_sothida@bkr)
 export const KHQR_PAYLOAD =
