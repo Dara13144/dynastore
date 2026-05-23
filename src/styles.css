@@ -105,3 +105,13 @@
     color: transparent;
   }
 }
+
+@keyframes gradient-x {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 20px oklch(0.78 0.18 195 / 0.5), 0 0 40px oklch(0.7 0.24 330 / 0.3); }
+  50% { box-shadow: 0 0 35px oklch(0.78 0.18 195 / 0.8), 0 0 70px oklch(0.7 0.24 330 / 0.6); }
+}
