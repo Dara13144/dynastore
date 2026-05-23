@@ -2,7 +2,9 @@ import { createFileRoute } from "@tanstack/react-router";
 import QRCode from "qrcode";
 import { randomUUID } from "crypto";
 import { buildKhqr, md5Hex, getEffectiveBakongAccountId } from "@/lib/bakong.server";
+import { generateIkhodeKhqr, isIkhodeEnabled } from "@/lib/ikhode.server";
 import { payments } from "@/lib/payment-store.server";
+
 
 // GET /api/payment/create?amount=1
 export const Route = createFileRoute("/api/payment/create")({
