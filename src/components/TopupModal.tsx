@@ -244,7 +244,7 @@ export function TopupModal({ onClose, onToast }: Props) {
           warnedFailure = true;
           onToast("បណ្តាញមិនល្អ — កំពុងព្យាយាមម្តងទៀត…");
         }
-        schedule(Math.min(20000, 3000 + failures * 5000));
+        schedule(Math.min(20000, 5000 + failures * 5000));
       }
     };
 
