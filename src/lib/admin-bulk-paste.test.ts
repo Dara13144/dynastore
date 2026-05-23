@@ -50,9 +50,9 @@ describe("admin dialog — single vikingfile.com URL field", () => {
     expect(validateGameFileUrl("    ")).toBe(GAME_FILE_URL_ERRORS.INVALID_URL);
   });
 
-  it("rejects a non-share host with HOST_NOT_ALLOWED", () => {
+  it("rejects a non-share host with UNSUPPORTED_HOST", () => {
     expect(validateGameFileUrl("https://example.com/file/abc")).toBe(
-      GAME_FILE_URL_ERRORS.HOST_NOT_ALLOWED,
+      GAME_FILE_URL_ERRORS.UNSUPPORTED_HOST,
     );
   });
 });
@@ -136,10 +136,10 @@ describe("admin dialog — bulk paste box (mixed list)", () => {
     expect(r.error).toBe(GAME_FILE_URL_ERRORS.INVALID_URL);
   });
 
-  it("rejects an unsupported host with HOST_NOT_ALLOWED", () => {
+  it("rejects an unsupported host with UNSUPPORTED_HOST", () => {
     const r = rows.find((x) => x.raw === "https://example.com/file/nope")!;
     expect(r.ok).toBe(false);
-    expect(r.error).toBe(GAME_FILE_URL_ERRORS.HOST_NOT_ALLOWED);
+    expect(r.error).toBe(GAME_FILE_URL_ERRORS.UNSUPPORTED_HOST);
   });
 
   it("summary counts match what the admin dialog header would render", () => {
