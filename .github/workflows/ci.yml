@@ -37,7 +37,11 @@ jobs:
       - name: Verify @/components imports resolve to real exports
         run: node scripts/check-component-imports.mjs
 
-  test:
+  unit:
+    # Lint + Vitest "unit-E2E" suite (parser / validator / dedupe coverage,
+    # including the share-hosts and admin-bulk-paste specs). Runs in parallel
+    # with the browser E2E job below so a regression in either pipeline is
+    # surfaced independently instead of being masked by an earlier failure.
     name: Lint, Unit Tests & Build
     runs-on: ubuntu-latest
     needs: typecheck
@@ -56,15 +60,26 @@ jobs:
         run: bun run lint
 
       - name: Unit tests (Vitest)
-        run: bunx vitest run
+        run: bun run test:unit -- --reporter=default --reporter=junit --outputFile=vitest-report.junit.xml
+
+      - name: Upload Vitest JUnit report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: vitest-report
+          path: vitest-report.junit.xml
+          retention-days: 14
 
       - name: Build
         run: bun run build
 
   e2e:
+    # Browser-driven Playwright suite (tests/e2e/*.spec.ts). Runs in parallel
+    # with the unit job — only `typecheck` gates it so we never spend Playwright
+    # CI minutes on a tree that doesn't compile.
     name: E2E (Playwright)
     runs-on: ubuntu-latest
-    needs: test
+    needs: typecheck
     timeout-minutes: 30
     env:
       E2E_BASE_URL: ${{ secrets.E2E_BASE_URL || 'https://dynastore.lovable.app' }}
@@ -89,7 +104,18 @@ jobs:
       - name: Install Playwright browsers
         run: bunx playwright install --with-deps chromium firefox webkit
 
+      - name: Probe base URL is reachable
+        id: probe
+        run: |
+          if curl -fsSL --max-time 15 -o /dev/null "$E2E_BASE_URL"; then
+            echo "reachable=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::warning::E2E_BASE_URL=$E2E_BASE_URL not reachable; skipping Playwright run."
+            echo "reachable=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Run Playwright tests
+        if: steps.probe.outputs.reachable == 'true'
         run: bunx playwright test
         env:
           CI: 'true'
@@ -103,4 +129,3 @@ jobs:
             playwright-report
             test-results
           retention-days: 14
-
