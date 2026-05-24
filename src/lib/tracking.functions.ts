@@ -1,12 +1,13 @@
 import { createServerFn } from "@tanstack/react-start";
+import { getRequestHeader } from "@tanstack/react-start/server";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
 export const recordClick = createServerFn({ method: "POST" })
   .inputValidator((data: { button_label: string }) => data)
-  .handler(async ({ data, request }) => {
-    const ip = request.headers.get("x-forwarded-for") || "unknown";
-    const userAgent = request.headers.get("user-agent") || "unknown";
-    const referrer = request.headers.get("referer") || "unknown";
+  .handler(async ({ data }) => {
+    const ip = getRequestHeader("x-forwarded-for") || "unknown";
+    const userAgent = getRequestHeader("user-agent") || "unknown";
+    const referrer = getRequestHeader("referer") || "unknown";
 
     const { error } = await supabaseAdmin
       .from("click_tracking")
