@@ -19,6 +19,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { StoreProvider, useStore, type Game } from "@/lib/store";
 import { purchaseGame } from "@/lib/payment.functions";
+import { recordClick } from "@/lib/tracking.functions";
 import { TopupModal } from "@/components/TopupModal";
 import { DynastoreAIChat } from "@/components/DynastoreAIChat";
 
@@ -183,6 +184,16 @@ function Header({ onSettings, onTopup }: { onSettings: () => void; onTopup: () =
 }
 
 function Hero() {
+  const trackClick = useServerFn(recordClick);
+
+  const handleDynastoreClick = () => {
+    trackClick({ data: { button_label: "dynastore.xyz" } });
+  };
+
+  const handleNewSiteClick = () => {
+    trackClick({ data: { button_label: "dynastores.site" } });
+  };
+
   return (
     <section className="relative overflow-hidden">
       <div className="absolute inset-0">
@@ -221,6 +232,7 @@ function Hero() {
               href="http://www.dynastore.xyz/"
               target="_blank"
               rel="noopener noreferrer"
+              onClick={handleDynastoreClick}
               className="mt-4 inline-flex w-full items-center justify-center rounded-xl bg-gradient-to-r from-primary via-accent to-primary bg-[length:200%_auto] px-6 py-4 text-base md:text-lg font-bold text-primary-foreground shadow-lg ring-2 ring-primary/40 animate-[gradient-x_3s_ease_infinite] hover:scale-105 hover:shadow-[0_0_30px_oklch(0.78_0.18_195/0.6)] transition-all duration-300"
               style={{ animation: "gradient-x 3s ease infinite, pulse-glow 2s ease-in-out infinite" }}
             >
@@ -230,6 +242,7 @@ function Hero() {
               href="https://www.dynastores.site"
               target="_blank"
               rel="noopener noreferrer"
+              onClick={handleNewSiteClick}
               className="mt-3 group relative inline-flex w-full items-center justify-center overflow-hidden rounded-xl bg-gradient-to-r from-accent via-primary to-accent bg-[length:200%_auto] px-6 py-4 text-base md:text-lg font-bold text-primary-foreground shadow-lg ring-2 ring-accent/40 hover:scale-105 transition-all duration-300"
               style={{ animation: "gradient-x 3s ease infinite, pulse-glow 2s ease-in-out infinite" }}
             >
@@ -405,6 +418,12 @@ function GameCard({ game, onToast }: { game: Game; onToast: (m: string) => void 
 }
 
 function NewSiteBanner() {
+  const trackClick = useServerFn(recordClick);
+
+  const handleClick = () => {
+    trackClick({ data: { button_label: "new-site-banner" } });
+  };
+
   return (
     <section id="deals" className="container mx-auto px-4 py-10">
       <div className="relative overflow-hidden rounded-3xl border border-border/60 bg-gradient-to-br from-primary/20 via-accent/20 to-primary/20 p-8 md:p-12 text-center">
@@ -421,6 +440,7 @@ function NewSiteBanner() {
             href="https://www.dynastores.site"
             target="_blank"
             rel="noopener noreferrer"
+            onClick={handleClick}
             className="group relative inline-flex items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-r from-primary via-accent to-primary bg-[length:300%_auto] px-10 py-5 text-lg md:text-2xl font-bold text-primary-foreground shadow-2xl ring-2 ring-primary/50 animate-[gradient-x_2.5s_ease_infinite] hover:scale-105 transition-all duration-300"
             style={{ animation: "gradient-x 2.5s ease infinite, pulse-glow 2s ease-in-out infinite, float-y 3s ease-in-out infinite" }}
           >

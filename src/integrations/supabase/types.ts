@@ -209,6 +209,33 @@ export type Database = {
         }
         Relationships: []
       }
+      click_tracking: {
+        Row: {
+          button_label: string
+          created_at: string
+          id: string
+          referrer: string | null
+          user_agent: string | null
+          visitor_ip: string | null
+        }
+        Insert: {
+          button_label: string
+          created_at?: string
+          id?: string
+          referrer?: string | null
+          user_agent?: string | null
+          visitor_ip?: string | null
+        }
+        Update: {
+          button_label?: string
+          created_at?: string
+          id?: string
+          referrer?: string | null
+          user_agent?: string | null
+          visitor_ip?: string | null
+        }
+        Relationships: []
+      }
       download_logs: {
         Row: {
           created_at: string
