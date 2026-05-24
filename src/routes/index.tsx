@@ -19,6 +19,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { StoreProvider, useStore, type Game } from "@/lib/store";
 import { purchaseGame } from "@/lib/payment.functions";
+import { recordClick } from "@/lib/tracking.functions";
 import { TopupModal } from "@/components/TopupModal";
 import { DynastoreAIChat } from "@/components/DynastoreAIChat";
 
