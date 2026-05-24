@@ -115,3 +115,18 @@
   0%, 100% { box-shadow: 0 0 20px oklch(0.78 0.18 195 / 0.5), 0 0 40px oklch(0.7 0.24 330 / 0.3); }
   50% { box-shadow: 0 0 35px oklch(0.78 0.18 195 / 0.8), 0 0 70px oklch(0.7 0.24 330 / 0.6); }
 }
+
+@keyframes shimmer-slide {
+  0% { transform: translateX(-150%) skewX(-20deg); }
+  100% { transform: translateX(250%) skewX(-20deg); }
+}
+
+@keyframes float-y {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-8px); }
+}
+
+@keyframes spin-slow {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
