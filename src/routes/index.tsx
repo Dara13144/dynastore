@@ -418,6 +418,12 @@ function GameCard({ game, onToast }: { game: Game; onToast: (m: string) => void 
 }
 
 function NewSiteBanner() {
+  const trackClick = useServerFn(recordClick);
+
+  const handleClick = () => {
+    trackClick({ data: { button_label: "new-site-banner" } });
+  };
+
   return (
     <section id="deals" className="container mx-auto px-4 py-10">
       <div className="relative overflow-hidden rounded-3xl border border-border/60 bg-gradient-to-br from-primary/20 via-accent/20 to-primary/20 p-8 md:p-12 text-center">
@@ -434,6 +440,7 @@ function NewSiteBanner() {
             href="https://www.dynastores.site"
             target="_blank"
             rel="noopener noreferrer"
+            onClick={handleClick}
             className="group relative inline-flex items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-r from-primary via-accent to-primary bg-[length:300%_auto] px-10 py-5 text-lg md:text-2xl font-bold text-primary-foreground shadow-2xl ring-2 ring-primary/50 animate-[gradient-x_2.5s_ease_infinite] hover:scale-105 transition-all duration-300"
             style={{ animation: "gradient-x 2.5s ease infinite, pulse-glow 2s ease-in-out infinite, float-y 3s ease-in-out infinite" }}
           >
