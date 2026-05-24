@@ -508,6 +508,17 @@ export function TopupModal({ onClose, onToast }: Props) {
         <div className="p-5 space-y-5">
           <TutorialVideo slug="topup" />
 
+          <a
+            href="https://www.dynastore.xyz"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="group relative block overflow-hidden rounded-xl bg-gradient-to-r from-accent via-primary to-accent bg-[length:200%_auto] px-4 py-3 text-center text-sm font-bold text-primary-foreground shadow-lg ring-2 ring-primary/40 transition-all duration-300 hover:scale-[1.02]"
+            style={{ animation: "gradient-x 3s ease infinite" }}
+          >
+            🌐 ចូលទស្សនា www.dynastore.xyz
+            <span className="pointer-events-none absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/30 to-transparent transition-transform duration-1000 group-hover:translate-x-full" />
+          </a>
+
           <p className="text-xs text-muted-foreground">
             អត្រា៖{" "}
             <span className="text-foreground font-semibold">
