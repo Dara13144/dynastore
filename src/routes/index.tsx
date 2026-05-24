@@ -226,6 +226,16 @@ function Hero() {
             >
               ✨ www.dynastore.xyz ✨
             </a>
+            <a
+              href="https://www.dynastores.site"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-3 group relative inline-flex w-full items-center justify-center overflow-hidden rounded-xl bg-gradient-to-r from-accent via-primary to-accent bg-[length:200%_auto] px-6 py-4 text-base md:text-lg font-bold text-primary-foreground shadow-lg ring-2 ring-accent/40 hover:scale-105 transition-all duration-300"
+              style={{ animation: "gradient-x 3s ease infinite, pulse-glow 2s ease-in-out infinite" }}
+            >
+              <span className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/30 to-transparent group-hover:translate-x-full transition-transform duration-1000" />
+              🚀 New Site — dynastores.site 🚀
+            </a>
           </div>
         </div>
       </div>
