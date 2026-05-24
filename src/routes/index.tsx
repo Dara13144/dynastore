@@ -239,7 +239,7 @@ function Hero() {
               ✨ www.dynastore.xyz ✨
             </a>
             <a
-              href="https://www.dynastores.site"
+              href="https://www.dynastore.xyz"
               target="_blank"
               rel="noopener noreferrer"
               onClick={handleNewSiteClick}
@@ -247,7 +247,7 @@ function Hero() {
               style={{ animation: "gradient-x 3s ease infinite, pulse-glow 2s ease-in-out infinite" }}
             >
               <span className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/30 to-transparent group-hover:translate-x-full transition-transform duration-1000" />
-              🚀 New Site — dynastores.site 🚀
+              🚀 New Site — www.dynastore.xyz 🚀
             </a>
           </div>
         </div>
@@ -437,7 +437,7 @@ function NewSiteBanner() {
             ទស្សនា Website ថ្មីរបស់យើងឥឡូវនេះ — រចនាសម័យថ្មី ល្បឿនលឿន និងងាយស្រួលប្រើ។
           </p>
           <a
-            href="https://www.dynastores.site"
+            href="https://www.dynastore.xyz"
             target="_blank"
             rel="noopener noreferrer"
             onClick={handleClick}
@@ -450,7 +450,7 @@ function NewSiteBanner() {
             />
             <span className="relative flex items-center gap-3">
               <Sparkles className="h-6 w-6 md:h-7 md:w-7 animate-[spin-slow_4s_linear_infinite]" />
-              New Site Design — dynastores.site
+              New Site Design — www.dynastore.xyz
               <Sparkles className="h-6 w-6 md:h-7 md:w-7 animate-[spin-slow_4s_linear_infinite_reverse]" />
             </span>
           </a>
