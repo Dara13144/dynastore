@@ -239,7 +239,7 @@ function Hero() {
               ✨ www.dynastore.xyz ✨
             </a>
             <a
-              href="https://www.dynastores.site"
+              href="https://www.dynastore.xyz"
               target="_blank"
               rel="noopener noreferrer"
               onClick={handleNewSiteClick}
@@ -247,7 +247,7 @@ function Hero() {
               style={{ animation: "gradient-x 3s ease infinite, pulse-glow 2s ease-in-out infinite" }}
             >
               <span className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/30 to-transparent group-hover:translate-x-full transition-transform duration-1000" />
-              🚀 New Site — dynastores.site 🚀
+              🚀 New Site — www.dynastore.xyz 🚀
             </a>
           </div>
         </div>
