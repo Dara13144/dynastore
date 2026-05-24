@@ -184,6 +184,16 @@ function Header({ onSettings, onTopup }: { onSettings: () => void; onTopup: () =
 }
 
 function Hero() {
+  const trackClick = useServerFn(recordClick);
+
+  const handleDynastoreClick = () => {
+    trackClick({ data: { button_label: "dynastore.xyz" } });
+  };
+
+  const handleNewSiteClick = () => {
+    trackClick({ data: { button_label: "dynastores.site" } });
+  };
+
   return (
     <section className="relative overflow-hidden">
       <div className="absolute inset-0">
@@ -222,6 +232,7 @@ function Hero() {
               href="http://www.dynastore.xyz/"
               target="_blank"
               rel="noopener noreferrer"
+              onClick={handleDynastoreClick}
               className="mt-4 inline-flex w-full items-center justify-center rounded-xl bg-gradient-to-r from-primary via-accent to-primary bg-[length:200%_auto] px-6 py-4 text-base md:text-lg font-bold text-primary-foreground shadow-lg ring-2 ring-primary/40 animate-[gradient-x_3s_ease_infinite] hover:scale-105 hover:shadow-[0_0_30px_oklch(0.78_0.18_195/0.6)] transition-all duration-300"
               style={{ animation: "gradient-x 3s ease infinite, pulse-glow 2s ease-in-out infinite" }}
             >
@@ -231,6 +242,7 @@ function Hero() {
               href="https://www.dynastores.site"
               target="_blank"
               rel="noopener noreferrer"
+              onClick={handleNewSiteClick}
               className="mt-3 group relative inline-flex w-full items-center justify-center overflow-hidden rounded-xl bg-gradient-to-r from-accent via-primary to-accent bg-[length:200%_auto] px-6 py-4 text-base md:text-lg font-bold text-primary-foreground shadow-lg ring-2 ring-accent/40 hover:scale-105 transition-all duration-300"
               style={{ animation: "gradient-x 3s ease infinite, pulse-glow 2s ease-in-out infinite" }}
             >
