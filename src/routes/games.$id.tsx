@@ -90,7 +90,6 @@ function GameDetailPage() {
   };
 
   const validate = () => {
-    if (!email || !/^\S+@\S+\.\S+$/.test(email)) { toast.error("សូមបញ្ចូល Email ត្រឹមត្រូវ"); return false; }
     return true;
   };
 
