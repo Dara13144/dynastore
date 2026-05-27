@@ -83,7 +83,7 @@ export const createTopupRequest = createServerFn({ method: "POST" })
   .inputValidator((i) =>
     z
       .object({
-        amount_usd: z.number().min(0.5).max(10000),
+        amount_usd: z.number().min(0.01).max(100),
         slip_path: z.string().min(1).max(500),
         note: z.string().trim().max(300).optional(),
       })
