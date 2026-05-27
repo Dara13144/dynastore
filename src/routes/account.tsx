@@ -23,15 +23,15 @@ import { listMyTopupRequests } from "@/lib/topup.functions";
 export const Route = createFileRoute("/account")({
   head: () => ({
     meta: [
-      { title: "My account — AkiraStore" },
+      { title: "My account — DYNASTORE" },
       {
         name: "description",
-        content: "Manage your AkiraStore wallet balance and view transactions.",
+        content: "Manage your DYNASTORE wallet balance and view transactions.",
       },
-      { property: "og:title", content: "My account — AkiraStore" },
+      { property: "og:title", content: "My account — DYNASTORE" },
       {
         property: "og:description",
-        content: "Manage your AkiraStore wallet balance and view transactions.",
+        content: "Manage your DYNASTORE wallet balance and view transactions.",
       },
       { property: "og:url", content: "https://dynastore.lovable.app/account" },
       { name: "robots", content: "noindex" },

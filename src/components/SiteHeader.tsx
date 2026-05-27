@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { useSession } from "@/hooks/use-session";
-import logoAkira from "@/assets/akira-logo.png";
+import logoAkira from "@/assets/dyna-logo.png";
 
 
 type Props = {
@@ -51,8 +51,8 @@ export function SiteHeader({ onTopup }: Props) {
     <header className="sticky top-0 z-40 bg-background/85 backdrop-blur border-b border-border">
       <div className="container mx-auto px-4 h-16 flex items-center justify-between gap-3">
         <Link to="/" className="flex items-center gap-2.5">
-          <img src={logoAkira} alt="AkiraStore" className="h-9 w-9 rounded-lg object-cover" />
-          <span className="font-semibold text-base text-foreground">AkiraStore</span>
+          <img src={logoAkira} alt="DYNASTORE" className="h-9 w-9 rounded-lg object-cover" />
+          <span className="font-semibold text-base text-foreground">DYNASTORE</span>
         </Link>
 
         <div className="flex items-center gap-2">
