@@ -207,7 +207,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           setBalance(next);
           if (prev !== null && next > prev) {
             toast.success(
-              `💰 +${(next - prev).toLocaleString()} coins · balance ${next.toLocaleString()}`,
+              `💰 +${(next - prev).toLocaleString()} balance · total ${next.toLocaleString()}`,
             );
           }
           prevBalance.current = next;
