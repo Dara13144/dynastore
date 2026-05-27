@@ -4,7 +4,7 @@ import {
   Search,
   Languages,
   Wallet,
-  Star,
+  
   ShoppingCart,
   ChevronDown,
   Package,
