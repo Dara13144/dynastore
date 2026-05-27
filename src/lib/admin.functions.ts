@@ -26,7 +26,7 @@ export const getAppSettings = createServerFn({ method: "GET" })
       .maybeSingle();
     if (error) throw new Error(error.message);
     return (
-      data ?? {
+      data ?? ({
         id: 1,
         coins_per_usd: 1,
         tx_ttl_min: 5,
@@ -35,7 +35,7 @@ export const getAppSettings = createServerFn({ method: "GET" })
         tus_backoff_base_ms: 3000,
         tus_backoff_step_ms: 2000,
         tus_backoff_cap_ms: 30000,
-      }
+      } as NonNullable<typeof data>)
     );
   });
 
