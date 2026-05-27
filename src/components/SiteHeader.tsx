@@ -72,11 +72,10 @@ export function SiteHeader({ onTopup }: Props) {
           {authed ? (
             <>
               <button
-                onClick={onTopup}
+                onClick={() => navigate({ to: "/account" })}
                 className="hidden sm:inline-flex items-center gap-1.5 h-9 rounded-full border border-primary/40 bg-primary/5 px-3 text-xs font-semibold text-primary hover:bg-primary/10"
               >
                 <Wallet className="h-3.5 w-3.5" /> {balanceLabel}
-                <Plus className="h-3 w-3" />
               </button>
               <span className="hidden sm:inline-flex items-center gap-1.5 h-9 rounded-full border border-primary/40 bg-primary/5 px-3 text-xs font-semibold text-primary">
                 <Star className="h-3.5 w-3.5 fill-primary" /> Coins 0

@@ -266,7 +266,7 @@ export function TopupModal({ onClose, onToast, initialAmount, autoStart }: Props
   }, [now, autoStatus, autoSession]);
 
   async function startAuto() {
-    if (amount < 0.5) {
+    if (amount < 0.01 || amount > 100) {
       onToast("ចំនួនទឹកប្រាក់តូចពេក");
       return;
     }
@@ -322,7 +322,7 @@ export function TopupModal({ onClose, onToast, initialAmount, autoStart }: Props
       onToast("សូមបញ្ជូនរូបបង្កាន់ដៃ");
       return;
     }
-    if (amount < 0.5) {
+    if (amount < 0.01 || amount > 100) {
       onToast("ចំនួនទឹកប្រាក់តូចពេក");
       return;
     }
@@ -558,10 +558,11 @@ export function TopupModal({ onClose, onToast, initialAmount, autoStart }: Props
                 </div>
                 <input
                   type="number"
-                  min={0.5}
-                  step={0.5}
+                  min={0.01}
+                  max={100}
+                  step={0.01}
                   value={amount}
-                  onChange={(e) => setAmount(Math.max(0, Number(e.target.value) || 0))}
+                  onChange={(e) => setAmount(Math.min(100, Math.max(0, Number(e.target.value) || 0)))}
                   className="mt-2 w-full rounded-xl bg-input px-3 py-2 text-sm ring-1 ring-border focus:ring-primary outline-none"
                 />
                 <div className="mt-1.5 text-xs text-muted-foreground">
