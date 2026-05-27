@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import {
   Star,
-  Send,
+  
   Gamepad2,
   Sparkles,
   X,
@@ -11,7 +11,7 @@ import {
   Loader2,
   Wallet,
 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+
 import { StoreProvider, useStore, type Game } from "@/lib/store";
 import { purchaseGame } from "@/lib/payment.functions";
 import { recordClick } from "@/lib/tracking.functions";
