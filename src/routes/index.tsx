@@ -20,7 +20,7 @@ import { DynastoreAIChat } from "@/components/DynastoreAIChat";
 import { SiteHeader } from "@/components/SiteHeader";
 
 import heroImg from "@/assets/dyna-hero.png";
-import logoD from "@/assets/dyna-logo.png";
+
 
 import iconTelegram from "@/assets/social-telegram.png";
 import iconTiktok from "@/assets/social-tiktok.png";
