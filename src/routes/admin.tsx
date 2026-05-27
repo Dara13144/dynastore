@@ -3360,7 +3360,7 @@ function GameEditFullDialog({
               />
             </label>
             <label className="space-y-1">
-              <span className="text-muted-foreground">តម្លៃ (coins)</span>
+              <span className="text-muted-foreground">តម្លៃ (balance)</span>
               <input
                 type="number"
                 min={0}
@@ -4764,7 +4764,7 @@ function TopupsTab() {
       } else {
         setOutcome((o) => ({ ...o, [id]: "approved" }));
         toast.success(
-          `✓ Approved · +${r.credited.toLocaleString()} coins · balance ${r.new_balance.toLocaleString()}`,
+          `✓ Approved · +${r.credited.toLocaleString()} balance · total ${r.new_balance.toLocaleString()}`,
         );
       }
       await load();
