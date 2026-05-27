@@ -261,7 +261,7 @@ function AccountPage() {
           </section>
         </div>
 
-        {/* Delivered accounts (placeholder) */}
+        {/* Delivered accounts */}
         <section className="mt-6 rounded-2xl border border-border/60 bg-card p-6">
           <h2 className="font-semibold flex items-center gap-2 text-primary">
             <Package className="h-4 w-4" /> Delivered accounts
@@ -269,15 +269,45 @@ function AccountPage() {
           <p className="text-xs text-muted-foreground mt-1">
             Auto-delivered credentials from your purchases. Keep them safe.
           </p>
-          <div className="py-12 grid place-items-center text-center">
-            <div className="h-10 w-10 rounded-full bg-muted/50 grid place-items-center text-muted-foreground mb-3">
-              <Package className="h-5 w-5" />
+          {deliveries.length === 0 ? (
+            <div className="py-12 grid place-items-center text-center">
+              <div className="h-10 w-10 rounded-full bg-muted/50 grid place-items-center text-muted-foreground mb-3">
+                <Package className="h-5 w-5" />
+              </div>
+              <div className="text-sm font-medium">No deliveries yet</div>
+              <div className="text-xs text-muted-foreground mt-1">
+                Buy a product to receive an account automatically.
+              </div>
             </div>
-            <div className="text-sm font-medium">No deliveries yet</div>
-            <div className="text-xs text-muted-foreground mt-1">
-              Buy a product to receive an account automatically.
-            </div>
-          </div>
+          ) : (
+            <ul className="mt-4 space-y-2">
+              {deliveries.map((d) => (
+                <li
+                  key={d.id}
+                  className="rounded-xl border border-border bg-background px-3 py-2.5"
+                >
+                  <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+                    <span className="font-mono uppercase">{d.game_id}</span>
+                    <span>{d.assigned_at ? new Date(d.assigned_at).toLocaleString() : ""}</span>
+                  </div>
+                  <div className="mt-1.5 flex items-center gap-2">
+                    <Mail className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                    <code className="flex-1 text-xs font-mono truncate">{d.content}</code>
+                    <button
+                      onClick={() => {
+                        navigator.clipboard.writeText(d.content);
+                        toast.success("Copied");
+                      }}
+                      className="text-muted-foreground hover:text-foreground"
+                      aria-label="Copy"
+                    >
+                      <Copy className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
         </section>
 
         {/* Account info / actions */}
