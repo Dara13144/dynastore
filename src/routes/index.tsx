@@ -109,9 +109,10 @@ function Header({ onSettings, onTopup }: { onSettings: () => void; onTopup: () =
     <header className="sticky top-0 z-40 backdrop-blur-md bg-background/70 border-b border-border/60">
       <div className="container mx-auto px-4 h-16 flex items-center justify-between gap-3">
         <Link to="/" className="flex items-center gap-2.5">
-          <img src={logoD} alt="Dyna Store" className="h-9 w-9 rounded-xl" />
-          <span className="font-display text-xl gradient-text">Dyna Store</span>
+          <img src={logoD} alt="AkiraStore" className="h-9 w-9 rounded-xl object-cover" />
+          <span className="font-display text-xl text-foreground">AkiraStore</span>
         </Link>
+
         <nav className="hidden md:flex items-center gap-5 text-sm text-muted-foreground">
           <a href="#games" className="hover:text-foreground transition">
             ហ្គេម
