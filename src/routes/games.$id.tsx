@@ -52,27 +52,12 @@ function GameDetailPage() {
     );
   }
 
-  const buy = async () => {
+  const buy = () => {
     if (!authed) {
       navigate({ to: "/login" });
       return;
     }
-    if (balance < game.price_coins) {
-      toast.error("Balance មិនគ្រប់គ្រាន់");
-      return;
-    }
-    setBusy(true);
-    try {
-      const r = await purchaseFn({ data: { gameId: game.id } });
-      if (r.ok) {
-        toast.success(r.message === "already_owned" ? "មានរួចហើយ" : "ទិញបានជោគជ័យ!");
-        await Promise.all([refreshWallet(), refreshLibrary()]);
-      } else toast.error(r.message || "បរាជ័យ");
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "បរាជ័យ");
-    } finally {
-      setBusy(false);
-    }
+    navigate({ to: "/checkout", search: { gameId: game.id } });
   };
 
   const download = async () => {
