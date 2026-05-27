@@ -23,7 +23,7 @@ import { recordClick } from "@/lib/tracking.functions";
 import { TopupModal } from "@/components/TopupModal";
 import { DynastoreAIChat } from "@/components/DynastoreAIChat";
 
-import heroImg from "@/assets/akira-hero.jpg";
+import heroImg from "@/assets/dyna-hero.png";
 import logoD from "@/assets/dyna-logo.png";
 
 import iconTelegram from "@/assets/social-telegram.png";
