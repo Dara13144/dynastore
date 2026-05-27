@@ -798,6 +798,15 @@ export type Database = {
           ok: boolean
         }[]
       }
+      purchase_game_atomic_qty: {
+        Args: { _game_id: string; _qty: number; _user_id: string }
+        Returns: {
+          delivered_contents: string[]
+          message: string
+          new_balance: number
+          ok: boolean
+        }[]
+      }
     }
     Enums: {
       app_role: "admin" | "user"
