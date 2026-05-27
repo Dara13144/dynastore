@@ -4,14 +4,14 @@ import {
   Search,
   Languages,
   Wallet,
-  
+  Star,
   ShoppingCart,
   ChevronDown,
   Package,
   History,
   Settings as SettingsIcon,
   Plus,
-  
+  Gift,
   LogOut,
   LogIn,
   ShieldCheck,
