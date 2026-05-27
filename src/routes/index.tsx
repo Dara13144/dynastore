@@ -38,15 +38,15 @@ import promoBanner from "@/assets/promo-banner.png";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Dyna Store — ហាងហ្គេម PC និង Console" },
+      { title: "AkiraStore — Your trusted store for quality and reliability" },
       {
         name: "description",
-        content: "ហាងហ្គេម PC និង Console នៅកម្ពុជា — ទាញយកហ្គេមបានភ្លាមៗបន្ទាប់ពីការទិញ។",
+        content: "AkiraStore — premium digital products, software, and entertainment subscriptions with warranty and instant delivery.",
       },
-      { property: "og:title", content: "Dyna Store — ហាងហ្គេម PC និង Console" },
+      { property: "og:title", content: "AkiraStore" },
       {
         property: "og:description",
-        content: "ហាងហ្គេម PC និង Console នៅកម្ពុជា — ទាញយកហ្គេមបានភ្លាមៗបន្ទាប់ពីការទិញ។",
+        content: "Your trusted store for quality and reliability.",
       },
       { property: "og:url", content: "https://dynastore.lovable.app/" },
     ],
@@ -61,6 +61,7 @@ export const Route = createFileRoute("/")({
       { rel: "canonical", href: "https://dynastore.lovable.app/" },
     ],
   }),
+
   component: () => (
     <StoreProvider>
       <Page />
