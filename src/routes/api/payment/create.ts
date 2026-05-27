@@ -5,110 +5,90 @@ import { buildKhqr, md5Hex, getEffectiveBakongAccountId } from "@/lib/bakong.ser
 import { generateIkhodeKhqr, isIkhodeEnabled } from "@/lib/ikhode.server";
 import { payments } from "@/lib/payment-store.server";
 
+// POST/GET /api/payment/create?amount=1
+const handler = async ({ request }: { request: Request }) => {
+  const reqId = randomUUID().slice(0, 8);
+  const startedAt = Date.now();
+  const log = (msg: string, extra: Record<string, unknown> = {}) =>
+    console.log(`[payment/create ${reqId}] ${msg}`, extra);
 
-// GET /api/payment/create?amount=1
+  try {
+    const url = new URL(request.url);
+    const rawAmount = url.searchParams.get("amount");
+    const amount = Math.max(0.01, Number(rawAmount ?? 1));
+
+    log("request received", { method: request.method, rawAmount, parsedAmount: amount });
+
+    if (!Number.isFinite(amount)) {
+      return Response.json(
+        { success: false, error: "Invalid amount", reqId },
+        { status: 400 },
+      );
+    }
+
+    const paymentId = randomUUID();
+    let billNumber: string;
+    let khqr: string;
+    let md5: string;
+
+    if (isIkhodeEnabled()) {
+      log("generating KHQR via iKhode bridge", { paymentId, amount });
+      const bridge = await generateIkhodeKhqr(amount);
+      billNumber = bridge.bill_number;
+      khqr = bridge.qr_string;
+      md5 = bridge.md5;
+    } else {
+      billNumber = `BILL-${Date.now()}`;
+      log("building local KHQR", { paymentId, billNumber, amount });
+      const accountId = await getEffectiveBakongAccountId();
+      khqr = buildKhqr(amount, billNumber, accountId);
+      md5 = md5Hex(khqr);
+    }
+    log("KHQR ready", { paymentId, billNumber, md5 });
+
+    const qrImage = await QRCode.toDataURL(khqr, { width: 400, margin: 2 });
+
+    await payments.create({
+      id: paymentId,
+      amount,
+      billNumber,
+      md5,
+      khqr,
+      status: "pending",
+      createdAt: Date.now(),
+    });
+    log("payment stored", { paymentId });
+
+    return Response.json({
+      success: true,
+      paymentId,
+      amount,
+      billNumber,
+      md5,
+      qr: khqr,
+      khqr,
+      qrImage,
+      reqId,
+    });
+  } catch (e) {
+    const err = e as Error;
+    console.error(`[payment/create ${reqId}] FATAL`, {
+      message: err?.message,
+      stack: err?.stack,
+      elapsedMs: Date.now() - startedAt,
+    });
+    return Response.json(
+      { success: false, error: "Failed to create payment", reqId, detail: err?.message },
+      { status: 500 },
+    );
+  }
+};
+
 export const Route = createFileRoute("/api/payment/create")({
   server: {
     handlers: {
-      GET: async ({ request }) => {
-        const reqId = randomUUID().slice(0, 8);
-        const startedAt = Date.now();
-        const log = (msg: string, extra: Record<string, unknown> = {}) =>
-          console.log(`[payment/create ${reqId}] ${msg}`, extra);
-
-        try {
-          const url = new URL(request.url);
-          const rawAmount = url.searchParams.get("amount");
-          const amount = Math.max(0.01, Number(rawAmount ?? 1));
-
-          log("request received", {
-            url: url.pathname + url.search,
-            rawAmount,
-            parsedAmount: amount,
-            userAgent: request.headers.get("user-agent") ?? null,
-            ip: request.headers.get("x-forwarded-for") ?? null,
-          });
-
-          if (!Number.isFinite(amount)) {
-            console.warn(`[payment/create ${reqId}] invalid amount`, { rawAmount });
-            return Response.json(
-              { success: false, error: "Invalid amount", reqId },
-              { status: 400 },
-            );
-          }
-
-          const paymentId = randomUUID();
-          let billNumber: string;
-          let khqr: string;
-          let md5: string;
-
-          if (isIkhodeEnabled()) {
-            log("generating KHQR via iKhode bridge", { paymentId, amount });
-            const bridge = await generateIkhodeKhqr(amount);
-            billNumber = bridge.bill_number;
-            khqr = bridge.qr_string;
-            md5 = bridge.md5;
-          } else {
-            billNumber = `BILL-${Date.now()}`;
-            log("building local KHQR", { paymentId, billNumber, amount });
-            if (typeof buildKhqr !== "function" || typeof md5Hex !== "function") {
-              throw new Error(
-                `[/api/payment/create] buildKhqr/md5Hex missing from "@/lib/bakong.server".`,
-              );
-            }
-            const accountId = await getEffectiveBakongAccountId();
-            khqr = buildKhqr(amount, billNumber, accountId);
-            md5 = md5Hex(khqr);
-          }
-          log("KHQR ready", {
-            paymentId,
-            billNumber,
-            khqrLength: khqr.length,
-            md5,
-          });
-
-
-          const qrImage = await QRCode.toDataURL(khqr, { width: 400, margin: 2 });
-          log("QR image generated", { paymentId, qrImageBytes: qrImage.length });
-
-          payments.set(paymentId, {
-            id: paymentId,
-            amount,
-            billNumber,
-            md5,
-            khqr,
-            status: "pending",
-            createdAt: Date.now(),
-          });
-          log("payment stored", { paymentId, totalInStore: payments.size });
-
-          const elapsedMs = Date.now() - startedAt;
-          log("done", { paymentId, elapsedMs });
-
-          return Response.json({
-            success: true,
-            paymentId,
-            amount,
-            billNumber,
-            md5,
-            khqr,
-            qrImage,
-            reqId,
-          });
-        } catch (e) {
-          const err = e as Error;
-          console.error(`[payment/create ${reqId}] FATAL`, {
-            message: err?.message,
-            name: err?.name,
-            stack: err?.stack,
-            elapsedMs: Date.now() - startedAt,
-          });
-          return Response.json(
-            { success: false, error: "Failed to create payment", reqId, detail: err?.message },
-            { status: 500 },
-          );
-        }
-      },
+      GET: handler,
+      POST: handler,
     },
   },
 });
