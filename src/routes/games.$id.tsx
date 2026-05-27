@@ -23,6 +23,7 @@ import { purchaseGame } from "@/lib/payment.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { TutorialVideo } from "@/components/TutorialVideo";
+import { useStockCounts } from "@/hooks/useStockCounts";
 
 export const Route = createFileRoute("/games/$id")({
   head: () => ({ meta: [{ title: "ផលិតផល — Dyna Store" }] }),
@@ -74,7 +75,8 @@ function GameDetailPage() {
   }
 
   const unitPrice = game.price_coins;
-  const stock = 9;
+  const { counts: stockMap, refresh: refreshStock } = useStockCounts([id]);
+  const stock = stockMap[id] ?? 0;
   const subtotal = unitPrice * qty;
   const couponDiscount = couponApplied ? Math.min(subtotal * 0.1, subtotal) : 0;
   const userCoins = Math.floor(balance);
@@ -107,6 +109,8 @@ function GameDetailPage() {
     setDelivered(content);
     refreshWallet();
     refreshLibrary();
+    refreshStock();
+    window.dispatchEvent(new Event("stock:refresh"));
   };
 
   const payWithBalance = async () => {
@@ -271,12 +275,16 @@ function GameDetailPage() {
                 {/* Select Duration / Variant */}
                 <div className="rounded-2xl glass border border-border/60 p-5 space-y-3">
                   <div className="text-sm font-semibold">Select Duration:</div>
-                  <div className="rounded-xl border-2 border-emerald-500/60 bg-emerald-500/5 px-4 py-3 flex items-center justify-between">
+                  <div className={`rounded-xl border-2 px-4 py-3 flex items-center justify-between ${stock > 0 ? "border-emerald-500/60 bg-emerald-500/5" : "border-red-500/60 bg-red-500/5"}`}>
                     <div>
                       <div className="font-semibold text-sm">1 Account</div>
-                      <div className="text-emerald-400 text-[11px] font-semibold">In Stock ({stock})</div>
+                      {stock > 0 ? (
+                        <div className="text-emerald-400 text-[11px] font-semibold">In Stock ({stock})</div>
+                      ) : (
+                        <div className="text-red-400 text-[11px] font-semibold">Out of Stock</div>
+                      )}
                     </div>
-                    <div className="text-emerald-400 font-bold">${unitPrice.toFixed(2)}</div>
+                    <div className={`font-bold ${stock > 0 ? "text-emerald-400" : "text-red-400"}`}>${unitPrice.toFixed(2)}</div>
                   </div>
                 </div>
 

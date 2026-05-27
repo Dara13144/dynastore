@@ -18,6 +18,7 @@ import { recordClick } from "@/lib/tracking.functions";
 import { TopupModal } from "@/components/TopupModal";
 import { DynastoreAIChat } from "@/components/DynastoreAIChat";
 import { SiteHeader } from "@/components/SiteHeader";
+import { useStockCounts } from "@/hooks/useStockCounts";
 
 import heroImg from "@/assets/dyna-hero.png";
 
@@ -144,6 +145,7 @@ function Hero() {
 
 function GamesSection({ onToast }: { onToast: (m: string) => void }) {
   const { games } = useStore();
+  const { counts: stockCounts } = useStockCounts(games.map((g) => g.id));
   return (
     <section id="games" className="container mx-auto px-4 py-14">
       <div className="flex items-end justify-between mb-6">
@@ -157,14 +159,14 @@ function GamesSection({ onToast }: { onToast: (m: string) => void }) {
       </div>
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
         {games.map((g) => (
-          <GameCard key={g.id} game={g} onToast={onToast} />
+          <GameCard key={g.id} game={g} onToast={onToast} stock={stockCounts[g.id] ?? 0} />
         ))}
       </div>
     </section>
   );
 }
 
-function GameCard({ game, onToast }: { game: Game; onToast: (m: string) => void }) {
+function GameCard({ game, onToast, stock = 0 }: { game: Game; onToast: (m: string) => void; stock?: number }) {
   const { authed, balance, library, toggleWishlist, refreshWallet, refreshLibrary } = useStore();
   const owned = library.some((l) => l.game_id === game.id && l.kind === "owned");
   const wished = library.some((l) => l.game_id === game.id && l.kind === "wishlist");
@@ -254,14 +256,22 @@ function GameCard({ game, onToast }: { game: Game; onToast: (m: string) => void 
             <div className="inline-flex items-center gap-1 font-semibold text-primary">
               <Wallet className="h-3 w-3 sm:h-3.5 sm:w-3.5" /> ${game.price_coins.toLocaleString()}
             </div>
-            {authed && !owned && (
+            <div
+              className={`inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[9px] sm:text-[10px] font-semibold ${stock > 0 ? "bg-emerald-500/15 text-emerald-400" : "bg-red-500/15 text-red-400"}`}
+            >
+              <span className={`h-1.5 w-1.5 rounded-full ${stock > 0 ? "bg-emerald-400" : "bg-red-400"}`} />
+              {stock > 0 ? `In Stock (${stock})` : "Out of Stock"}
+            </div>
+          </div>
+          {authed && !owned && (
+            <div className="flex justify-end text-[11px] sm:text-xs">
               <div
                 className={`hidden sm:inline-flex items-center gap-1 ${balance >= game.price_coins ? "text-emerald-400" : "text-amber-400"}`}
               >
                 <Wallet className="h-3 w-3" /> Balance: ${balance.toLocaleString()}
               </div>
-            )}
-          </div>
+            </div>
+          )}
           {authed && !owned && (
             <div className="h-1 sm:h-1.5 w-full overflow-hidden rounded-full bg-accent/40">
               <div
@@ -295,7 +305,14 @@ function GameCard({ game, onToast }: { game: Game; onToast: (m: string) => void 
                 disabled
                 className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 text-emerald-400 px-2 py-1 sm:px-3 sm:py-1.5 text-[10px] sm:text-xs font-semibold"
               >
-                Buy
+                Owned
+              </button>
+            ) : stock <= 0 ? (
+              <button
+                disabled
+                className="inline-flex items-center gap-1 rounded-full border border-red-500/50 bg-red-500/10 text-red-300 px-2 py-1 sm:px-3 sm:py-1.5 text-[10px] sm:text-xs font-semibold opacity-80"
+              >
+                Out of Stock
               </button>
             ) : authed && balance < game.price_coins ? (
               <button
