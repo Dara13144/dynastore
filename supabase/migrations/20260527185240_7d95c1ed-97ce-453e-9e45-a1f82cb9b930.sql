@@ -1,0 +1,2 @@
+REVOKE EXECUTE ON FUNCTION public.purchase_game_atomic_qty(uuid, text, integer) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.purchase_game_atomic_qty(uuid, text, integer) TO service_role;
