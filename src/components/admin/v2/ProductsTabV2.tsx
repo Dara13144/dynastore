@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { Loader2, Plus, Edit, Trash2, Package, Search, X } from "lucide-react";
+import { Loader2, Plus, Edit, Trash2, Package, Search, X, Upload } from "lucide-react";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 import {
   listAdminProducts,
   upsertProduct,
