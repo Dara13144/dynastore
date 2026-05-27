@@ -512,7 +512,11 @@ export function TopupModal({ onClose, onToast, initialAmount, autoStart }: Props
       <div className="w-full max-w-2xl my-auto rounded-3xl border border-border/60 bg-card shadow-2xl">
         <div className="flex items-center justify-between p-5 border-b border-border/60">
           <h2 className="font-display text-lg flex items-center gap-2">
-            <Wallet className="h-5 w-5 text-primary" /> បញ្ចូល Balance
+            {autoStatus === "waiting" ? (
+              <>Scan to pay with Bakong</>
+            ) : (
+              <><Wallet className="h-5 w-5 text-primary" /> បញ្ចូល Balance</>
+            )}
           </h2>
           <button onClick={onClose} className="rounded-full p-2 hover:bg-accent">
             <X className="h-4 w-4" />
