@@ -13,7 +13,6 @@ import {
   Link as LinkIcon,
 } from "lucide-react";
 import { useStore, StoreProvider, type Game } from "@/lib/store";
-import { purchaseGame } from "@/lib/payment.functions";
 import { getGameDownloadUrl } from "@/lib/games.functions";
 import { toast } from "sonner";
 import { TutorialVideo } from "@/components/TutorialVideo";
@@ -29,16 +28,13 @@ export const Route = createFileRoute("/games/$id")({
 
 function GameDetailPage() {
   const { id } = Route.useParams();
-  const { authed, balance, games, library, refreshWallet, refreshLibrary, toggleWishlist } =
-    useStore();
+  const { authed, balance, games, library, toggleWishlist } = useStore();
   const navigate = useNavigate();
   const game: Game | undefined = games.find((g) => g.id === id);
   const owned = library.some((l) => l.game_id === id && l.kind === "owned");
   const wished = library.some((l) => l.game_id === id && l.kind === "wishlist");
 
-  const [busy, setBusy] = useState(false);
   const [downloading, setDownloading] = useState(false);
-  const purchaseFn = useServerFn(purchaseGame);
   const downloadFn = useServerFn(getGameDownloadUrl);
 
   if (!game) {
@@ -52,27 +48,12 @@ function GameDetailPage() {
     );
   }
 
-  const buy = async () => {
+  const buy = () => {
     if (!authed) {
       navigate({ to: "/login" });
       return;
     }
-    if (balance < game.price_coins) {
-      toast.error("Balance មិនគ្រប់គ្រាន់");
-      return;
-    }
-    setBusy(true);
-    try {
-      const r = await purchaseFn({ data: { gameId: game.id } });
-      if (r.ok) {
-        toast.success(r.message === "already_owned" ? "មានរួចហើយ" : "ទិញបានជោគជ័យ!");
-        await Promise.all([refreshWallet(), refreshLibrary()]);
-      } else toast.error(r.message || "បរាជ័យ");
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "បរាជ័យ");
-    } finally {
-      setBusy(false);
-    }
+    navigate({ to: "/checkout", search: { gameId: game.id } });
   };
 
   const download = async () => {
@@ -196,14 +177,9 @@ function GameDetailPage() {
               ) : (
                 <button
                   onClick={buy}
-                  disabled={busy}
-                  className="inline-flex items-center gap-2 rounded-xl bg-primary text-primary-foreground px-5 py-2.5 text-sm font-semibold hover:opacity-90 disabled:opacity-60"
+                  className="inline-flex items-center gap-2 rounded-xl bg-primary text-primary-foreground px-5 py-2.5 text-sm font-semibold hover:opacity-90"
                 >
-                  {busy ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Package className="h-4 w-4" />
-                  )}
+                  <Package className="h-4 w-4" />
                   ទិញឥឡូវ
                 </button>
               )}
