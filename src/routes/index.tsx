@@ -166,7 +166,7 @@ function GamesSection({ onToast }: { onToast: (m: string) => void }) {
   );
 }
 
-function GameCard({ game, onToast }: { game: Game; onToast: (m: string) => void }) {
+function GameCard({ game, onToast, stock = 0 }: { game: Game; onToast: (m: string) => void; stock?: number }) {
   const { authed, balance, library, toggleWishlist, refreshWallet, refreshLibrary } = useStore();
   const owned = library.some((l) => l.game_id === game.id && l.kind === "owned");
   const wished = library.some((l) => l.game_id === game.id && l.kind === "wishlist");
