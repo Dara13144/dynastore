@@ -65,6 +65,9 @@ function GameDetailPage() {
 
   useEffect(() => () => { if (pollRef.current) clearInterval(pollRef.current); }, []);
 
+  const { counts: stockMap, refresh: refreshStock } = useStockCounts([id]);
+  const stock = stockMap[id] ?? 0;
+
   if (!game) {
     return (
       <div className="min-h-screen grid place-items-center text-muted-foreground gap-3">
@@ -75,8 +78,6 @@ function GameDetailPage() {
   }
 
   const unitPrice = game.price_coins;
-  const { counts: stockMap, refresh: refreshStock } = useStockCounts([id]);
-  const stock = stockMap[id] ?? 0;
   const subtotal = unitPrice * qty;
   const couponDiscount = couponApplied ? Math.min(subtotal * 0.1, subtotal) : 0;
   const userCoins = Math.floor(balance);
