@@ -11,7 +11,7 @@ import {
   History,
   Settings as SettingsIcon,
   Plus,
-  Gift,
+  
   LogOut,
   LogIn,
   ShieldCheck,
