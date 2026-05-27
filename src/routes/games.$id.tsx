@@ -264,15 +264,9 @@ function GameDetailPage() {
               </p>
             </div>
 
-            {!owned && <TutorialVideo slug="buy_game" />}
+            <TutorialVideo slug="buy_game" />
 
-            {owned ? (
-              <div className="rounded-2xl glass border border-emerald-500/40 p-5">
-                <div className="text-emerald-400 text-sm inline-flex items-center gap-2">
-                  <Check className="h-4 w-4" /> អ្នកមានហ្គេមនេះ
-                </div>
-              </div>
-            ) : (
+            {(
               <>
                 {/* Select Duration / Variant */}
                 <div className="rounded-2xl glass border border-border/60 p-5 space-y-3">
