@@ -598,42 +598,88 @@ export function TopupModal({ onClose, onToast, initialAmount, autoStart }: Props
                 </div>
               )}
               {autoStatus === "waiting" && autoSession && (
-                <div className="mx-auto w-full max-w-[320px] flex flex-col items-center gap-3">
-                  <KhqrCard
-                    innerRef={autoQrBoxRef}
-                    qrValue={autoSession.qr}
-                    amount={autoSession.amount}
-                  />
-                  <div className="w-full rounded-xl bg-muted/30 p-3 text-center">
-                    <div className="inline-flex items-center gap-2 text-xs">
-                      <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
-                      <span>កំពុងរង់ចាំការទូទាត់…</span>
+                <div className="mx-auto w-full max-w-[360px] flex flex-col items-center gap-4">
+                  <p className="text-xs text-muted-foreground text-center -mt-1">
+                    Open ABA / ACLEDA / Wing / Bakong and scan the KHQR
+                  </p>
+
+                  {/* Plain QR — minimal style */}
+                  <div
+                    ref={autoQrBoxRef}
+                    className="rounded-2xl bg-white p-4 shadow-md ring-1 ring-black/5"
+                  >
+                    <QRCode
+                      value={autoSession.qr}
+                      size={232}
+                      style={{ height: "auto", maxWidth: "100%", width: "232px" }}
+                      viewBox="0 0 256 256"
+                    />
+                  </div>
+
+                  {/* Ref + amount */}
+                  <div className="text-center">
+                    <div className="text-xs text-muted-foreground">
+                      Ref TOP-{autoSession.id.slice(0, 4).toUpperCase()}
                     </div>
-                    <div className="mt-1 text-2xl font-mono font-bold tabular-nums">
-                      {mm}:{ss}
-                    </div>
-                    <div className="text-[10px] text-muted-foreground">
-                      ស្គេន QR តាម Bakong/ABA/Wing → balance នឹងបញ្ចូលដោយស្វ័យប្រវត្តិ
+                    <div className="font-display text-3xl mt-0.5">
+                      ${autoSession.amount.toFixed(2)}
                     </div>
                   </div>
+
+                  {/* Waiting pill */}
+                  <div className="inline-flex items-center gap-2 rounded-full border border-border/60 px-3 py-1.5 text-xs">
+                    <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
+                    <span className="font-mono tabular-nums">
+                      Waiting… {mm}:{ss} / 5:00
+                    </span>
+                  </div>
+
+                  {/* MD5 row */}
                   <button
-                    onClick={downloadAutoQrPng}
-                    disabled={exporting}
-                    className="inline-flex items-center gap-2 rounded-full bg-primary text-primary-foreground px-4 py-2 text-xs font-semibold disabled:opacity-50"
+                    type="button"
+                    onClick={() => {
+                      navigator.clipboard?.writeText(autoSession.md5).then(
+                        () => onToast("MD5 copied"),
+                        () => {},
+                      );
+                    }}
+                    className="w-full inline-flex items-center justify-between gap-2 rounded-xl border border-border/60 bg-muted/30 px-3 py-2 text-xs font-mono hover:bg-muted/50"
                   >
-                    {exporting ? (
-                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                    ) : (
-                      <Download className="h-3.5 w-3.5" />
-                    )}
-                    {exporting ? "កំពុង Export…" : "ទាញយក QR (PNG)"}
+                    <span className="flex items-center gap-2">
+                      <span className="rounded-md bg-background/60 px-1.5 py-0.5 text-[10px] uppercase tracking-wider">
+                        MD5
+                      </span>
+                      <span className="truncate">
+                        {autoSession.md5.slice(0, 8)}…{autoSession.md5.slice(-6)}
+                      </span>
+                    </span>
+                    <Copy className="h-3.5 w-3.5 text-muted-foreground" />
                   </button>
-                  <button
-                    onClick={resetAuto}
-                    className="text-xs text-muted-foreground hover:text-foreground underline"
-                  >
-                    បោះបង់
-                  </button>
+
+                  <p className="text-[11px] text-muted-foreground text-center">
+                    Auto-verifying via Bakong Open API every 5s
+                  </p>
+
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={downloadAutoQrPng}
+                      disabled={exporting}
+                      className="inline-flex items-center gap-2 rounded-full border border-border px-3 py-1.5 text-xs hover:bg-accent disabled:opacity-50"
+                    >
+                      {exporting ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      ) : (
+                        <Download className="h-3.5 w-3.5" />
+                      )}
+                      Save QR
+                    </button>
+                    <button
+                      onClick={resetAuto}
+                      className="text-xs text-muted-foreground hover:text-foreground underline"
+                    >
+                      Cancel
+                    </button>
+                  </div>
                 </div>
               )}
               {autoStatus === "paid" && autoSession && (
