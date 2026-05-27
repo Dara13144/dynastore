@@ -18,6 +18,7 @@ import { recordClick } from "@/lib/tracking.functions";
 import { TopupModal } from "@/components/TopupModal";
 import { DynastoreAIChat } from "@/components/DynastoreAIChat";
 import { SiteHeader } from "@/components/SiteHeader";
+import { useStockCounts } from "@/hooks/useStockCounts";
 
 import heroImg from "@/assets/dyna-hero.png";
 
