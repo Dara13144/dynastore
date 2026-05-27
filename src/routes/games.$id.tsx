@@ -267,19 +267,9 @@ function GameDetailPage() {
             {!owned && <TutorialVideo slug="buy_game" />}
 
             {owned ? (
-              <div className="rounded-2xl glass border border-emerald-500/40 p-5 space-y-3">
+              <div className="rounded-2xl glass border border-emerald-500/40 p-5">
                 <div className="text-emerald-400 text-sm inline-flex items-center gap-2">
-                  <Check className="h-4 w-4" /> អ្នកមានហ្គេមនេះ — អាចទាញយកបានគ្រប់ពេល
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  <button onClick={() => download("direct")} disabled={downloading} className="inline-flex items-center gap-2 rounded-xl bg-emerald-500 text-white px-5 py-2.5 text-sm font-semibold hover:opacity-90 disabled:opacity-60">
-                    {downloading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
-                    ទាញយកឯកសារ (.zip)
-                  </button>
-                  <button onClick={() => download("link")} disabled={downloading} className="inline-flex items-center gap-2 rounded-xl border border-emerald-500/60 text-emerald-300 px-5 py-2.5 text-sm font-semibold hover:bg-emerald-500/10 disabled:opacity-60">
-                    {downloading ? <Loader2 className="h-4 w-4 animate-spin" /> : <LinkIcon className="h-4 w-4" />}
-                    Download By Link
-                  </button>
+                  <Check className="h-4 w-4" /> អ្នកមានហ្គេមនេះ
                 </div>
               </div>
             ) : (
