@@ -132,7 +132,7 @@ function GameDetailPage() {
               <div className="flex items-center justify-between">
                 <span className="text-xs text-muted-foreground">តម្លៃ</span>
                 <span className="inline-flex items-center gap-1 font-semibold text-primary text-lg">
-                  <Wallet className="h-4 w-4" /> {game.price_coins.toLocaleString()}
+                  <Wallet className="h-4 w-4" /> ${game.price_coins.toLocaleString()}
                 </span>
               </div>
               {authed && !owned && (
@@ -141,7 +141,7 @@ function GameDetailPage() {
                   <span
                     className={balance >= game.price_coins ? "text-emerald-400" : "text-amber-400"}
                   >
-                    {balance.toLocaleString()}
+                    ${balance.toLocaleString()}
                   </span>
                 </div>
               )}
