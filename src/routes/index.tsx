@@ -113,17 +113,6 @@ function Header({ onSettings, onTopup }: { onSettings: () => void; onTopup: () =
           <span className="font-display text-xl text-foreground">DYNASTORE</span>
         </Link>
 
-        <nav className="hidden md:flex items-center gap-5 text-sm text-muted-foreground">
-          <a href="#games" className="hover:text-foreground transition">
-            ហ្គេម
-          </a>
-          <a href="#deals" className="hover:text-foreground transition">
-            ប្រូម៉ូសិន
-          </a>
-          <a href="#community" className="hover:text-foreground transition">
-            សហគមន៍
-          </a>
-        </nav>
         <div className="flex items-center gap-2">
           {authed && (
             <button
