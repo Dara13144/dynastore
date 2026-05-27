@@ -280,21 +280,6 @@ function GameDetailPage() {
                   </div>
                 </div>
 
-                {/* Email for Delivery */}
-                <div className="rounded-2xl glass border border-emerald-500/40 p-5 space-y-2">
-                  <label htmlFor="delivery-email" className="text-sm font-semibold inline-flex items-center gap-1">
-                    Email for Delivery <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    id="delivery-email"
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="your@email.com"
-                    className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm focus:outline-none focus:border-primary"
-                  />
-                  <div className="text-[11px] text-muted-foreground">Credentials will be sent to this email</div>
-                </div>
 
                 {/* Quantity */}
                 <div className="rounded-2xl glass border border-border/60 p-5 flex items-center justify-between">
