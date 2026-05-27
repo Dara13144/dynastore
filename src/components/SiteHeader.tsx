@@ -114,7 +114,7 @@ export function SiteHeader({ onTopup }: Props) {
                         {profile?.display_name || "Account"}
                       </div>
                       <div className="text-xs text-muted-foreground truncate max-w-full">
-                        {profile?.email || ""}
+                        {session?.user?.email || ""}
                       </div>
                     </div>
                     <div className="py-2 text-sm">
