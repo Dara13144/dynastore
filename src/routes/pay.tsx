@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/pay")({
   head: () => ({
@@ -55,8 +56,11 @@ export default function PayPage() {
     setPayment(null);
     setStatus(null);
     try {
+      const { data: sess } = await supabase.auth.getSession();
+      const token = sess.session?.access_token;
       const res = await fetch(`/api/payment/create?amount=${encodeURIComponent(amount)}`, {
         method: "POST",
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
       const data: CreateResp = await res.json();
       if (!res.ok || data.error) throw new Error(data.error || `HTTP ${res.status}`);
@@ -74,10 +78,19 @@ export default function PayPage() {
     const tick = async () => {
       try {
         const res = await fetch(`/api/payment/status/${id}`);
-        const data: StatusResp = await res.json();
+        const data: StatusResp & { credit?: { creditedCoins?: number; newBalance?: number } } =
+          await res.json();
         setStatus(data);
         appendLog(`Status: ${data.status ?? data.error ?? "?"}`);
-        if (data.status === "paid") stopPolling();
+        if (data.status === "paid") {
+          stopPolling();
+          if (data.credit?.creditedCoins) {
+            appendLog(
+              `✅ +${data.credit.creditedCoins} balance (new: ${data.credit.newBalance})`,
+            );
+          }
+          window.dispatchEvent(new Event("wallet:refresh"));
+        }
       } catch (e: unknown) {
         appendLog(`Status error: ${(e as Error).message}`);
       }
