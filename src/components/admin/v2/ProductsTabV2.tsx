@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { Loader2, Plus, Edit, Trash2, Package, Search, X } from "lucide-react";
+import { Loader2, Plus, Edit, Trash2, Package, Search, X, Upload } from "lucide-react";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 import {
   listAdminProducts,
   upsertProduct,
@@ -174,7 +175,7 @@ function NewProductForm({ onCancel, onCreated, save }: { onCancel: () => void; o
         <Field label="Stock cap"><input type="number" value={form.stock_cap} onChange={(e) => setForm({ ...form, stock_cap: e.target.value })} className="input" /></Field>
         <Field label="Category"><input value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} className="input" /></Field>
         <Field label="Cover emoji"><input value={form.cover_emoji} onChange={(e) => setForm({ ...form, cover_emoji: e.target.value })} className="input" /></Field>
-        <Field label="Image URL"><input value={form.image_url} onChange={(e) => setForm({ ...form, image_url: e.target.value })} placeholder="https://..." className="input" /></Field>
+        <Field label="Image" className="md:col-span-2"><ImageUploader value={form.image_url} onChange={(url) => setForm({ ...form, image_url: url })} /></Field>
         <label className="flex items-center gap-2 text-sm mt-6"><input type="checkbox" checked={form.featured} onChange={(e) => setForm({ ...form, featured: e.target.checked })} /> Featured on home page</label>
         <Field label="Description" className="md:col-span-2"><textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={3} className="input resize-y" /></Field>
       </div>
@@ -194,6 +195,68 @@ function Field({ label, children, className }: { label: string; children: React.
     <div className={className}>
       <div className="text-[11px] uppercase tracking-wide text-muted-foreground mb-1">{label}</div>
       {children}
+    </div>
+  );
+}
+
+function ImageUploader({ value, onChange }: { value: string; onChange: (url: string) => void }) {
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [busy, setBusy] = useState(false);
+
+  const handleFile = async (file: File) => {
+    if (!file.type.startsWith("image/")) { toast.error("Image files only"); return; }
+    if (file.size > 5 * 1024 * 1024) { toast.error("Max 5MB"); return; }
+    setBusy(true);
+    try {
+      const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
+      const path = `products/${crypto.randomUUID()}.${ext}`;
+      const { error } = await supabase.storage.from("game-images").upload(path, file, {
+        cacheControl: "3600", upsert: false, contentType: file.type,
+      });
+      if (error) throw error;
+      const { data } = supabase.storage.from("game-images").getPublicUrl(path);
+      onChange(data.publicUrl);
+      toast.success("Image uploaded");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Upload failed");
+    } finally {
+      setBusy(false);
+      if (fileRef.current) fileRef.current.value = "";
+    }
+  };
+
+  return (
+    <div className="flex items-start gap-3">
+      {value && <img src={value} alt="" className="h-16 w-16 rounded-lg object-cover border border-border shrink-0" />}
+      <div className="flex-1 space-y-2">
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => fileRef.current?.click()}
+            disabled={busy}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-background px-3 py-1.5 text-xs font-semibold hover:bg-muted disabled:opacity-50"
+          >
+            {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
+            {value ? "Replace" : "Upload image"}
+          </button>
+          {value && (
+            <button type="button" onClick={() => onChange("")} className="text-xs text-rose-600 hover:underline">Remove</button>
+          )}
+        </div>
+        <input
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder="…or paste image URL"
+          className="input"
+        />
+        <input
+          ref={fileRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); }}
+        />
+      </div>
     </div>
   );
 }
