@@ -155,7 +155,7 @@ function GamesSection({ onToast }: { onToast: (m: string) => void }) {
         </div>
         <Gamepad2 className="h-6 w-6 text-primary hidden sm:block" />
       </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
         {games.map((g) => (
           <GameCard key={g.id} game={g} onToast={onToast} />
         ))}
@@ -221,7 +221,7 @@ function GameCard({ game, onToast }: { game: Game; onToast: (m: string) => void 
       <Link
         to="/games/$id"
         params={{ id: game.id }}
-        className="block relative aspect-[16/10] overflow-hidden"
+      className="block relative aspect-[16/10] overflow-hidden"
       >
         <img
           src={game.image}
@@ -229,48 +229,48 @@ function GameCard({ game, onToast }: { game: Game; onToast: (m: string) => void 
           className="h-full w-full object-cover transition group-hover:scale-105"
         />
         {game.badge && (
-          <span className="absolute top-3 left-3 rounded-full bg-primary px-2.5 py-0.5 text-[10px] font-semibold text-primary-foreground">
+          <span className="absolute top-2 left-2 sm:top-3 sm:left-3 rounded-full bg-primary px-2 py-0.5 text-[9px] sm:text-[10px] font-semibold text-primary-foreground">
             {game.badge}
           </span>
         )}
         {owned && (
-          <span className="absolute top-3 right-3 rounded-full bg-emerald-500 px-2.5 py-0.5 text-[10px] font-semibold text-white inline-flex items-center gap-1">
-            <Check className="h-3 w-3" /> ជាកម្មសិទ្ធ
+          <span className="absolute top-2 right-2 sm:top-3 sm:right-3 rounded-full bg-emerald-500 px-2 py-0.5 text-[9px] sm:text-[10px] font-semibold text-white inline-flex items-center gap-1">
+            <Check className="h-2.5 w-2.5 sm:h-3 sm:w-3" /> ជាកម្មសិទ្ធ
           </span>
         )}
       </Link>
-      <div className="p-4">
-        <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
+      <div className="p-3 sm:p-4">
+        <div className="text-[9px] sm:text-[10px] uppercase tracking-wider text-muted-foreground">
           {game.category}
         </div>
         <Link to="/games/$id" params={{ id: game.id }} className="block">
-          <h3 className="font-display text-lg mt-0.5 hover:text-primary transition">
+          <h3 className="font-display text-sm sm:text-lg mt-0.5 hover:text-primary transition truncate">
             {game.title}
           </h3>
         </Link>
-        <p className="text-xs text-muted-foreground mt-1.5 line-clamp-2">{game.description}</p>
-        <div className="mt-3 space-y-2">
-          <div className="flex items-center justify-between text-xs">
+        <p className="text-[11px] sm:text-xs text-muted-foreground mt-1 line-clamp-2 hidden sm:block">{game.description}</p>
+        <div className="mt-2 sm:mt-3 space-y-1.5 sm:space-y-2">
+          <div className="flex items-center justify-between text-[11px] sm:text-xs">
             <div className="inline-flex items-center gap-1 font-semibold text-primary">
-              <Wallet className="h-3.5 w-3.5" /> ${game.price_coins.toLocaleString()}
+              <Wallet className="h-3 w-3 sm:h-3.5 sm:w-3.5" /> ${game.price_coins.toLocaleString()}
             </div>
             {authed && !owned && (
               <div
-                className={`inline-flex items-center gap-1 ${balance >= game.price_coins ? "text-emerald-400" : "text-amber-400"}`}
+                className={`hidden sm:inline-flex items-center gap-1 ${balance >= game.price_coins ? "text-emerald-400" : "text-amber-400"}`}
               >
                 <Wallet className="h-3 w-3" /> Balance: ${balance.toLocaleString()}
               </div>
             )}
           </div>
           {authed && !owned && (
-            <div className="h-1.5 w-full overflow-hidden rounded-full bg-accent/40">
+            <div className="h-1 sm:h-1.5 w-full overflow-hidden rounded-full bg-accent/40">
               <div
                 className={`h-full transition-all ${balance >= game.price_coins ? "bg-emerald-400" : "bg-amber-400"}`}
                 style={{ width: `${Math.min(100, (balance / game.price_coins) * 100)}%` }}
               />
             </div>
           )}
-          <div className="flex items-center justify-end gap-1.5">
+          <div className="flex items-center justify-end gap-1 sm:gap-1.5">
             <button
               onClick={wish}
               aria-label={
@@ -279,31 +279,32 @@ function GameCard({ game, onToast }: { game: Game; onToast: (m: string) => void 
                   : `បន្ថែមទៅបញ្ជីចង់លេង — ${game.title}`
               }
               aria-pressed={wished}
-              className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1.5 text-xs hover:bg-accent ${wished ? "border-primary text-primary" : "border-border"}`}
+              className={`inline-flex items-center gap-1 rounded-full border px-2 py-1 sm:px-2.5 sm:py-1.5 text-[10px] sm:text-xs hover:bg-accent ${wished ? "border-primary text-primary" : "border-border"}`}
             >
-              <Star className={`h-3.5 w-3.5 ${wished ? "fill-primary" : ""}`} />
+              <Star className={`h-3 w-3 sm:h-3.5 sm:w-3.5 ${wished ? "fill-primary" : ""}`} />
             </button>
             {owned ? (
               <button
                 disabled
-                className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 text-emerald-400 px-3 py-1.5 text-xs font-semibold"
+                className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 text-emerald-400 px-2 py-1 sm:px-3 sm:py-1.5 text-[10px] sm:text-xs font-semibold"
               >
                 មាន
               </button>
             ) : authed && balance < game.price_coins ? (
               <button
                 disabled
-                className="inline-flex items-center gap-1 rounded-full border border-amber-400/50 bg-amber-400/10 text-amber-300 px-3 py-1.5 text-xs font-semibold opacity-80"
+                className="inline-flex items-center gap-1 rounded-full border border-amber-400/50 bg-amber-400/10 text-amber-300 px-2 py-1 sm:px-3 sm:py-1.5 text-[10px] sm:text-xs font-semibold opacity-80"
               >
-                Balance មិនគ្រប់គ្រាន់
+                <span className="hidden sm:inline">Balance មិនគ្រប់គ្រាន់</span>
+                <span className="sm:hidden">មិនគ្រប់</span>
               </button>
             ) : (
               <button
                 onClick={buy}
                 disabled={busy}
-                className="inline-flex items-center gap-1 rounded-full bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-60"
+                className="inline-flex items-center gap-1 rounded-full bg-primary px-2 py-1 sm:px-3 sm:py-1.5 text-[10px] sm:text-xs font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-60"
               >
-                {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "ទិញ"}
+                {busy ? <Loader2 className="h-3 w-3 sm:h-3.5 sm:w-3.5 animate-spin" /> : "ទិញ"}
               </button>
             )}
           </div>
