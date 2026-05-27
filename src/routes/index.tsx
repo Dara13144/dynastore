@@ -24,7 +24,7 @@ import { TopupModal } from "@/components/TopupModal";
 import { DynastoreAIChat } from "@/components/DynastoreAIChat";
 
 import heroImg from "@/assets/akira-hero.jpg";
-import logoD from "@/assets/akira-logo.png";
+import logoD from "@/assets/dyna-logo.png";
 
 import iconTelegram from "@/assets/social-telegram.png";
 import iconTiktok from "@/assets/social-tiktok.png";
@@ -38,12 +38,12 @@ import promoBanner from "@/assets/promo-banner.png";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "AkiraStore — Your trusted store for quality and reliability" },
+      { title: "DYNASTORE — Your trusted store for quality and reliability" },
       {
         name: "description",
-        content: "AkiraStore — premium digital products, software, and entertainment subscriptions with warranty and instant delivery.",
+        content: "DYNASTORE — premium digital products, software, and entertainment subscriptions with warranty and instant delivery.",
       },
-      { property: "og:title", content: "AkiraStore" },
+      { property: "og:title", content: "DYNASTORE" },
       {
         property: "og:description",
         content: "Your trusted store for quality and reliability.",
@@ -109,8 +109,8 @@ function Header({ onSettings, onTopup }: { onSettings: () => void; onTopup: () =
     <header className="sticky top-0 z-40 backdrop-blur-md bg-background/70 border-b border-border/60">
       <div className="container mx-auto px-4 h-16 flex items-center justify-between gap-3">
         <Link to="/" className="flex items-center gap-2.5">
-          <img src={logoD} alt="AkiraStore" className="h-9 w-9 rounded-xl object-cover" />
-          <span className="font-display text-xl text-foreground">AkiraStore</span>
+          <img src={logoD} alt="DYNASTORE" className="h-9 w-9 rounded-xl object-cover" />
+          <span className="font-display text-xl text-foreground">DYNASTORE</span>
         </Link>
 
         <nav className="hidden md:flex items-center gap-5 text-sm text-muted-foreground">
@@ -192,7 +192,7 @@ function Hero() {
       <div className="relative overflow-hidden rounded-3xl shadow-card ring-1 ring-border">
         <img
           src={heroImg}
-          alt="Welcome to AkiraStore"
+          alt="Welcome to DYNASTORE"
           width={1920}
           height={1080}
           fetchPriority="high"
