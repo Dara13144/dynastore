@@ -177,14 +177,9 @@ function GameDetailPage() {
               ) : (
                 <button
                   onClick={buy}
-                  disabled={busy}
-                  className="inline-flex items-center gap-2 rounded-xl bg-primary text-primary-foreground px-5 py-2.5 text-sm font-semibold hover:opacity-90 disabled:opacity-60"
+                  className="inline-flex items-center gap-2 rounded-xl bg-primary text-primary-foreground px-5 py-2.5 text-sm font-semibold hover:opacity-90"
                 >
-                  {busy ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Package className="h-4 w-4" />
-                  )}
+                  <Package className="h-4 w-4" />
                   ទិញឥឡូវ
                 </button>
               )}
