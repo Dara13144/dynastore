@@ -178,7 +178,7 @@ function LibraryPage() {
                       image={g.image}
                       badge={
                         <span className="inline-flex items-center gap-1 text-sm font-semibold text-primary">
-                          <Wallet className="h-3.5 w-3.5" /> {g.price_coins.toLocaleString()}
+                          <Wallet className="h-3.5 w-3.5" /> ${g.price_coins.toLocaleString()}
                         </span>
                       }
                       action={

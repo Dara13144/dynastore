@@ -328,13 +328,13 @@ function GameCard({ game, onToast }: { game: Game; onToast: (m: string) => void 
         <div className="mt-3 space-y-2">
           <div className="flex items-center justify-between text-xs">
             <div className="inline-flex items-center gap-1 font-semibold text-primary">
-              <Wallet className="h-3.5 w-3.5" /> {game.price_coins.toLocaleString()}
+              <Wallet className="h-3.5 w-3.5" /> ${game.price_coins.toLocaleString()}
             </div>
             {authed && !owned && (
               <div
                 className={`inline-flex items-center gap-1 ${balance >= game.price_coins ? "text-emerald-400" : "text-amber-400"}`}
               >
-                <Wallet className="h-3 w-3" /> Balance: {balance.toLocaleString()}
+                <Wallet className="h-3 w-3" /> Balance: ${balance.toLocaleString()}
               </div>
             )}
           </div>
