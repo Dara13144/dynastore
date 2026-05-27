@@ -1,34 +1,38 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
 import {
   ArrowLeft,
-  Save,
   LogOut,
-  Copy,
-  Check,
-  User as UserIcon,
   Wallet,
   RefreshCw,
+  Plus,
+  Clock,
+  History,
+  Package,
+  Check,
+  X as XIcon,
+  Loader2,
 } from "lucide-react";
 import { StoreProvider, useStore } from "@/lib/store";
 import { useSession } from "@/hooks/use-session";
 import { TopupModal } from "@/components/TopupModal";
+import { listMyTopupRequests } from "@/lib/topup.functions";
 
 import logoD from "@/assets/dyna-logo.jpeg";
 
 export const Route = createFileRoute("/account")({
   head: () => ({
     meta: [
-      { title: "គណនី — Dyna Store" },
+      { title: "My account — Dyna Store" },
       {
         name: "description",
-        content:
-          "មើល និងកែប្រែព័ត៌មានគណនី Dyna Store, គ្រប់គ្រង Balance, និងការកំណត់ផ្ទាល់ខ្លួនរបស់អ្នក។",
+        content: "Manage your Dyna Store wallet balance and view transactions.",
       },
-      { property: "og:title", content: "គណនី — Dyna Store" },
+      { property: "og:title", content: "My account — Dyna Store" },
       {
         property: "og:description",
-        content: "គ្រប់គ្រងព័ត៌មានគណនី Dyna Store, Balance, និងការកំណត់ផ្ទាល់ខ្លួនរបស់អ្នក។",
+        content: "Manage your Dyna Store wallet balance and view transactions.",
       },
       { property: "og:url", content: "https://dynastore.lovable.app/account" },
       { name: "robots", content: "noindex" },
@@ -42,71 +46,81 @@ export const Route = createFileRoute("/account")({
   ),
 });
 
+const PRESETS = [10, 25, 50, 100];
+
+type TopupRow = Awaited<ReturnType<typeof listMyTopupRequests>>[number];
+
 function AccountPage() {
   const navigate = useNavigate();
   const { session, loading: sessionLoading } = useSession();
-  const { profile, signOut, updateProfile, refreshProfile, balance, refreshWallet } = useStore();
+  const { profile, signOut, balance, refreshWallet } = useStore();
+  const listFn = useServerFn(listMyTopupRequests);
 
-  const [displayName, setDisplayName] = useState("");
-  const [bio, setBio] = useState("");
-  const [avatarUrl, setAvatarUrl] = useState("");
-  const [saving, setSaving] = useState(false);
   const [topupOpen, setTopupOpen] = useState(false);
+  const [topupInitialAmount, setTopupInitialAmount] = useState<number | undefined>();
+  const [topupAutoStart, setTopupAutoStart] = useState(false);
+
+  const [customAmount, setCustomAmount] = useState<string>("");
+  const [history, setHistory] = useState<TopupRow[]>([]);
+  const [loadingHistory, setLoadingHistory] = useState(true);
 
   const [toast, setToast] = useState<string | null>(null);
   const showToast = (m: string) => {
     setToast(m);
     window.setTimeout(() => setToast(null), 2400);
   };
-  const [msg, setMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
-  const [copied, setCopied] = useState<string | null>(null);
 
   useEffect(() => {
     if (!sessionLoading && !session) navigate({ to: "/login" });
   }, [sessionLoading, session, navigate]);
 
+  const reloadHistory = async () => {
+    try {
+      setLoadingHistory(true);
+      const h = await listFn();
+      setHistory(h);
+    } catch {
+      /* ignore */
+    } finally {
+      setLoadingHistory(false);
+    }
+  };
+
   useEffect(() => {
-    setDisplayName(profile.display_name ?? "");
-    setBio(profile.bio ?? "");
-    setAvatarUrl(profile.avatar_url ?? "");
-  }, [profile]);
+    if (!session) return;
+    reloadHistory();
+    const onRefresh = () => {
+      reloadHistory();
+    };
+    window.addEventListener("wallet:refresh", onRefresh);
+    return () => window.removeEventListener("wallet:refresh", onRefresh);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session]);
 
   if (sessionLoading || !session) {
     return (
       <div className="min-h-screen grid place-items-center text-sm text-muted-foreground">
-        កំពុងផ្ទុក…
+        Loading…
       </div>
     );
   }
 
   const user = session.user;
-  const provider = user.app_metadata?.provider ?? "email";
-  const createdAt = user.created_at ? new Date(user.created_at).toLocaleString() : "—";
-  const lastSignIn = user.last_sign_in_at ? new Date(user.last_sign_in_at).toLocaleString() : "—";
+  const balanceUsd = balance; // 1 coin = $1 (coins_per_usd default 1)
 
-  const onSave = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSaving(true);
-    setMsg(null);
-    const { error } = await updateProfile({
-      display_name: displayName.trim() || "Player",
-      bio: bio.trim() || null,
-      avatar_url: avatarUrl.trim() || null,
-    });
-    setSaving(false);
-    if (error) setMsg({ type: "err", text: error });
-    else setMsg({ type: "ok", text: "បានរក្សាទុក" });
-    setTimeout(() => setMsg(null), 2500);
+  const openTopup = (amount?: number, autoStart = false) => {
+    setTopupInitialAmount(amount);
+    setTopupAutoStart(autoStart);
+    setTopupOpen(true);
   };
 
-  const copy = async (label: string, text: string) => {
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopied(label);
-      setTimeout(() => setCopied(null), 1500);
-    } catch {
-      /* ignore */
+  const handleCustomTopup = () => {
+    const n = Number(customAmount);
+    if (!Number.isFinite(n) || n < 0.5) {
+      showToast("Enter at least $0.50");
+      return;
     }
+    openTopup(n, true);
   };
 
   return (
@@ -121,165 +135,155 @@ function AccountPage() {
             to="/"
             className="inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-xs hover:bg-accent"
           >
-            <ArrowLeft className="h-3.5 w-3.5" /> ត្រឡប់
+            <ArrowLeft className="h-3.5 w-3.5" /> Back
           </Link>
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-10 max-w-3xl space-y-6">
-        <div>
-          <h1 className="font-display text-3xl">គណនីរបស់អ្នក</h1>
+      <main className="container mx-auto px-4 py-10 max-w-6xl">
+        <div className="mb-6">
+          <h1 className="font-display text-3xl">My account</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            មើល និងកែប្រែព័ត៌មានគណនីទាំងអស់នៅទីនេះ។
+            Manage your wallet balance and view transactions.
           </p>
         </div>
 
-        {/* Profile card */}
-        <section className="glass rounded-2xl border border-border/60 p-6">
-          <div className="flex items-center gap-4">
-            <div className="h-16 w-16 rounded-full overflow-hidden bg-primary/15 grid place-items-center text-primary text-xl font-semibold shrink-0">
-              {avatarUrl ? (
-                <img
-                  src={avatarUrl}
-                  alt=""
-                  className="h-full w-full object-cover"
-                  onError={(e) => ((e.currentTarget as HTMLImageElement).style.display = "none")}
-                />
-              ) : (
-                <UserIcon className="h-7 w-7" />
-              )}
-            </div>
-            <div className="min-w-0">
-              <div className="font-display text-xl truncate">
-                {profile.display_name || "Player"}
+        <div className="grid lg:grid-cols-2 gap-6">
+          {/* LEFT — Balance + Top up */}
+          <div className="space-y-6">
+            {/* Wallet balance */}
+            <section className="relative overflow-hidden rounded-2xl border border-border/60 bg-gradient-to-br from-primary/15 via-primary/5 to-background p-6">
+              <div className="flex items-center gap-2 text-[11px] uppercase tracking-wider text-muted-foreground">
+                <Wallet className="h-3.5 w-3.5" /> Wallet balance
               </div>
-              <div className="text-xs text-muted-foreground truncate">{user.email}</div>
-            </div>
-          </div>
-
-          <form onSubmit={onSave} className="mt-6 space-y-4">
-            <Field label="ឈ្មោះបង្ហាញ">
-              <input
-                value={displayName}
-                onChange={(e) => setDisplayName(e.target.value)}
-                maxLength={60}
-                className="w-full rounded-xl bg-input px-4 py-2.5 text-sm outline-none ring-1 ring-border focus:ring-primary"
-              />
-            </Field>
-            <Field label="URL រូបភាព (ស្រេច)">
-              <input
-                value={avatarUrl}
-                onChange={(e) => setAvatarUrl(e.target.value)}
-                placeholder="https://…"
-                className="w-full rounded-xl bg-input px-4 py-2.5 text-sm outline-none ring-1 ring-border focus:ring-primary"
-              />
-            </Field>
-            <Field label="ប្រវត្តិសង្ខេប (ស្រេច)">
-              <textarea
-                value={bio}
-                onChange={(e) => setBio(e.target.value)}
-                rows={3}
-                maxLength={280}
-                className="w-full rounded-xl bg-input px-4 py-2.5 text-sm outline-none ring-1 ring-border focus:ring-primary resize-none"
-              />
-            </Field>
-
-            <div className="flex items-center gap-3 pt-1">
+              <div className="mt-3 font-display text-5xl tabular-nums">
+                ${balanceUsd.toFixed(2)}
+              </div>
+              <div className="mt-2 text-xs text-muted-foreground">
+                Use your balance to pay at checkout.
+              </div>
               <button
-                type="submit"
-                disabled={saving}
-                className="inline-flex items-center gap-1.5 rounded-full bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-60"
+                onClick={refreshWallet}
+                className="absolute top-4 right-4 inline-flex items-center gap-1.5 rounded-full border border-border/60 bg-background/60 px-2.5 py-1 text-[11px] hover:bg-accent"
+                aria-label="Refresh balance"
               >
-                <Save className="h-3.5 w-3.5" /> {saving ? "កំពុងរក្សាទុក…" : "រក្សាទុក"}
+                <RefreshCw className="h-3 w-3" /> Refresh
               </button>
-              <button
-                type="button"
-                onClick={refreshProfile}
-                className="rounded-full border border-border px-4 py-2 text-xs hover:bg-accent"
-              >
-                ផ្ទុកឡើងវិញ
-              </button>
-              {msg && (
-                <span
-                  className={`text-xs ${msg.type === "ok" ? "text-primary" : "text-destructive"}`}
+            </section>
+
+            {/* Top up */}
+            <section className="rounded-2xl border border-border/60 bg-card p-6">
+              <h2 className="font-semibold">Top up</h2>
+              <p className="text-xs text-muted-foreground mt-1">
+                Pick a preset or enter a custom amount.
+              </p>
+
+              <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-2">
+                {PRESETS.map((p) => (
+                  <button
+                    key={p}
+                    onClick={() => openTopup(p, true)}
+                    className="rounded-xl border border-border/60 bg-background/40 px-3 py-3 text-sm font-semibold hover:border-primary/50 hover:bg-primary/10 transition-colors"
+                  >
+                    +${p.toFixed(2)}
+                  </button>
+                ))}
+              </div>
+
+              <div className="mt-3 flex items-center gap-2">
+                <div className="relative flex-1">
+                  <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
+                    $
+                  </span>
+                  <input
+                    type="number"
+                    min={0.5}
+                    step={0.5}
+                    value={customAmount}
+                    onChange={(e) => setCustomAmount(e.target.value)}
+                    placeholder="Custom amount"
+                    className="w-full rounded-xl bg-input pl-7 pr-3 py-2.5 text-sm outline-none ring-1 ring-border focus:ring-primary"
+                  />
+                </div>
+                <button
+                  onClick={handleCustomTopup}
+                  className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground hover:opacity-90"
                 >
-                  {msg.text}
-                </span>
-              )}
-            </div>
-          </form>
-        </section>
-
-        {/* Balance card */}
-        <section className="glass rounded-2xl border border-border/60 p-6 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="h-12 w-12 rounded-2xl bg-primary/15 grid place-items-center text-primary">
-              <Wallet className="h-6 w-6" />
-            </div>
-            <div>
-              <div className="text-[11px] uppercase tracking-wider text-muted-foreground">
-                Balance បច្ចុប្បន្ន
+                  <Plus className="h-4 w-4" /> Top up
+                </button>
               </div>
-              <div className="font-display text-2xl">{balance.toLocaleString()}</div>
+
+              <p className="mt-3 text-[11px] text-muted-foreground">
+                Paid instantly via Bakong KHQR — scan with ABA / ACLEDA / Wing / Bakong.
+              </p>
+            </section>
+          </div>
+
+          {/* RIGHT — Transactions */}
+          <section className="rounded-2xl border border-border/60 bg-card p-6">
+            <div className="flex items-start justify-between gap-3 mb-4">
+              <div>
+                <h2 className="font-semibold">Transactions</h2>
+                <p className="text-xs text-muted-foreground mt-0.5">Most recent first.</p>
+              </div>
+              <button
+                onClick={reloadHistory}
+                className="inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-[11px] hover:bg-accent"
+              >
+                <History className="h-3 w-3" /> View all
+              </button>
+            </div>
+
+            {loadingHistory ? (
+              <div className="py-16 grid place-items-center text-muted-foreground">
+                <Loader2 className="h-5 w-5 animate-spin" />
+              </div>
+            ) : history.length === 0 ? (
+              <div className="py-16 grid place-items-center text-center">
+                <div className="h-10 w-10 rounded-full bg-muted/50 grid place-items-center text-muted-foreground mb-3">
+                  <Wallet className="h-5 w-5" />
+                </div>
+                <div className="text-sm font-medium">No transactions yet</div>
+                <div className="text-xs text-muted-foreground mt-1">Top up to get started.</div>
+              </div>
+            ) : (
+              <ul className="divide-y divide-border/50">
+                {history.map((t) => (
+                  <TxnRow key={t.id} row={t} />
+                ))}
+              </ul>
+            )}
+          </section>
+        </div>
+
+        {/* Delivered accounts (placeholder) */}
+        <section className="mt-6 rounded-2xl border border-border/60 bg-card p-6">
+          <h2 className="font-semibold flex items-center gap-2 text-primary">
+            <Package className="h-4 w-4" /> Delivered accounts
+          </h2>
+          <p className="text-xs text-muted-foreground mt-1">
+            Auto-delivered credentials from your purchases. Keep them safe.
+          </p>
+          <div className="py-12 grid place-items-center text-center">
+            <div className="h-10 w-10 rounded-full bg-muted/50 grid place-items-center text-muted-foreground mb-3">
+              <Package className="h-5 w-5" />
+            </div>
+            <div className="text-sm font-medium">No deliveries yet</div>
+            <div className="text-xs text-muted-foreground mt-1">
+              Buy a product to receive an account automatically.
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setTopupOpen(true)}
-              className="inline-flex items-center gap-1.5 rounded-full bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground hover:opacity-90"
-            >
-              បញ្ចូល Balance
-            </button>
-            <button
-              onClick={() => {
-                refreshWallet();
-              }}
-              className="inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-xs hover:bg-accent"
-            >
-              <RefreshCw className="h-3.5 w-3.5" /> ផ្ទុកឡើងវិញ
-            </button>
+        </section>
+
+        {/* Account info / actions */}
+        <section className="mt-6 rounded-2xl border border-border/60 bg-card p-6 flex flex-wrap items-center justify-between gap-3">
+          <div className="text-xs text-muted-foreground">
+            Signed in as{" "}
+            <span className="text-foreground font-medium">
+              {profile.display_name || "Player"}
+            </span>{" "}
+            · {user.email}
           </div>
-        </section>
-
-        {/* Account details */}
-        <section className="glass rounded-2xl border border-border/60 p-6">
-          <h2 className="font-semibold text-sm mb-4">ព័ត៌មានគណនី</h2>
-          <dl className="grid sm:grid-cols-2 gap-4 text-sm">
-            <Info
-              label="អ៊ីមែល"
-              value={user.email ?? "—"}
-              onCopy={() => copy("email", user.email ?? "")}
-              copied={copied === "email"}
-            />
-            <Info
-              label="User ID"
-              value={user.id}
-              mono
-              onCopy={() => copy("uid", user.id)}
-              copied={copied === "uid"}
-            />
-            <Info label="វិធីចូល" value={String(provider)} />
-            <Info
-              label="អ៊ីមែលបានបញ្ជាក់"
-              value={user.email_confirmed_at ? "បាទ/ចាស" : "មិនទាន់"}
-            />
-            <Info label="បង្កើតគណនី" value={createdAt} />
-            <Info label="ចូលចុងក្រោយ" value={lastSignIn} />
-            {profile.created_at && (
-              <Info label="Profile បង្កើត" value={new Date(profile.created_at).toLocaleString()} />
-            )}
-            {profile.updated_at && (
-              <Info
-                label="Profile កែចុងក្រោយ"
-                value={new Date(profile.updated_at).toLocaleString()}
-              />
-            )}
-          </dl>
-        </section>
-
-        {/* Danger zone */}
-        <section className="glass rounded-2xl border border-border/60 p-6">
-          <h2 className="font-semibold text-sm mb-3">សកម្មភាព</h2>
           <button
             onClick={async () => {
               await signOut();
@@ -287,11 +291,23 @@ function AccountPage() {
             }}
             className="inline-flex items-center gap-1.5 rounded-full border border-destructive/40 text-destructive px-4 py-2 text-xs hover:bg-destructive/10"
           >
-            <LogOut className="h-3.5 w-3.5" /> ចាកចេញពីគណនី
+            <LogOut className="h-3.5 w-3.5" /> Sign out
           </button>
         </section>
       </main>
-      {topupOpen && <TopupModal onClose={() => setTopupOpen(false)} onToast={showToast} />}
+
+      {topupOpen && (
+        <TopupModal
+          onClose={() => {
+            setTopupOpen(false);
+            setTopupAutoStart(false);
+            reloadHistory();
+          }}
+          onToast={showToast}
+          initialAmount={topupInitialAmount}
+          autoStart={topupAutoStart}
+        />
+      )}
       {toast && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[200] rounded-full bg-foreground text-background px-5 py-2 text-sm shadow-lg">
           {toast}
@@ -301,49 +317,46 @@ function AccountPage() {
   );
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function TxnRow({ row }: { row: TopupRow }) {
+  const date = row.created_at ? new Date(row.created_at) : null;
+  const status = row.status as "pending" | "approved" | "rejected";
   return (
-    <label className="block">
-      <span className="text-xs text-muted-foreground">{label}</span>
-      <div className="mt-1">{children}</div>
-    </label>
-  );
-}
-
-function Info({
-  label,
-  value,
-  mono,
-  onCopy,
-  copied,
-}: {
-  label: string;
-  value: string;
-  mono?: boolean;
-  onCopy?: () => void;
-  copied?: boolean;
-}) {
-  return (
-    <div className="rounded-xl border border-border/50 bg-background/40 px-3 py-2.5">
-      <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</div>
-      <div className="mt-0.5 flex items-center gap-2">
-        <div className={`flex-1 truncate text-sm ${mono ? "font-mono text-xs" : ""}`} title={value}>
-          {value}
+    <li className="py-3 flex items-center justify-between gap-3">
+      <div className="flex items-center gap-3 min-w-0">
+        <div
+          className={`h-9 w-9 rounded-full grid place-items-center shrink-0 ${
+            status === "approved"
+              ? "bg-emerald-500/15 text-emerald-400"
+              : status === "rejected"
+                ? "bg-destructive/15 text-destructive"
+                : "bg-amber-500/15 text-amber-400"
+          }`}
+        >
+          {status === "approved" ? (
+            <Check className="h-4 w-4" />
+          ) : status === "rejected" ? (
+            <XIcon className="h-4 w-4" />
+          ) : (
+            <Clock className="h-4 w-4" />
+          )}
         </div>
-        {onCopy && (
-          <button
-            onClick={onCopy}
-            className="rounded-md p-1 hover:bg-accent text-muted-foreground"
-            aria-label="Copy"
-          >
-            {copied ? (
-              <Check className="h-3.5 w-3.5 text-primary" />
-            ) : (
-              <Copy className="h-3.5 w-3.5" />
-            )}
-          </button>
-        )}
+        <div className="min-w-0">
+          <div className="text-sm font-medium truncate">
+            Top up · ${Number(row.amount_usd).toFixed(2)}
+          </div>
+          <div className="text-[11px] text-muted-foreground">
+            {date ? date.toLocaleString() : "—"} ·{" "}
+            <span className="capitalize">{status}</span>
+          </div>
+        </div>
       </div>
-    </div>
+      <div
+        className={`text-sm font-semibold tabular-nums ${
+          status === "approved" ? "text-emerald-400" : "text-muted-foreground"
+        }`}
+      >
+        {status === "approved" ? "+" : ""}${Number(row.amount_usd).toFixed(2)}
+      </div>
+    </li>
   );
 }
