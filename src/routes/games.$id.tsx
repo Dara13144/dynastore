@@ -275,12 +275,16 @@ function GameDetailPage() {
                 {/* Select Duration / Variant */}
                 <div className="rounded-2xl glass border border-border/60 p-5 space-y-3">
                   <div className="text-sm font-semibold">Select Duration:</div>
-                  <div className="rounded-xl border-2 border-emerald-500/60 bg-emerald-500/5 px-4 py-3 flex items-center justify-between">
+                  <div className={`rounded-xl border-2 px-4 py-3 flex items-center justify-between ${stock > 0 ? "border-emerald-500/60 bg-emerald-500/5" : "border-red-500/60 bg-red-500/5"}`}>
                     <div>
                       <div className="font-semibold text-sm">1 Account</div>
-                      <div className="text-emerald-400 text-[11px] font-semibold">In Stock ({stock})</div>
+                      {stock > 0 ? (
+                        <div className="text-emerald-400 text-[11px] font-semibold">In Stock ({stock})</div>
+                      ) : (
+                        <div className="text-red-400 text-[11px] font-semibold">Out of Stock</div>
+                      )}
                     </div>
-                    <div className="text-emerald-400 font-bold">${unitPrice.toFixed(2)}</div>
+                    <div className={`font-bold ${stock > 0 ? "text-emerald-400" : "text-red-400"}`}>${unitPrice.toFixed(2)}</div>
                   </div>
                 </div>
 
