@@ -25,7 +25,7 @@ export type Game = {
   image: string;
   badge?: string | null;
   price_coins: number;
-  file_path?: string | null;
+  has_file?: boolean;
   screenshots?: string[];
   preview_video_url?: string | null;
 };
