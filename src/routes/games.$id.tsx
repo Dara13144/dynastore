@@ -13,7 +13,6 @@ import {
   Link as LinkIcon,
 } from "lucide-react";
 import { useStore, StoreProvider, type Game } from "@/lib/store";
-import { purchaseGame } from "@/lib/payment.functions";
 import { getGameDownloadUrl } from "@/lib/games.functions";
 import { toast } from "sonner";
 import { TutorialVideo } from "@/components/TutorialVideo";
@@ -29,16 +28,13 @@ export const Route = createFileRoute("/games/$id")({
 
 function GameDetailPage() {
   const { id } = Route.useParams();
-  const { authed, balance, games, library, refreshWallet, refreshLibrary, toggleWishlist } =
-    useStore();
+  const { authed, balance, games, library, toggleWishlist } = useStore();
   const navigate = useNavigate();
   const game: Game | undefined = games.find((g) => g.id === id);
   const owned = library.some((l) => l.game_id === id && l.kind === "owned");
   const wished = library.some((l) => l.game_id === id && l.kind === "wishlist");
 
-  const [busy, setBusy] = useState(false);
   const [downloading, setDownloading] = useState(false);
-  const purchaseFn = useServerFn(purchaseGame);
   const downloadFn = useServerFn(getGameDownloadUrl);
 
   if (!game) {
