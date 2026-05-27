@@ -276,6 +276,7 @@ export function TopupModal({ onClose, onToast, initialAmount, autoStart }: Props
       setAutoSession({
         id: r.id,
         qr: r.qr_payload,
+        md5: r.md5,
         coins: r.coins,
         amount: r.amount_usd,
         expiresAt: new Date(r.expires_at).getTime(),
