@@ -41,8 +41,8 @@ function CheckoutPage() {
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
-    if (!authed && session === null) navigate({ to: "/login" });
-  }, [authed, session, navigate]);
+    if (!authed) navigate({ to: "/login" });
+  }, [authed, navigate]);
 
   useEffect(() => () => { if (pollRef.current) clearInterval(pollRef.current); }, []);
 
