@@ -123,6 +123,7 @@ export function SiteHeader({ onTopup }: Props) {
                       <MenuItem icon={<History className="h-4 w-4" />} label="Order History" onClick={() => { setMenuOpen(false); navigate({ to: "/library" }); }} />
                       <MenuItem icon={<SettingsIcon className="h-4 w-4" />} label="Account Settings" onClick={() => { setMenuOpen(false); navigate({ to: "/account" }); }} />
                       <MenuItem icon={<Plus className="h-4 w-4" />} label="Add Balance" onClick={() => { setMenuOpen(false); onTopup?.(); }} />
+                      <MenuItem icon={<Gift className="h-4 w-4" />} label="Reward Coins" onClick={() => setMenuOpen(false)} />
                       
                       {isAdmin && (
                         <MenuItem icon={<ShieldCheck className="h-4 w-4" />} label="Admin" onClick={() => { setMenuOpen(false); navigate({ to: "/admin" }); }} />
