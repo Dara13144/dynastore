@@ -291,6 +291,17 @@ export function TopupModal({ onClose, onToast, initialAmount, autoStart }: Props
     setAutoStatus("idle");
   }
 
+  // Auto-kick the Bakong session when caller requests it (e.g. preset click on Account page)
+  const didAutoStart = useRef(false);
+  useEffect(() => {
+    if (!autoStart) return;
+    if (didAutoStart.current) return;
+    if (autoStatus !== "idle") return;
+    didAutoStart.current = true;
+    startAuto();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoStart]);
+
   function pickSlip(f: File) {
     if (!f.type.startsWith("image/")) {
       onToast("សូមជ្រើសរើសរូបភាព");
