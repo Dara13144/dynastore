@@ -1,8 +1,7 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import {
-  ArrowLeft,
   LogOut,
   Wallet,
   RefreshCw,
@@ -17,28 +16,29 @@ import {
 import { StoreProvider, useStore } from "@/lib/store";
 import { useSession } from "@/hooks/use-session";
 import { TopupModal } from "@/components/TopupModal";
+import { SiteHeader } from "@/components/SiteHeader";
 import { listMyTopupRequests } from "@/lib/topup.functions";
 
-import logoD from "@/assets/dyna-logo.jpeg";
 
 export const Route = createFileRoute("/account")({
   head: () => ({
     meta: [
-      { title: "My account — Dyna Store" },
+      { title: "My account — AkiraStore" },
       {
         name: "description",
-        content: "Manage your Dyna Store wallet balance and view transactions.",
+        content: "Manage your AkiraStore wallet balance and view transactions.",
       },
-      { property: "og:title", content: "My account — Dyna Store" },
+      { property: "og:title", content: "My account — AkiraStore" },
       {
         property: "og:description",
-        content: "Manage your Dyna Store wallet balance and view transactions.",
+        content: "Manage your AkiraStore wallet balance and view transactions.",
       },
       { property: "og:url", content: "https://dynastore.lovable.app/account" },
       { name: "robots", content: "noindex" },
     ],
     links: [{ rel: "canonical", href: "https://dynastore.lovable.app/account" }],
   }),
+
   component: () => (
     <StoreProvider>
       <AccountPage />
@@ -125,20 +125,8 @@ function AccountPage() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <header className="sticky top-0 z-40 backdrop-blur-md bg-background/70 border-b border-border/60">
-        <div className="container mx-auto px-4 h-16 flex items-center justify-between gap-3">
-          <Link to="/" className="flex items-center gap-2.5">
-            <img src={logoD} alt="Dyna Store" className="h-9 w-9 rounded-xl" />
-            <span className="font-display text-xl gradient-text">Dyna Store</span>
-          </Link>
-          <Link
-            to="/"
-            className="inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-xs hover:bg-accent"
-          >
-            <ArrowLeft className="h-3.5 w-3.5" /> Back
-          </Link>
-        </div>
-      </header>
+      <SiteHeader onTopup={() => openTopup()} />
+
 
       <main className="container mx-auto px-4 py-10 max-w-6xl">
         <div className="mb-6">
