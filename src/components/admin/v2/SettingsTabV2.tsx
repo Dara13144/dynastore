@@ -7,7 +7,8 @@ import { getAppSettings, updateAppSettings } from "@/lib/admin.functions";
 export function SettingsTabV2() {
   const get = useServerFn(getAppSettings);
   const upd = useServerFn(updateAppSettings);
-  const [s, setS] = useState<Awaited<ReturnType<typeof getAppSettings>> | null>(null);
+  type Settings = Awaited<ReturnType<typeof getAppSettings>>;
+  const [s, setS] = useState<Settings | null>(null);
   const [busy, setBusy] = useState(false);
 
   useEffect(() => { get().then(setS).catch(() => {}); }, [get]);
@@ -37,8 +38,8 @@ export function SettingsTabV2() {
         <p className="text-sm text-muted-foreground">Store configuration.</p>
       </div>
       <div className="rounded-2xl border border-border bg-background p-5 space-y-4">
-        <Row label="Coins per USD"><input type="number" value={s.coins_per_usd} onChange={(e) => setS({ ...s, coins_per_usd: Number(e.target.value) })} className="input" /></Row>
-        <Row label="QR expiry (minutes)"><input type="number" value={s.tx_ttl_min} onChange={(e) => setS({ ...s, tx_ttl_min: Number(e.target.value) })} className="input" /></Row>
+        <Row label="Coins per USD"><input type="number" value={s.coins_per_usd} onChange={(e) => setS({ ...s, coins_per_usd: Number(e.target.value) as typeof s.coins_per_usd })} className="input" /></Row>
+        <Row label="QR expiry (minutes)"><input type="number" value={s.tx_ttl_min} onChange={(e) => setS({ ...s, tx_ttl_min: Number(e.target.value) as typeof s.tx_ttl_min })} className="input" /></Row>
         <button disabled={busy} onClick={save} className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50">
           {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} Save
         </button>
