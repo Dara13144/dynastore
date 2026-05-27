@@ -296,7 +296,7 @@ function AccountPage() {
                     <button
                       onClick={() => {
                         navigator.clipboard.writeText(d.content);
-                        toast.success("Copied");
+                        sonner.success("Copied");
                       }}
                       className="text-muted-foreground hover:text-foreground"
                       aria-label="Copy"
