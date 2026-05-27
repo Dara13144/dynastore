@@ -93,11 +93,20 @@ function AccountPage() {
     }
   };
 
+  const reloadDeliveries = async () => {
+    try {
+      const r = await deliveriesFn();
+      setDeliveries(r.items as typeof deliveries);
+    } catch {/* ignore */}
+  };
+
   useEffect(() => {
     if (!session) return;
     reloadHistory();
+    reloadDeliveries();
     const onRefresh = () => {
       reloadHistory();
+      reloadDeliveries();
     };
     window.addEventListener("wallet:refresh", onRefresh);
     return () => window.removeEventListener("wallet:refresh", onRefresh);
