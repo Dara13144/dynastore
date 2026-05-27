@@ -175,7 +175,7 @@ function NewProductForm({ onCancel, onCreated, save }: { onCancel: () => void; o
         <Field label="Stock cap"><input type="number" value={form.stock_cap} onChange={(e) => setForm({ ...form, stock_cap: e.target.value })} className="input" /></Field>
         <Field label="Category"><input value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} className="input" /></Field>
         <Field label="Cover emoji"><input value={form.cover_emoji} onChange={(e) => setForm({ ...form, cover_emoji: e.target.value })} className="input" /></Field>
-        <Field label="Image URL"><input value={form.image_url} onChange={(e) => setForm({ ...form, image_url: e.target.value })} placeholder="https://..." className="input" /></Field>
+        <Field label="Image" className="md:col-span-2"><ImageUploader value={form.image_url} onChange={(url) => setForm({ ...form, image_url: url })} /></Field>
         <label className="flex items-center gap-2 text-sm mt-6"><input type="checkbox" checked={form.featured} onChange={(e) => setForm({ ...form, featured: e.target.checked })} /> Featured on home page</label>
         <Field label="Description" className="md:col-span-2"><textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={3} className="input resize-y" /></Field>
       </div>
