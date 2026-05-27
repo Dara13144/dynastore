@@ -186,7 +186,7 @@ export function TopupModal({ onClose, onToast }: Props) {
 
         if (r.status === "approved") {
           setAutoStatus("paid");
-          onToast(`✅ បានបញ្ចូល ${autoSession.coins.toLocaleString()} coins`);
+          onToast(`✅ បានបញ្ចូល ${autoSession.coins.toLocaleString()} balance`);
           const h = await listFn();
           setHistory(h);
           window.dispatchEvent(new Event("wallet:refresh"));
@@ -522,7 +522,7 @@ export function TopupModal({ onClose, onToast }: Props) {
           <p className="text-xs text-muted-foreground">
             អត្រា៖{" "}
             <span className="text-foreground font-semibold">
-              $1 = {rate.toLocaleString()} coins
+              $1 = {rate.toLocaleString()} balance
             </span>
           </p>
 
@@ -554,7 +554,7 @@ export function TopupModal({ onClose, onToast }: Props) {
                 />
                 <div className="mt-1.5 text-xs text-muted-foreground">
                   នឹងទទួលបាន{" "}
-                  <span className="text-primary font-semibold">{coins.toLocaleString()} coins</span>
+                  <span className="text-primary font-semibold">{coins.toLocaleString()} balance</span>
                 </div>
               </div>
             </div>
@@ -595,7 +595,7 @@ export function TopupModal({ onClose, onToast }: Props) {
                       {mm}:{ss}
                     </div>
                     <div className="text-[10px] text-muted-foreground">
-                      ស្គេន QR តាម Bakong/ABA/Wing → coins នឹងបញ្ចូលដោយស្វ័យប្រវត្តិ
+                      ស្គេន QR តាម Bakong/ABA/Wing → balance នឹងបញ្ចូលដោយស្វ័យប្រវត្តិ
                     </div>
                   </div>
                   <button
@@ -622,7 +622,7 @@ export function TopupModal({ onClose, onToast }: Props) {
                 <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-6 text-center space-y-2">
                   <Check className="h-10 w-10 text-emerald-400 mx-auto" />
                   <div className="font-bold text-emerald-300">បានបញ្ចូលដោយជោគជ័យ!</div>
-                  <div className="text-sm">+{autoSession.coins.toLocaleString()} coins</div>
+                  <div className="text-sm">+{autoSession.coins.toLocaleString()} balance</div>
                   <button
                     onClick={() => {
                       resetAuto();
