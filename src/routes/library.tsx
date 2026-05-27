@@ -149,7 +149,7 @@ function LibraryPage() {
                           <Check className="h-3 w-3" /> ជាកម្មសិទ្ធ
                         </span>
                       }
-                      action={<DownloadBtn gameId={g.id} hasFile={!!g.file_path} />}
+                      action={<DownloadBtn gameId={g.id} hasFile={!!g.has_file} />}
                     />
                   ),
               )}
