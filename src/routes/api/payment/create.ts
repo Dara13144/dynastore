@@ -4,6 +4,21 @@ import { randomUUID } from "crypto";
 import { buildKhqr, md5Hex, getEffectiveBakongAccountId } from "@/lib/bakong.server";
 import { generateIkhodeKhqr, isIkhodeEnabled } from "@/lib/ikhode.server";
 import { payments } from "@/lib/payment-store.server";
+import { supabaseAdmin } from "@/integrations/supabase/client.server";
+
+async function resolveUserId(request: Request): Promise<string | null> {
+  const auth = request.headers.get("authorization") || request.headers.get("Authorization");
+  if (!auth?.toLowerCase().startsWith("bearer ")) return null;
+  const token = auth.slice(7).trim();
+  if (!token) return null;
+  try {
+    const { data, error } = await supabaseAdmin.auth.getUser(token);
+    if (error || !data?.user) return null;
+    return data.user.id;
+  } catch {
+    return null;
+  }
+}
 
 // POST/GET /api/payment/create?amount=1
 const handler = async ({ request }: { request: Request }) => {
@@ -48,6 +63,8 @@ const handler = async ({ request }: { request: Request }) => {
 
     const qrImage = await QRCode.toDataURL(khqr, { width: 400, margin: 2 });
 
+    const userId = await resolveUserId(request);
+
     await payments.create({
       id: paymentId,
       amount,
@@ -56,8 +73,9 @@ const handler = async ({ request }: { request: Request }) => {
       khqr,
       status: "pending",
       createdAt: Date.now(),
+      userId,
     });
-    log("payment stored", { paymentId });
+    log("payment stored", { paymentId, userId });
 
     return Response.json({
       success: true,
