@@ -11,6 +11,7 @@ import {
 import appCss from "../styles.css?url";
 import "@/integrations/supabase/attach-fetch-auth";
 import { Toaster } from "@/components/ui/sonner";
+import { WelcomeModal } from "@/components/WelcomeModal";
 
 function NotFoundComponent() {
   return (
@@ -165,6 +166,7 @@ function RootComponent() {
     <QueryClientProvider client={queryClient}>
       <Outlet />
       <Toaster richColors position="top-right" />
+      <WelcomeModal />
     </QueryClientProvider>
   );
 }
