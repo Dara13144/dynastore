@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
 export const getStockCounts = createServerFn({ method: "GET" })
@@ -22,4 +23,19 @@ export const getStockCounts = createServerFn({ method: "GET" })
       counts[gid] = (counts[gid] ?? 0) + 1;
     }
     return { counts };
+  });
+
+export const getMyDeliveries = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { userId } = context;
+    const { data, error } = await supabaseAdmin
+      .from("stock_items")
+      .select("id, game_id, content, assigned_at")
+      .eq("assigned_to", userId)
+      .eq("status", "sold")
+      .order("assigned_at", { ascending: false })
+      .limit(200);
+    if (error) throw new Error(error.message);
+    return { items: data ?? [] };
   });
