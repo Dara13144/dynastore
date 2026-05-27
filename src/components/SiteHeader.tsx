@@ -27,7 +27,9 @@ type Props = {
 
 export function SiteHeader({ onTopup }: Props) {
   const { authed, balance, profile, signOut, isAdmin } = useStore();
+  const { session } = useSession();
   const navigate = useNavigate();
+
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
 
