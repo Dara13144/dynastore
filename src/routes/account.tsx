@@ -116,8 +116,8 @@ function AccountPage() {
 
   const handleCustomTopup = () => {
     const n = Number(customAmount);
-    if (!Number.isFinite(n) || n < 0.5) {
-      showToast("Enter at least $0.50");
+    if (!Number.isFinite(n) || n < 0.01 || n > 100) {
+      showToast("Enter an amount between $0.01 and $100");
       return;
     }
     openTopup(n, true);
