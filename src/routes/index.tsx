@@ -270,10 +270,20 @@ function GameCard({ game, onToast }: { game: Game; onToast: (m: string) => void 
     try {
       const r = await purchaseFn({ data: { gameId: game.id } });
       if (r.ok) {
-        onToast(r.message === "already_owned" ? "អ្នកមានហ្គេមនេះរួចហើយ" : "ទិញបានជោគជ័យ!");
+        if (r.message === "already_owned") {
+          onToast("អ្នកមានផលិតផលនេះរួចហើយ");
+        } else {
+          onToast(
+            r.deliveredContent
+              ? `✅ Delivered: ${r.deliveredContent}`
+              : "ទិញបានជោគជ័យ!",
+          );
+        }
         await Promise.all([refreshWallet(), refreshLibrary()]);
       } else if (r.message === "insufficient_balance") {
         onToast("Balance មិនគ្រប់គ្រាន់");
+      } else if (r.message === "out_of_stock") {
+        onToast("អស់ស្តុក — សូមរង់ចាំការបន្ថែម");
       } else onToast(r.message || "បរាជ័យ");
     } catch (e) {
       onToast(e instanceof Error ? e.message : "បរាជ័យ");
