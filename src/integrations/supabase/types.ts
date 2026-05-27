@@ -276,8 +276,10 @@ export type Database = {
         Row: {
           badge: string | null
           category: string
+          cover_emoji: string | null
           created_at: string
           description: string | null
+          featured: boolean
           file_path: string | null
           file_size_bytes: number | null
           has_file: boolean | null
@@ -286,15 +288,19 @@ export type Database = {
           preview_video_url: string | null
           price_coins: number
           screenshots: string[]
+          stock_cap: number
           storage_provider: string
+          tagline: string | null
           title: string
           visible: boolean
         }
         Insert: {
           badge?: string | null
           category: string
+          cover_emoji?: string | null
           created_at?: string
           description?: string | null
+          featured?: boolean
           file_path?: string | null
           file_size_bytes?: number | null
           has_file?: boolean | null
@@ -303,15 +309,19 @@ export type Database = {
           preview_video_url?: string | null
           price_coins?: number
           screenshots?: string[]
+          stock_cap?: number
           storage_provider?: string
+          tagline?: string | null
           title: string
           visible?: boolean
         }
         Update: {
           badge?: string | null
           category?: string
+          cover_emoji?: string | null
           created_at?: string
           description?: string | null
+          featured?: boolean
           file_path?: string | null
           file_size_bytes?: number | null
           has_file?: boolean | null
@@ -320,7 +330,9 @@ export type Database = {
           preview_video_url?: string | null
           price_coins?: number
           screenshots?: string[]
+          stock_cap?: number
           storage_provider?: string
+          tagline?: string | null
           title?: string
           visible?: boolean
         }
@@ -423,6 +435,44 @@ export type Database = {
           visible?: boolean
         }
         Relationships: []
+      }
+      stock_items: {
+        Row: {
+          assigned_at: string | null
+          assigned_to: string | null
+          content: string
+          created_at: string
+          game_id: string
+          id: string
+          status: string
+        }
+        Insert: {
+          assigned_at?: string | null
+          assigned_to?: string | null
+          content: string
+          created_at?: string
+          game_id: string
+          id?: string
+          status?: string
+        }
+        Update: {
+          assigned_at?: string | null
+          assigned_to?: string | null
+          content?: string
+          created_at?: string
+          game_id?: string
+          id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stock_items_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "games"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       telegram_notifications: {
         Row: {
