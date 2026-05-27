@@ -22,6 +22,7 @@ import { purchaseGame } from "@/lib/payment.functions";
 import { recordClick } from "@/lib/tracking.functions";
 import { TopupModal } from "@/components/TopupModal";
 import { DynastoreAIChat } from "@/components/DynastoreAIChat";
+import { SiteHeader } from "@/components/SiteHeader";
 
 import heroImg from "@/assets/dyna-hero.png";
 import logoD from "@/assets/dyna-logo.png";
