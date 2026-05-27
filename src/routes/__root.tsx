@@ -11,7 +11,6 @@ import {
 import appCss from "../styles.css?url";
 import "@/integrations/supabase/attach-fetch-auth";
 import { Toaster } from "@/components/ui/sonner";
-import { WelcomeModal } from "@/components/WelcomeModal";
 
 function NotFoundComponent() {
   return (
@@ -76,7 +75,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
       { name: "google-site-verification", content: "8diCLufyhJnU_wOWfBHl8DvoEb3t8UxkPQ74uikgv74" },
-      { title: "Dynastore Gaming" },
+      { title: "Dynastore" },
       {
         name: "description",
         content:
@@ -84,7 +83,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       },
       { name: "author", content: "Dyna Store" },
       { property: "og:site_name", content: "Dyna Store" },
-      { property: "og:title", content: "Dynastore Gaming" },
+      { property: "og:title", content: "Dynastore" },
       {
         property: "og:description",
         content:
@@ -92,7 +91,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
-      { name: "twitter:title", content: "Dynastore Gaming" },
+      { name: "twitter:title", content: "Dynastore" },
       {
         name: "twitter:description",
         content:
@@ -108,6 +107,11 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         content:
           "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/81765852-df1e-4307-8b6c-f764f338545e/id-preview-972c5967--c299877f-7af3-4cab-a4b4-973400b82e93.lovable.app-1778606757957.png",
       },
+      { name: "description", content: "we have sell account game for pc payment with bank in cambodia" },
+      { property: "og:description", content: "we have sell account game for pc payment with bank in cambodia" },
+      { name: "twitter:description", content: "we have sell account game for pc payment with bank in cambodia" },
+      { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/ONmskwIM2hRGkQzWYsE6y7iD70s1/social-images/social-1779910047860-ChatGPT_Image_May_28,_2026,_02_27_17_AM.webp" },
+      { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/ONmskwIM2hRGkQzWYsE6y7iD70s1/social-images/social-1779910047860-ChatGPT_Image_May_28,_2026,_02_27_17_AM.webp" },
     ],
     links: [
       {
@@ -166,7 +170,6 @@ function RootComponent() {
     <QueryClientProvider client={queryClient}>
       <Outlet />
       <Toaster richColors position="top-right" />
-      <WelcomeModal />
     </QueryClientProvider>
   );
 }
