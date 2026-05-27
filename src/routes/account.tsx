@@ -58,6 +58,7 @@ function AccountPage() {
   const { session, loading: sessionLoading } = useSession();
   const { profile, signOut, balance, refreshWallet } = useStore();
   const listFn = useServerFn(listMyTopupRequests);
+  const deliveriesFn = useServerFn(getMyDeliveries);
 
   const [topupOpen, setTopupOpen] = useState(false);
   const [topupInitialAmount, setTopupInitialAmount] = useState<number | undefined>();
@@ -66,6 +67,9 @@ function AccountPage() {
   const [customAmount, setCustomAmount] = useState<string>("");
   const [history, setHistory] = useState<TopupRow[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(true);
+  const [deliveries, setDeliveries] = useState<
+    Array<{ id: string; game_id: string; content: string; assigned_at: string | null }>
+  >([]);
 
   const [toast, setToast] = useState<string | null>(null);
   const showToast = (m: string) => {
