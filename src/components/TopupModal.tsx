@@ -120,7 +120,7 @@ export function TopupModal({ onClose, onToast, initialAmount, autoStart }: Props
   const [mode, setMode] = useState<Mode>("auto");
   const [staticQr, setStaticQr] = useState<string | null>(null);
   const [rate, setRate] = useState(1);
-  const [amount, setAmount] = useState<number>(1);
+  const [amount, setAmount] = useState<number>(initialAmount && initialAmount > 0 ? initialAmount : 1);
   const [note, setNote] = useState("");
   const [slipFile, setSlipFile] = useState<File | null>(null);
   const [slipPreview, setSlipPreview] = useState<string | null>(null);
