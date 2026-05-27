@@ -80,7 +80,7 @@ function Page() {
       <main>
         <Hero />
         <GamesSection onToast={showToast} />
-        <NewSiteBanner />
+        
         <Recommendations onToast={showToast} />
       </main>
       <Footer />
