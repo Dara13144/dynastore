@@ -4,14 +4,14 @@ import {
   Search,
   Languages,
   Wallet,
-  
+  Star,
   ShoppingCart,
   ChevronDown,
   Package,
   History,
   Settings as SettingsIcon,
   Plus,
-  
+  Gift,
   LogOut,
   LogIn,
   ShieldCheck,
@@ -72,6 +72,16 @@ export function SiteHeader({ onTopup }: Props) {
           {authed ? (
             <>
               <button
+                onClick={onTopup}
+                className="hidden sm:inline-flex items-center gap-1.5 h-9 rounded-full border border-primary/40 bg-primary/5 px-3 text-xs font-semibold text-primary hover:bg-primary/10"
+              >
+                <Wallet className="h-3.5 w-3.5" /> {balanceLabel}
+                <Plus className="h-3 w-3" />
+              </button>
+              <span className="hidden sm:inline-flex items-center gap-1.5 h-9 rounded-full border border-primary/40 bg-primary/5 px-3 text-xs font-semibold text-primary">
+                <Star className="h-3.5 w-3.5 fill-primary" /> Coins 0
+              </span>
+              <button
                 aria-label="Cart"
                 className="hidden sm:inline-flex items-center gap-1.5 h-9 rounded-full border border-border bg-card px-3 text-xs font-medium hover:bg-muted"
               >
@@ -113,6 +123,7 @@ export function SiteHeader({ onTopup }: Props) {
                       <MenuItem icon={<History className="h-4 w-4" />} label="Order History" onClick={() => { setMenuOpen(false); navigate({ to: "/library" }); }} />
                       <MenuItem icon={<SettingsIcon className="h-4 w-4" />} label="Account Settings" onClick={() => { setMenuOpen(false); navigate({ to: "/account" }); }} />
                       <MenuItem icon={<Plus className="h-4 w-4" />} label="Add Balance" onClick={() => { setMenuOpen(false); onTopup?.(); }} />
+                      <MenuItem icon={<Gift className="h-4 w-4" />} label="Reward Coins" onClick={() => setMenuOpen(false)} />
                       
                       {isAdmin && (
                         <MenuItem icon={<ShieldCheck className="h-4 w-4" />} label="Admin" onClick={() => { setMenuOpen(false); navigate({ to: "/admin" }); }} />
