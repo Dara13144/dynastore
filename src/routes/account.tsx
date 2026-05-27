@@ -1,8 +1,7 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import {
-  ArrowLeft,
   LogOut,
   Wallet,
   RefreshCw,
@@ -17,9 +16,9 @@ import {
 import { StoreProvider, useStore } from "@/lib/store";
 import { useSession } from "@/hooks/use-session";
 import { TopupModal } from "@/components/TopupModal";
+import { SiteHeader } from "@/components/SiteHeader";
 import { listMyTopupRequests } from "@/lib/topup.functions";
 
-import logoD from "@/assets/dyna-logo.jpeg";
 
 export const Route = createFileRoute("/account")({
   head: () => ({
