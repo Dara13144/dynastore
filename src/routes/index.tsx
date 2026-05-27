@@ -263,14 +263,15 @@ function GameCard({ game, onToast, stock = 0 }: { game: Game; onToast: (m: strin
               {stock > 0 ? `In Stock (${stock})` : "Out of Stock"}
             </div>
           </div>
-            {authed && !owned && (
+          {authed && !owned && (
+            <div className="flex justify-end text-[11px] sm:text-xs">
               <div
                 className={`hidden sm:inline-flex items-center gap-1 ${balance >= game.price_coins ? "text-emerald-400" : "text-amber-400"}`}
               >
                 <Wallet className="h-3 w-3" /> Balance: ${balance.toLocaleString()}
               </div>
-            )}
-          </div>
+            </div>
+          )}
           {authed && !owned && (
             <div className="h-1 sm:h-1.5 w-full overflow-hidden rounded-full bg-accent/40">
               <div
