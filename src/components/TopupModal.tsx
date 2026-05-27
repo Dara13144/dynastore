@@ -133,6 +133,7 @@ export function TopupModal({ onClose, onToast, initialAmount, autoStart }: Props
   const [autoSession, setAutoSession] = useState<{
     id: string;
     qr: string;
+    md5: string;
     coins: number;
     amount: number;
     expiresAt: number;
