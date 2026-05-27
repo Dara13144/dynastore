@@ -305,7 +305,14 @@ function GameCard({ game, onToast, stock = 0 }: { game: Game; onToast: (m: strin
                 disabled
                 className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 text-emerald-400 px-2 py-1 sm:px-3 sm:py-1.5 text-[10px] sm:text-xs font-semibold"
               >
-                Buy
+                Owned
+              </button>
+            ) : stock <= 0 ? (
+              <button
+                disabled
+                className="inline-flex items-center gap-1 rounded-full border border-red-500/50 bg-red-500/10 text-red-300 px-2 py-1 sm:px-3 sm:py-1.5 text-[10px] sm:text-xs font-semibold opacity-80"
+              >
+                Out of Stock
               </button>
             ) : authed && balance < game.price_coins ? (
               <button
