@@ -17,7 +17,9 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import { useStore } from "@/lib/store";
+import { useSession } from "@/hooks/use-session";
 import logoAkira from "@/assets/akira-logo.png";
+
 
 type Props = {
   onTopup?: () => void;
