@@ -106,7 +106,7 @@ function KhqrCard({
   );
 }
 
-export function TopupModal({ onClose, onToast }: Props) {
+export function TopupModal({ onClose, onToast, initialAmount, autoStart }: Props) {
   const cfgFn = useServerFn(getTopupConfig);
   const submitFn = useServerFn(createTopupRequest);
   const listFn = useServerFn(listMyTopupRequests);
