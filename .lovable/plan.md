@@ -1,53 +1,80 @@
-## What we'll add
+## Goal
 
-Two tutorial videos managed by admin and shown to users:
-1. **"How to top up balance"** — video appears at the top of the Topup modal
-2. **"How to buy a game"** — video appears on every game detail page (`/games/:id`)
+Replace the current `/admin` page with a new sidebar-based admin layout matching the AkiraStore Admin screenshots, while keeping all existing data, RLS, and business logic intact (games, stock_items, topup_requests, wallets, user_roles, settings).
 
-Admin uploads/edits these from a new **Tutorials** tab in the admin panel.
+## New layout
 
-## Storage approach
+```text
+┌─────────────────┬──────────────────────────────────────────┐
+│ DYNASTORE Admin │   Dashboard / Products / Orders / ...   │
+│  • Dashboard    │                                          │
+│  • Products     │   <Active tab content>                   │
+│  • Orders       │                                          │
+│  • Wallets      │                                          │
+│  • Settings     │                                          │
+│                 │                                          │
+│ ← Back to store │                                          │
+└─────────────────┴──────────────────────────────────────────┘
+```
 
-Use **video URLs** (YouTube / Telegram / direct mp4 link) rather than uploading large mp4 files to storage. This is simpler, cheaper, and avoids the 50MB-per-bucket-object friction. YouTube/embed URLs get rendered in an iframe; direct mp4 links use a native `<video>` tag.
+- Left sidebar (collapsible on mobile) using existing shadcn `Sidebar` primitives.
+- Header strip removed; page title sits at top of each tab content area.
+- "Back to store" link pinned to bottom of sidebar.
 
-If you prefer actual file uploads to Cloud storage instead, tell me and I'll switch to a `tutorial-videos` storage bucket.
+## Pages
 
-## Database
+### 1. Dashboard
+- Four stat cards: Revenue (7d), Orders count, Products count, Customers count.
+- Recent orders panel: last 5 approved topups + bakong orders.
+- Top products panel: top 5 games by `library.kind='owned'` count.
 
-New table `public.tutorial_videos`:
-- `slug` (text, unique) — `'topup'` or `'buy_game'`
-- `title` (text)
-- `video_url` (text)
-- `description` (text, optional)
-- `visible` (boolean)
-- updated timestamps
+### 2. Products & Account Stock
+- Search bar + category filter + product count badge.
+- Table rows for each game: image, title, tagline, category, "X / cap Y" stock display, price, **Stock / Edit / Delete** buttons.
+- "Stock" expands an inline panel with:
+  - Left: textarea "Add accounts (one per line)" + green **Add to stock** button. Each line becomes a row in `stock_items` with `status='available'` and the pasted text in `content`.
+  - Right: list of currently available `stock_items` for that game with a delete icon.
+- "Add product" button opens the New Product form (name, tagline, price, stock cap, category, cover emoji, image upload, featured checkbox, description, Create / Cancel).
+- Stock cap: new `stock_cap` integer column on `games` — admin can edit the cap inline.
 
-RLS:
-- Public can read rows where `visible = true`
-- Admins can insert / update / delete
+### 3. Orders
+- Single table: Order ID, Customer (name + email), Method, Date, Total, Status badge.
+- Source: `topup_requests` (Bakong/Wallet) joined with `profiles`; status badges PAID / PENDING / REFUNDED match existing statuses (approved/pending/rejected).
 
-Seed two rows: `topup` and `buy_game` (empty URLs initially).
+### 4. Wallets
+- Table of users: avatar, name, email, balance, "Set balance" button (uses existing `admin_set_balance` RPC).
+- Search by name/email.
 
-## Admin panel
+### 5. Settings
+- Existing settings (Bakong account id, coins per usd, tx TTL, TUS knobs) in a single clean card.
 
-- New **Tutorials** tab in `src/routes/admin.tsx`
-- Form for each of the 2 slugs: title, video URL, description, visible toggle, save button
-- Live preview of the embedded video
+## DB changes (1 migration)
 
-## User-facing display
+- `ALTER TABLE public.games ADD COLUMN tagline text` (nullable).
+- `ALTER TABLE public.games ADD COLUMN stock_cap integer NOT NULL DEFAULT 0`.
+- `ALTER TABLE public.games ADD COLUMN featured boolean NOT NULL DEFAULT false`.
+- `ALTER TABLE public.games ADD COLUMN cover_emoji text`.
+- No new tables — `stock_items` already exists and powers credentials delivery.
 
-- **TopupModal**: small "How to top up" banner at the top — click to expand and play
-- **Game page** (`/games/:id`): "How to buy" section near the buy button — click to expand and play
+## Server functions (new in `src/lib/admin.functions.ts`)
 
-Both fetch from the public table; hidden if not visible or URL empty.
+All protected by `requireSupabaseAuth` + admin check via `has_role`:
+- `getAdminDashboard` → stats + recent orders + top products.
+- `listAdminProducts` / `upsertProduct` / `deleteProduct`.
+- `addStockBulk({ game_id, lines })` → inserts N `stock_items` rows.
+- `deleteStockItem({ id })`.
+- `listAdminOrders` → topup_requests + profiles.
+- `listAdminWallets` / `adminSetBalance` (wraps existing RPC).
 
-## Files touched
+## Files
 
-- Migration: create `tutorial_videos` table + RLS + seed
-- New: `src/components/admin/TutorialsTab.tsx`
-- New: `src/components/TutorialVideo.tsx` (shared embed component, handles YouTube vs mp4)
-- Edit: `src/routes/admin.tsx` — add tab
-- Edit: `src/components/TopupModal.tsx` — show topup video
-- Edit: `src/routes/games.$id.tsx` — show buy-game video
+- New: `src/routes/admin.tsx` (rewritten), `src/components/admin/AdminSidebar.tsx`, `src/components/admin/{DashboardTab,ProductsTab,OrdersTab,WalletsTab,SettingsTab}.tsx`, `src/lib/admin.functions.ts`.
+- Delete: old admin subtab components that no longer apply (games, users, topups, content, tutorials, logs, uploads, diagnostics) — superseded by the 5 new tabs. Existing helpers (TUS upload, etc.) stay if still referenced.
+- Keep: `/admin/khqr-debug` route untouched.
 
-Confirm and I'll run the migration + build it.
+## Out of scope (ask later if needed)
+
+- Tutorials / Content / Upload audit / Diagnostics / Download logs tabs — being removed in this redesign. If you want any of these kept, tell me which.
+- The old "ProductsTab images, screenshots, video, file upload" flow is simplified to just cover image + description in the new form.
+
+Reply **approve** to proceed, or tell me what to change.
