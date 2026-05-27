@@ -155,7 +155,7 @@ function GamesSection({ onToast }: { onToast: (m: string) => void }) {
         </div>
         <Gamepad2 className="h-6 w-6 text-primary hidden sm:block" />
       </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
         {games.map((g) => (
           <GameCard key={g.id} game={g} onToast={onToast} />
         ))}
