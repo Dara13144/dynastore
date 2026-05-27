@@ -315,7 +315,7 @@ export const createBakongTopup = createServerFn({ method: "POST" })
   .inputValidator((i) =>
     z
       .object({
-        amount_usd: z.number().min(0.5).max(10000),
+        amount_usd: z.number().min(0.01).max(100),
       })
       .parse(i),
   )
