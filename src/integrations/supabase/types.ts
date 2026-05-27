@@ -280,6 +280,7 @@ export type Database = {
           description: string | null
           file_path: string | null
           file_size_bytes: number | null
+          has_file: boolean | null
           id: string
           image_url: string | null
           preview_video_url: string | null
@@ -296,6 +297,7 @@ export type Database = {
           description?: string | null
           file_path?: string | null
           file_size_bytes?: number | null
+          has_file?: boolean | null
           id: string
           image_url?: string | null
           preview_video_url?: string | null
@@ -312,6 +314,7 @@ export type Database = {
           description?: string | null
           file_path?: string | null
           file_size_bytes?: number | null
+          has_file?: boolean | null
           id?: string
           image_url?: string | null
           preview_video_url?: string | null

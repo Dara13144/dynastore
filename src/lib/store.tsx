@@ -25,7 +25,7 @@ export type Game = {
   image: string;
   badge?: string | null;
   price_coins: number;
-  file_path?: string | null;
+  has_file?: boolean;
   screenshots?: string[];
   preview_video_url?: string | null;
 };
@@ -120,7 +120,12 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   // Load games catalog (public)
   useEffect(() => {
     (async () => {
-      const { data } = await supabase.from("games").select("*").order("title");
+      const { data } = await supabase
+        .from("games")
+        .select(
+          "id, title, category, price_coins, description, image_url, has_file, badge, screenshots, preview_video_url",
+        )
+        .order("title");
       if (data)
         setGames(
           data.map(
@@ -131,7 +136,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
               price_coins: number;
               description?: string | null;
               image_url?: string | null;
-              file_path?: string | null;
+              has_file?: boolean | null;
               badge?: string | null;
               screenshots?: string[] | null;
               preview_video_url?: string | null;
@@ -143,7 +148,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
               image: g.image_url || IMAGES[g.id] || gtaImg,
               badge: g.badge,
               price_coins: g.price_coins,
-              file_path: g.file_path ?? null,
+              has_file: g.has_file ?? false,
               screenshots: g.screenshots ?? [],
               preview_video_url: g.preview_video_url ?? null,
             }),
