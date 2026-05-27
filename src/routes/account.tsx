@@ -185,11 +185,12 @@ function AccountPage() {
                   </span>
                   <input
                     type="number"
-                    min={0.5}
-                    step={0.5}
+                    min={0.01}
+                    max={100}
+                    step={0.01}
                     value={customAmount}
                     onChange={(e) => setCustomAmount(e.target.value)}
-                    placeholder="Custom amount"
+                    placeholder="Custom amount ($0.01 – $100)"
                     className="w-full rounded-xl bg-input pl-7 pr-3 py-2.5 text-sm outline-none ring-1 ring-border focus:ring-primary"
                   />
                 </div>
