@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
+import { Route as RegisterRouteImport } from './routes/register'
 import { Route as PayRouteImport } from './routes/pay'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as LibraryRouteImport } from './routes/library'
@@ -26,6 +27,11 @@ import { Route as ApiPaymentStatusIdRouteImport } from './routes/api/payment/sta
 const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
   id: '/sitemap.xml',
   path: '/sitemap.xml',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RegisterRoute = RegisterRouteImport.update({
+  id: '/register',
+  path: '/register',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PayRoute = PayRouteImport.update({
@@ -98,6 +104,7 @@ export interface FileRoutesByFullPath {
   '/library': typeof LibraryRoute
   '/login': typeof LoginRoute
   '/pay': typeof PayRoute
+  '/register': typeof RegisterRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/admin/khqr-debug': typeof AdminKhqrDebugRoute
   '/games/$id': typeof GamesIdRoute
@@ -113,6 +120,7 @@ export interface FileRoutesByTo {
   '/library': typeof LibraryRoute
   '/login': typeof LoginRoute
   '/pay': typeof PayRoute
+  '/register': typeof RegisterRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/admin/khqr-debug': typeof AdminKhqrDebugRoute
   '/games/$id': typeof GamesIdRoute
@@ -129,6 +137,7 @@ export interface FileRoutesById {
   '/library': typeof LibraryRoute
   '/login': typeof LoginRoute
   '/pay': typeof PayRoute
+  '/register': typeof RegisterRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/admin/khqr-debug': typeof AdminKhqrDebugRoute
   '/games/$id': typeof GamesIdRoute
@@ -146,6 +155,7 @@ export interface FileRouteTypes {
     | '/library'
     | '/login'
     | '/pay'
+    | '/register'
     | '/sitemap.xml'
     | '/admin/khqr-debug'
     | '/games/$id'
@@ -161,6 +171,7 @@ export interface FileRouteTypes {
     | '/library'
     | '/login'
     | '/pay'
+    | '/register'
     | '/sitemap.xml'
     | '/admin/khqr-debug'
     | '/games/$id'
@@ -176,6 +187,7 @@ export interface FileRouteTypes {
     | '/library'
     | '/login'
     | '/pay'
+    | '/register'
     | '/sitemap.xml'
     | '/admin/khqr-debug'
     | '/games/$id'
@@ -192,6 +204,7 @@ export interface RootRouteChildren {
   LibraryRoute: typeof LibraryRoute
   LoginRoute: typeof LoginRoute
   PayRoute: typeof PayRoute
+  RegisterRoute: typeof RegisterRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   GamesIdRoute: typeof GamesIdRoute
   ApiPaymentCreateRoute: typeof ApiPaymentCreateRoute
@@ -207,6 +220,13 @@ declare module '@tanstack/react-router' {
       path: '/sitemap.xml'
       fullPath: '/sitemap.xml'
       preLoaderRoute: typeof SitemapDotxmlRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/register': {
+      id: '/register'
+      path: '/register'
+      fullPath: '/register'
+      preLoaderRoute: typeof RegisterRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/pay': {
@@ -313,6 +333,7 @@ const rootRouteChildren: RootRouteChildren = {
   LibraryRoute: LibraryRoute,
   LoginRoute: LoginRoute,
   PayRoute: PayRoute,
+  RegisterRoute: RegisterRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   GamesIdRoute: GamesIdRoute,
   ApiPaymentCreateRoute: ApiPaymentCreateRoute,
