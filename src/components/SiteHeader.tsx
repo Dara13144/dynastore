@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import {
   Search,
   Languages,
-  Wallet,
+  Coins,
   Star,
   ShoppingCart,
   ChevronDown,
@@ -75,7 +75,7 @@ export function SiteHeader({ onTopup }: Props) {
                 onClick={() => navigate({ to: "/account" })}
                 className="inline-flex items-center gap-1.5 h-9 rounded-full border border-primary/40 bg-primary/5 px-2.5 sm:px-3 text-xs font-semibold text-primary hover:bg-primary/10"
               >
-                <Wallet className="h-3.5 w-3.5" /> {balanceLabel}
+                <Coins className="h-3.5 w-3.5" /> {balanceLabel}
               </button>
               <span className="inline-flex items-center gap-1.5 h-9 rounded-full border border-primary/40 bg-primary/5 px-2.5 sm:px-3 text-xs font-semibold text-primary">
                 <Star className="h-3.5 w-3.5 fill-primary" /> Coins 0
