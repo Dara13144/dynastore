@@ -12,6 +12,7 @@ import {
   Download,
   Zap,
   FileImage,
+  Copy,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import {
