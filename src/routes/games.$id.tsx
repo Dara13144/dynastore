@@ -75,7 +75,8 @@ function GameDetailPage() {
   }
 
   const unitPrice = game.price_coins;
-  const stock = 9;
+  const { counts: stockMap, refresh: refreshStock } = useStockCounts([id]);
+  const stock = stockMap[id] ?? 0;
   const subtotal = unitPrice * qty;
   const couponDiscount = couponApplied ? Math.min(subtotal * 0.1, subtotal) : 0;
   const userCoins = Math.floor(balance);
