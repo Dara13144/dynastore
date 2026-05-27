@@ -341,22 +341,22 @@ function GameCard({ game, onToast, stock = 0 }: { game: Game; onToast: (m: strin
 function ServiceLinks() {
   const services = [
     {
-      title: "Game Topup — 400 Games+ Free Fire, ML & More",
+      title: "DYNASTORE — 400 Games+ Free Fire, ML & More",
       href: "https://www.dynastore.xyz",
       letter: "D",
       gradient: "from-orange-400 to-rose-500",
       badge: null as string | null,
     },
     {
-      title: "Telegram Service — Star, Premium, Boost",
-      href: "https://sabitotopup.store",
+      title: "GAME TOPUP — Star, Premium, Boost",
+      href: "https://www.sabitotopup.store",
       letter: "S",
       gradient: "from-sky-400 to-blue-600",
       badge: "NEW",
     },
     {
-      title: "TikTok Boost & Likes",
-      href: "https://www.kiratopup.online",
+      title: "ROBLOX ACCOUNT",
+      href: "https://www.kiratopup.online/",
       letter: "K",
       gradient: "from-zinc-700 to-zinc-900",
       badge: "NEW",
