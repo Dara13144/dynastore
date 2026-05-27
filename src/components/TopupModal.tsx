@@ -25,7 +25,7 @@ import khqrSeal from "@/assets/khqr-seal.png";
 import staticKhqrImg from "@/assets/static-khqr.png";
 import { TutorialVideo } from "@/components/TutorialVideo";
 
-type Props = { onClose: () => void; onToast: (m: string) => void };
+type Props = { onClose: () => void; onToast: (m: string) => void; initialAmount?: number; autoStart?: boolean };
 type Mode = "auto" | "manual";
 
 const PRESETS = [1, 2, 5, 10, 20, 50];
