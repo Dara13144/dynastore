@@ -23,6 +23,7 @@ import { purchaseGame } from "@/lib/payment.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { TutorialVideo } from "@/components/TutorialVideo";
+import { useStockCounts } from "@/hooks/useStockCounts";
 
 export const Route = createFileRoute("/games/$id")({
   head: () => ({ meta: [{ title: "ផលិតផល — Dyna Store" }] }),
