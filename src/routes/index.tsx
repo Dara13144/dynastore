@@ -448,60 +448,124 @@ function Footer() {
     { label: "ACLEDA Bank", icon: payAcleda },
     { label: "Wing Bank", icon: payWing },
   ];
+
+  const Col = ({ title, children }: { title: string; children: React.ReactNode }) => (
+    <div>
+      <div className="flex items-center gap-2 mb-3">
+        <span className="h-4 w-0.5 bg-primary rounded-full" />
+        <h3 className="font-semibold text-sm text-foreground">{title}</h3>
+      </div>
+      <ul className="space-y-2 text-sm text-muted-foreground">{children}</ul>
+    </div>
+  );
+
+  const LinkItem = ({ to, href, children }: { to?: string; href?: string; children: React.ReactNode }) =>
+    to ? (
+      <li>
+        <Link to={to} className="hover:text-primary transition">
+          {children}
+        </Link>
+      </li>
+    ) : (
+      <li>
+        <a href={href} className="hover:text-primary transition">
+          {children}
+        </a>
+      </li>
+    );
+
   return (
-    <footer className="border-t border-border/60 mt-10">
-      <div className="container mx-auto px-4 py-8 flex flex-col items-center gap-5 text-center text-xs text-muted-foreground">
-        <div className="flex items-center justify-center gap-3">
-          {socials.map((s) => (
+    <footer className="border-t border-border/60 mt-12 bg-background">
+      <div className="container mx-auto px-4 py-12">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+          <Col title="About DYNASTORE">
+            <LinkItem href="#about">Our story</LinkItem>
+            <LinkItem to="/">Browse Products</LinkItem>
+          </Col>
+          <Col title="Quick Links">
+            <LinkItem to="/">Home</LinkItem>
+            <LinkItem to="/">Browse Products</LinkItem>
+            <LinkItem href="#how-to-buy">How to Buy</LinkItem>
+            <LinkItem to="/account">Account Settings</LinkItem>
+            <LinkItem href="#cart">Cart</LinkItem>
+          </Col>
+          <Col title="Help">
+            <LinkItem href="#how-to-buy">How to Buy</LinkItem>
+            <LinkItem href="#faq">FAQ</LinkItem>
+            <LinkItem href="#contact">Contact</LinkItem>
+          </Col>
+          <Col title="Contact">
+            <li className="flex items-center gap-2">
+              <span>✉️</span>
+              <a href="mailto:support@dynastore.fun" className="hover:text-primary transition">
+                support@dynastore.fun
+              </a>
+            </li>
+            <li className="flex items-center gap-2">
+              <span>📍</span>
+              <span>Phnom Penh, Cambodia</span>
+            </li>
+            <li className="pt-2">
+              <div className="flex items-center gap-2">
+                {socials.map((s) => (
+                  <a
+                    key={s.label}
+                    href={s.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={s.label}
+                    title={s.label}
+                    className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-muted/40 ring-1 ring-border/60 hover:ring-primary transition"
+                  >
+                    <img src={s.icon} alt={s.label} className="h-7 w-7 rounded-full object-cover" />
+                  </a>
+                ))}
+              </div>
+            </li>
+            <li className="pt-2">
+              <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground/80 mb-1.5">
+                We Accept
+              </div>
+              <div className="flex items-center gap-2 flex-wrap">
+                {payments.map((p) => (
+                  <div
+                    key={p.label}
+                    title={p.label}
+                    className="inline-flex h-7 w-10 items-center justify-center rounded-md bg-white ring-1 ring-border/60 px-1"
+                  >
+                    <img src={p.icon} alt={p.label} className="max-h-5 max-w-full object-contain" />
+                  </div>
+                ))}
+              </div>
+            </li>
+          </Col>
+        </div>
+
+        <div className="mt-10 pt-6 border-t border-border/60 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-muted-foreground">
+          <div>
+            © {new Date().getFullYear()} <span className="text-foreground font-semibold">DYNASTORE</span>. All Rights Reserved.
+            <span className="mx-2 opacity-50">·</span>
+            Dev By{" "}
             <a
-              key={s.label}
-              href={s.href}
+              href="https://t.me/ismeDara"
               target="_blank"
               rel="noopener noreferrer"
-              aria-label={s.label}
-              title={s.label}
-              className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-white/5 ring-1 ring-border/60 transition-transform hover:scale-110 hover:ring-primary"
+              className="text-primary hover:underline"
             >
-              <img src={s.icon} alt={s.label} className="h-9 w-9 rounded-full object-cover" />
+              @ismeDara
             </a>
-          ))}
-        </div>
-
-        <div className="flex flex-col items-center gap-2.5">
-          <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground/80">
-            We Accept
           </div>
-          <div className="flex items-center justify-center gap-3 flex-wrap">
-            {payments.map((p) => (
-              <div
-                key={p.label}
-                title={p.label}
-                aria-label={p.label}
-                className="inline-flex h-10 w-14 items-center justify-center rounded-lg bg-white ring-1 ring-border/60 px-1.5"
-              >
-                <img src={p.icon} alt={p.label} className="max-h-8 max-w-full object-contain" />
-              </div>
-            ))}
+          <div className="flex items-center gap-5">
+            <a href="#privacy" className="hover:text-primary transition">Privacy Policy</a>
+            <a href="#terms" className="hover:text-primary transition">Terms of Service</a>
+            <a href="#cookies" className="hover:text-primary transition">Cookies</a>
           </div>
-        </div>
-
-        <div>
-          © {new Date().getFullYear()} Dyna Store. All rights reserved.
-          <span className="mx-2 opacity-50">·</span>
-          Dev By{" "}
-          <a
-            href="https://t.me/ismeDara"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-primary hover:underline"
-          >
-            @ismeDara
-          </a>
         </div>
       </div>
     </footer>
   );
 }
+
 
 function SettingsModal({
   onClose,
