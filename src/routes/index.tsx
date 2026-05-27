@@ -2,19 +2,14 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import {
-  Settings,
-  LogIn,
-  LogOut,
   Star,
   Send,
   Gamepad2,
   Sparkles,
   X,
-  Library,
   Check,
   Loader2,
   Wallet,
-  Plus,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { StoreProvider, useStore, type Game } from "@/lib/store";
@@ -22,9 +17,10 @@ import { purchaseGame } from "@/lib/payment.functions";
 import { recordClick } from "@/lib/tracking.functions";
 import { TopupModal } from "@/components/TopupModal";
 import { DynastoreAIChat } from "@/components/DynastoreAIChat";
+import { SiteHeader } from "@/components/SiteHeader";
 
 import heroImg from "@/assets/dyna-hero.png";
-import logoD from "@/assets/dyna-logo.png";
+
 
 import iconTelegram from "@/assets/social-telegram.png";
 import iconTiktok from "@/assets/social-tiktok.png";
@@ -80,7 +76,7 @@ function Page() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <Header onSettings={() => setSettingsOpen(true)} onTopup={() => setTopupOpen(true)} />
+      <SiteHeader onTopup={() => setTopupOpen(true)} />
       <main>
         <Hero />
         <GamesSection onToast={showToast} />
@@ -103,77 +99,6 @@ function Page() {
   );
 }
 
-function Header({ onSettings, onTopup }: { onSettings: () => void; onTopup: () => void }) {
-  const { authed, signOut, balance, isAdmin } = useStore();
-  return (
-    <header className="sticky top-0 z-40 backdrop-blur-md bg-background/70 border-b border-border/60">
-      <div className="container mx-auto px-4 h-16 flex items-center justify-between gap-3">
-        <Link to="/" className="flex items-center gap-2.5">
-          <img src={logoD} alt="DYNASTORE" className="h-9 w-9 rounded-xl object-cover" />
-          <span className="font-display text-xl text-foreground">DYNASTORE</span>
-        </Link>
-
-        <div className="flex items-center gap-2">
-          {authed && (
-            <button
-              onClick={onTopup}
-              className="inline-flex items-center gap-1.5 rounded-full border border-primary/40 bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary hover:bg-primary/20"
-            >
-              <Wallet className="h-3.5 w-3.5" /> {balance.toLocaleString()}{" "}
-              <Plus className="h-3 w-3" />
-            </button>
-          )}
-          {authed && (
-            <Link
-              to="/library"
-              className="hidden sm:inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-xs font-medium hover:bg-accent"
-            >
-              <Library className="h-3.5 w-3.5" /> បណ្ណាល័យ
-            </Link>
-          )}
-          <button
-            onClick={onSettings}
-            className="p-2 rounded-full hover:bg-accent transition"
-            aria-label="Settings"
-          >
-            <Settings className="h-4 w-4" />
-          </button>
-          {authed ? (
-            <>
-              {isAdmin && (
-                <Link
-                  to="/admin"
-                  className="hidden sm:inline-flex items-center gap-1.5 rounded-full border border-primary/40 bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary hover:bg-primary/20"
-                >
-                  Admin
-                </Link>
-              )}
-              <Link
-                to="/account"
-                className="inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-xs font-medium hover:bg-accent"
-              >
-                គណនី
-              </Link>
-              <button
-                onClick={() => signOut()}
-                className="inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-xs font-medium hover:bg-accent"
-              >
-                <LogOut className="h-3.5 w-3.5" /> ចេញ
-              </button>
-            </>
-          ) : (
-            <Link
-              to="/login"
-              className="inline-flex items-center gap-1.5 rounded-full bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground hover:opacity-90"
-            >
-              <LogIn className="h-3.5 w-3.5" /> ចូល
-            </Link>
-          )}
-        </div>
-      </div>
-    </header>
-  );
-}
 
 function Hero() {
   return (
