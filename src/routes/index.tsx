@@ -81,8 +81,7 @@ function Page() {
       <main>
         <Hero />
         <GamesSection onToast={showToast} />
-        
-        <Recommendations onToast={showToast} />
+        <ServiceLinks />
       </main>
       <Footer />
 
