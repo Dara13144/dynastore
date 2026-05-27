@@ -85,7 +85,10 @@ export const payments = {
       { _payment_id: id } as never,
     );
     if (error) throw new Error(`credit_payment_atomic failed: ${error.message}`);
-    const row = Array.isArray(data) ? data[0] : data;
+    const row = (Array.isArray(data) ? data[0] : data) as
+      | { ok?: boolean; new_balance?: number; status?: string; credited_coins?: number }
+      | null
+      | undefined;
     return {
       ok: !!row?.ok,
       newBalance: Number(row?.new_balance ?? 0),

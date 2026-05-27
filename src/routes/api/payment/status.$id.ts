@@ -52,10 +52,14 @@ export const Route = createFileRoute("/api/payment/status/$id")({
           });
 
           if (result?.responseCode === 0 && result?.data) {
-            await payments.markPaid(payment.id);
+            const credit = await payments.creditPaid(payment.id);
             payment.status = "paid";
             payment.paidAt = Date.now();
-            log("marked PAID", { paymentId: payment.id });
+            log("marked PAID + credited wallet", {
+              paymentId: payment.id,
+              credit,
+            });
+            return Response.json({ ...payment, reqId, credit });
           }
 
           log("done", { paymentId: payment.id, elapsedMs: Date.now() - startedAt });
