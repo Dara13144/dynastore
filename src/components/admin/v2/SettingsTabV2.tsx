@@ -7,7 +7,8 @@ import { getAppSettings, updateAppSettings } from "@/lib/admin.functions";
 export function SettingsTabV2() {
   const get = useServerFn(getAppSettings);
   const upd = useServerFn(updateAppSettings);
-  const [s, setS] = useState<Awaited<ReturnType<typeof getAppSettings>> | null>(null);
+  type Settings = Awaited<ReturnType<typeof getAppSettings>>;
+  const [s, setS] = useState<Settings | null>(null);
   const [busy, setBusy] = useState(false);
 
   useEffect(() => { get().then(setS).catch(() => {}); }, [get]);
