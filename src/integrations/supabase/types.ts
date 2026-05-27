@@ -375,31 +375,37 @@ export type Database = {
           amount: number
           bill_number: string
           created_at: string
+          credited: boolean
           id: string
           khqr: string
           md5: string
           paid_at: string | null
           status: string
+          user_id: string | null
         }
         Insert: {
           amount: number
           bill_number: string
           created_at?: string
+          credited?: boolean
           id?: string
           khqr: string
           md5: string
           paid_at?: string | null
           status?: string
+          user_id?: string | null
         }
         Update: {
           amount?: number
           bill_number?: string
           created_at?: string
+          credited?: boolean
           id?: string
           khqr?: string
           md5?: string
           paid_at?: string | null
           status?: string
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -758,6 +764,15 @@ export type Database = {
             Args: { _new_balance: number; _reason?: string; _user_id: string }
             Returns: number
           }
+      credit_payment_atomic: {
+        Args: { _payment_id: string }
+        Returns: {
+          credited_coins: number
+          new_balance: number
+          ok: boolean
+          status: string
+        }[]
+      }
       credit_topup_atomic: {
         Args: { _bakong_response: Json; _request_id: string }
         Returns: {
