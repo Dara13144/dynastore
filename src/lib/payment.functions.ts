@@ -15,9 +15,11 @@ export const purchaseGame = createServerFn({ method: "POST" })
     });
     if (error) throw new Error(error.message);
     const row = Array.isArray(result) ? result[0] : result;
-    const ok = row?.ok ?? false;
-    const balance = row?.new_balance ?? 0;
-    const message = row?.message ?? "";
+    const ok = (row as { ok?: boolean })?.ok ?? false;
+    const balance = (row as { new_balance?: number })?.new_balance ?? 0;
+    const message = (row as { message?: string })?.message ?? "";
+    const deliveredContent =
+      (row as { delivered_content?: string | null })?.delivered_content ?? null;
 
     if (ok && message === "purchased") {
       const [{ data: game }, who] = await Promise.all([
@@ -28,7 +30,7 @@ export const purchaseGame = createServerFn({ method: "POST" })
           .maybeSingle(),
         formatUserById(userId),
       ]);
-      const caption = `🎮 <b>Game Purchased</b>\n👤 ${who}\n🕹️ ${game?.title ?? data.gameId}\n💰 -${Number(game?.price_coins ?? 0).toLocaleString()} coins\n💼 Balance: ${Number(balance).toLocaleString()}`;
+      const caption = `🛒 <b>Product Purchased</b>\n👤 ${who}\n📦 ${game?.title ?? data.gameId}\n💰 -$${Number(game?.price_coins ?? 0).toLocaleString()}\n💼 Balance: $${Number(balance).toLocaleString()}\n✅ Auto-delivered`;
       if (game?.image_url) {
         await notifyTelegramPhotoFromUrl(game.image_url, caption, "purchase");
       } else {
@@ -36,5 +38,5 @@ export const purchaseGame = createServerFn({ method: "POST" })
       }
     }
 
-    return { ok, balance, message };
+    return { ok, balance, message, deliveredContent };
   });
