@@ -576,17 +576,7 @@ export function TopupModal({ onClose, onToast, initialAmount, autoStart }: Props
           {/* AUTO MODE */}
           {mode === "auto" && (
             <>
-              {autoStatus === "idle" && (
-                <>
-                  <div className="mx-auto w-full max-w-[280px] rounded-2xl bg-white p-3 shadow-md ring-1 ring-black/5">
-                    <img
-                      src={staticKhqrImg}
-                      alt="KHQR"
-                      className="w-full h-auto rounded-lg"
-                    />
-                  </div>
-                </>
-              )}
+              {autoStatus === "idle" && null}
               {autoStatus === "creating" && (
                 <div className="flex justify-center py-6">
                   <Loader2 className="h-6 w-6 animate-spin text-primary" />
