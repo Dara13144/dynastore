@@ -3360,7 +3360,7 @@ function GameEditFullDialog({
               />
             </label>
             <label className="space-y-1">
-              <span className="text-muted-foreground">តម្លៃ (coins)</span>
+              <span className="text-muted-foreground">តម្លៃ (balance)</span>
               <input
                 type="number"
                 min={0}
