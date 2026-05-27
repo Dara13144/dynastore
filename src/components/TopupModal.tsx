@@ -266,7 +266,7 @@ export function TopupModal({ onClose, onToast, initialAmount, autoStart }: Props
   }, [now, autoStatus, autoSession]);
 
   async function startAuto() {
-    if (amount < 0.5) {
+    if (amount < 0.01 || amount > 100) {
       onToast("ចំនួនទឹកប្រាក់តូចពេក");
       return;
     }
