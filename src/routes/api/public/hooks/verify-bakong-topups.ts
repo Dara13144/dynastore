@@ -53,96 +53,86 @@ export const Route = createFileRoute("/api/public/hooks/verify-bakong-topups")({
 async function runVerifyTick() {
   const nowIso = new Date().toISOString();
 
+  // Pending, not expired, have an md5 to check.
+  const { data: rows, error } = await supabaseAdmin
+    .from("topup_requests")
+    .select("id, user_id, amount_usd, coins, md5, expires_at")
+    .eq("status", "pending")
+    .not("md5", "is", null)
+    .or(`expires_at.is.null,expires_at.gt.${nowIso}`)
+    .order("created_at", { ascending: true })
+    .limit(MAX_PER_TICK);
 
-        // Pending, not expired, have an md5 to check.
-        const { data: rows, error } = await supabaseAdmin
-          .from("topup_requests")
-          .select("id, user_id, amount_usd, coins, md5, expires_at")
-          .eq("status", "pending")
-          .not("md5", "is", null)
-          .or(`expires_at.is.null,expires_at.gt.${nowIso}`)
-          .order("created_at", { ascending: true })
-          .limit(MAX_PER_TICK);
+  let checked = 0;
+  let approved = 0;
+  let stillPending = 0;
+  let errors = 0;
 
-        if (error) {
-          console.error("[verify-bakong-topups] select failed", error);
-          return json({ ok: false, error: error.message }, 500);
-        }
+  if (error) {
+    console.error("[verify-bakong-topups] select failed", error);
+    return { checked, approved, pending: stillPending, errors: errors + 1 };
+  }
 
-        let checked = 0;
-        let approved = 0;
-        let stillPending = 0;
-        let errors = 0;
-
-        for (const row of rows ?? []) {
-          checked++;
-          try {
-            const check = await checkTransactionByMd5(row.md5 as string);
-            if (check?.responseCode !== 0 || !check?.data) {
-              stillPending++;
-              continue;
-            }
-            const paid = Number(check.data.amount ?? 0);
-            if (paid && Math.abs(paid - Number(row.amount_usd)) > 0.01) {
-              console.warn("[verify-bakong-topups] amount mismatch", {
-                id: row.id,
-                expected: row.amount_usd,
-                paid,
-              });
-            }
-            const { data: credit, error: cErr } = await supabaseAdmin.rpc(
-              "credit_topup_atomic",
-              {
-                _request_id: row.id,
-                _bakong_response: JSON.parse(JSON.stringify(check)),
-              },
-            );
-            if (cErr) {
-              errors++;
-              console.error("[verify-bakong-topups] credit failed", {
-                id: row.id,
-                error: cErr.message,
-              });
-              continue;
-            }
-            const result = Array.isArray(credit) ? credit[0] : credit;
-            if (result?.ok && Number(result.credited) > 0) {
-              approved++;
-              console.info("[verify-bakong-topups] credited", {
-                id: row.id,
-                user_id: row.user_id,
-                credited: result.credited,
-                new_balance: result.new_balance,
-              });
-            } else {
-              stillPending++;
-            }
-          } catch (e) {
-            errors++;
-            if (e instanceof BakongApiError) {
-              console.warn("[verify-bakong-topups] bakong error", {
-                id: row.id,
-                kind: e.kind,
-                status: e.status,
-              });
-            } else {
-              console.error("[verify-bakong-topups] unexpected error", {
-                id: row.id,
-                message: (e as Error).message,
-              });
-            }
-          }
-        }
-
-        return json({
-          ok: true,
-          at: nowIso,
-          checked,
-          approved,
-          pending: stillPending,
-          errors,
+  for (const row of rows ?? []) {
+    checked++;
+    try {
+      const check = await checkTransactionByMd5(row.md5 as string);
+      if (check?.responseCode !== 0 || !check?.data) {
+        stillPending++;
+        continue;
+      }
+      const paid = Number(check.data.amount ?? 0);
+      if (paid && Math.abs(paid - Number(row.amount_usd)) > 0.01) {
+        console.warn("[verify-bakong-topups] amount mismatch", {
+          id: row.id,
+          expected: row.amount_usd,
+          paid,
         });
-      },
-    },
-  },
-});
+      }
+      const { data: credit, error: cErr } = await supabaseAdmin.rpc(
+        "credit_topup_atomic",
+        {
+          _request_id: row.id,
+          _bakong_response: JSON.parse(JSON.stringify(check)),
+        },
+      );
+      if (cErr) {
+        errors++;
+        console.error("[verify-bakong-topups] credit failed", {
+          id: row.id,
+          error: cErr.message,
+        });
+        continue;
+      }
+      const result = Array.isArray(credit) ? credit[0] : credit;
+      if (result?.ok && Number(result.credited) > 0) {
+        approved++;
+        console.info("[verify-bakong-topups] credited", {
+          id: row.id,
+          user_id: row.user_id,
+          credited: result.credited,
+          new_balance: result.new_balance,
+        });
+      } else {
+        stillPending++;
+      }
+    } catch (e) {
+      errors++;
+      if (e instanceof BakongApiError) {
+        console.warn("[verify-bakong-topups] bakong error", {
+          id: row.id,
+          kind: e.kind,
+          status: e.status,
+        });
+      } else {
+        console.error("[verify-bakong-topups] unexpected error", {
+          id: row.id,
+          message: (e as Error).message,
+        });
+      }
+    }
+  }
+
+  return { checked, approved, pending: stillPending, errors };
+}
+
