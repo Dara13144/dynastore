@@ -187,44 +187,46 @@ function Header({ onSettings, onTopup }: { onSettings: () => void; onTopup: () =
 }
 
 function Hero() {
-  const trackClick = useServerFn(recordClick);
-
-  const handleDynastoreClick = () => {
-    trackClick({ data: { button_label: "dynastore.xyz" } });
-  };
-
-  const handleNewSiteClick = () => {
-    trackClick({ data: { button_label: "dynastores.site" } });
-  };
-
   return (
-    <section className="relative overflow-hidden">
-      <div className="absolute inset-0">
+    <section className="container mx-auto px-4 pt-6 pb-2">
+      <div className="relative overflow-hidden rounded-3xl shadow-card ring-1 ring-border">
         <img
           src={heroImg}
-          alt=""
+          alt="Welcome to AkiraStore"
           width={1920}
           height={1080}
           fetchPriority="high"
           decoding="async"
-          className="h-full w-full object-cover opacity-40"
+          className="w-full h-auto block"
         />
-        <div className="absolute inset-0 bg-gradient-to-b from-background/40 via-background/70 to-background" />
       </div>
-      <div className="relative container mx-auto px-4 py-20 md:py-28 max-w-4xl text-center">
-        <div className="inline-flex items-center gap-2 rounded-full border border-border/60 bg-background/40 px-3 py-1 text-xs text-muted-foreground mb-5">
-          <Sparkles className="h-3.5 w-3.5 text-primary" /> ហ្គេម PC និង Console
-        </div>
-        <h1 className="font-display text-4xl md:text-6xl tracking-tight">
-          <span className="gradient-text">ទិញហ្គេម</span> ដោយ Balance
-        </h1>
-        <p className="mt-4 text-base md:text-lg text-muted-foreground">
-          ទិញហ្គេម PC/Console ភ្លាមៗដោយ Balance របស់អ្នក។
-        </p>
+      <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
+        {[
+          { key: "all", label: "All", active: true },
+          { key: "software", label: "Software" },
+          { key: "social", label: "Social" },
+          { key: "entertainment", label: "Entertainment" },
+          { key: "design", label: "Design" },
+          { key: "developer", label: "Developer Tools" },
+          { key: "vpn", label: "VPN" },
+        ].map((c) => (
+          <button
+            key={c.key}
+            className={
+              c.active
+                ? "inline-flex items-center gap-1.5 rounded-full bg-accent px-4 py-2 text-sm font-semibold text-accent-foreground shadow-sm"
+                : "inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-4 py-2 text-sm font-medium text-foreground hover:bg-muted transition"
+            }
+          >
+            <span className={c.active ? "h-1.5 w-1.5 rounded-full bg-accent-foreground" : "h-1.5 w-1.5 rounded-full bg-muted-foreground"} />
+            {c.label}
+          </button>
+        ))}
       </div>
     </section>
   );
 }
+
 
 function GamesSection({ onToast }: { onToast: (m: string) => void }) {
   const { games } = useStore();
