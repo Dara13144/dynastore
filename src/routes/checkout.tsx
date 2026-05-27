@@ -26,7 +26,7 @@ type StatusResp = { status?: string; paidAt?: string | null; error?: string };
 function CheckoutPage() {
   const { gameId } = Route.useSearch();
   const navigate = useNavigate();
-  const { authed, balance, games, library, refreshWallet, refreshLibrary, session } = useStore();
+  const { authed, balance, games, library, refreshWallet, refreshLibrary } = useStore();
   const game: Game | undefined = games.find((g) => g.id === gameId);
   const alreadyOwned = library.some((l) => l.game_id === gameId && l.kind === "owned");
 
