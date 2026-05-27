@@ -214,8 +214,17 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         },
       )
       .subscribe();
+    // Cross-page balance refresh: any flow can dispatch `wallet:refresh`
+    // (e.g. KHQR pay page, top-up modal) to force a re-fetch on every screen
+    // that reads from useStore (SiteHeader, account, game cards, etc.).
+    const onRefresh = () => {
+      fetchWallet(userId);
+    };
+    window.addEventListener("wallet:refresh", onRefresh);
+
     return () => {
       supabase.removeChannel(ch);
+      window.removeEventListener("wallet:refresh", onRefresh);
     };
   }, [userId, fetchProfile, fetchWallet, fetchLibrary]);
 
