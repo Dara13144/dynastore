@@ -114,7 +114,7 @@ function GameDetailPage() {
     if (!enough) { toast.error("Insufficient balance"); return; }
     setBusy(true);
     try {
-      const r = await purchaseFn({ data: { gameId: game.id } });
+      const r = await purchaseFn({ data: { gameId: game.id, qty } });
       if (!r.ok) { toast.error(r.message || "Failed"); return; }
       finalizeDelivery(r.deliveredContent ?? null);
     } catch (e) {
@@ -134,7 +134,7 @@ function GameDetailPage() {
           setTimeout(async () => {
             await refreshWallet();
             try {
-              const r = await purchaseFn({ data: { gameId: game.id } });
+              const r = await purchaseFn({ data: { gameId: game.id, qty } });
               if (r.ok) finalizeDelivery(r.deliveredContent ?? null);
               else toast.error(r.message || "Auto-delivery failed");
             } catch (e) {
