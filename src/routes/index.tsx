@@ -2,19 +2,14 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import {
-  Settings,
-  LogIn,
-  LogOut,
   Star,
   Send,
   Gamepad2,
   Sparkles,
   X,
-  Library,
   Check,
   Loader2,
   Wallet,
-  Plus,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { StoreProvider, useStore, type Game } from "@/lib/store";
