@@ -199,6 +199,68 @@ function Field({ label, children, className }: { label: string; children: React.
   );
 }
 
+function ImageUploader({ value, onChange }: { value: string; onChange: (url: string) => void }) {
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [busy, setBusy] = useState(false);
+
+  const handleFile = async (file: File) => {
+    if (!file.type.startsWith("image/")) { toast.error("Image files only"); return; }
+    if (file.size > 5 * 1024 * 1024) { toast.error("Max 5MB"); return; }
+    setBusy(true);
+    try {
+      const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
+      const path = `products/${crypto.randomUUID()}.${ext}`;
+      const { error } = await supabase.storage.from("game-images").upload(path, file, {
+        cacheControl: "3600", upsert: false, contentType: file.type,
+      });
+      if (error) throw error;
+      const { data } = supabase.storage.from("game-images").getPublicUrl(path);
+      onChange(data.publicUrl);
+      toast.success("Image uploaded");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Upload failed");
+    } finally {
+      setBusy(false);
+      if (fileRef.current) fileRef.current.value = "";
+    }
+  };
+
+  return (
+    <div className="flex items-start gap-3">
+      {value && <img src={value} alt="" className="h-16 w-16 rounded-lg object-cover border border-border shrink-0" />}
+      <div className="flex-1 space-y-2">
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => fileRef.current?.click()}
+            disabled={busy}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-background px-3 py-1.5 text-xs font-semibold hover:bg-muted disabled:opacity-50"
+          >
+            {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
+            {value ? "Replace" : "Upload image"}
+          </button>
+          {value && (
+            <button type="button" onClick={() => onChange("")} className="text-xs text-rose-600 hover:underline">Remove</button>
+          )}
+        </div>
+        <input
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder="…or paste image URL"
+          className="input"
+        />
+        <input
+          ref={fileRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); }}
+        />
+      </div>
+    </div>
+  );
+}
+
 function StockPanel({ gameId }: { gameId: string }) {
   const listSt = useServerFn(listGameStock);
   const addSt = useServerFn(addStockBulk);
