@@ -507,32 +507,36 @@ export function TopupModal({ onClose, onToast, initialAmount, autoStart }: Props
   const mm = String(Math.floor(secondsLeft / 60)).padStart(2, "0");
   const ss = String(secondsLeft % 60).padStart(2, "0");
 
+  const isWaiting = autoStatus === "waiting";
+
   return (
-    <div className="fixed inset-0 z-[100] grid place-items-center bg-background/80 backdrop-blur-sm p-4 overflow-y-auto">
-      <div className="w-full max-w-2xl my-auto rounded-3xl border border-border/60 bg-card shadow-2xl">
-        <div className="flex items-center justify-between p-5 border-b border-border/60">
-          <h2 className="font-display text-lg flex items-center gap-2">
-            {autoStatus === "waiting" ? (
+    <div className="fixed inset-0 z-[100] grid place-items-center bg-foreground/30 backdrop-blur-sm p-4 overflow-y-auto">
+      <div className={`w-full ${isWaiting ? "max-w-md" : "max-w-2xl"} my-auto rounded-3xl border border-border bg-card shadow-2xl`}>
+        <div className="flex items-center justify-between p-5 border-b border-border">
+          <h2 className="font-semibold text-base flex items-center gap-2 text-foreground">
+            {isWaiting ? (
               <>Scan to pay with Bakong</>
             ) : (
-              <><Wallet className="h-5 w-5 text-primary" /> បញ្ចូល Balance</>
+              <><Wallet className="h-5 w-5 text-primary" /> Top up Balance</>
             )}
           </h2>
-          <button onClick={onClose} className="rounded-full p-2 hover:bg-accent">
+          <button onClick={onClose} className="rounded-full p-2 hover:bg-muted">
             <X className="h-4 w-4" />
           </button>
         </div>
 
         <div className="p-5 space-y-5">
-          <TutorialVideo slug="topup" />
+          {!isWaiting && <TutorialVideo slug="topup" />}
 
+          {!isWaiting && (
+            <p className="text-xs text-muted-foreground">
+              Rate:{" "}
+              <span className="text-foreground font-semibold">
+                $1 = {rate.toLocaleString()} balance
+              </span>
+            </p>
+          )}
 
-          <p className="text-xs text-muted-foreground">
-            អត្រា៖{" "}
-            <span className="text-foreground font-semibold">
-              $1 = {rate.toLocaleString()} balance
-            </span>
-          </p>
 
           {/* Amount input (shared) */}
           {(autoStatus === "idle") && (
