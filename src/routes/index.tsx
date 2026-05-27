@@ -288,7 +288,7 @@ function GameCard({ game, onToast }: { game: Game; onToast: (m: string) => void 
                 disabled
                 className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 text-emerald-400 px-2 py-1 sm:px-3 sm:py-1.5 text-[10px] sm:text-xs font-semibold"
               >
-                មាន
+                Buy
               </button>
             ) : authed && balance < game.price_coins ? (
               <button
