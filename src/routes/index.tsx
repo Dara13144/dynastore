@@ -80,7 +80,7 @@ function Page() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <Header onSettings={() => setSettingsOpen(true)} onTopup={() => setTopupOpen(true)} />
+      <SiteHeader onTopup={() => setTopupOpen(true)} />
       <main>
         <Hero />
         <GamesSection onToast={showToast} />
