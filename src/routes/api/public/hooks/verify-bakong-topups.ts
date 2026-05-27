@@ -27,7 +27,32 @@ export const Route = createFileRoute("/api/public/hooks/verify-bakong-topups")({
     handlers: {
       OPTIONS: async () => new Response(null, { status: 204, headers: CORS }),
       POST: async () => {
-        const nowIso = new Date().toISOString();
+        // pg_cron's minimum interval is 1 minute, but we want md5 checks
+        // every 5 seconds. Loop 12 times per invocation with a 5s sleep
+        // between ticks, giving an effective ~5s server-side polling rate.
+        const TICKS = 12;
+        const TICK_INTERVAL_MS = 5000;
+        const startedAt = new Date().toISOString();
+        const totals = { checked: 0, approved: 0, pending: 0, errors: 0 };
+
+        for (let tick = 0; tick < TICKS; tick++) {
+          if (tick > 0) await new Promise((r) => setTimeout(r, TICK_INTERVAL_MS));
+          const tickResult = await runVerifyTick();
+          totals.checked += tickResult.checked;
+          totals.approved += tickResult.approved;
+          totals.pending = tickResult.pending; // last-tick snapshot
+          totals.errors += tickResult.errors;
+        }
+
+        return json({ ok: true, at: startedAt, ticks: TICKS, ...totals });
+      },
+    },
+  },
+});
+
+async function runVerifyTick() {
+  const nowIso = new Date().toISOString();
+
 
         // Pending, not expired, have an md5 to check.
         const { data: rows, error } = await supabaseAdmin
