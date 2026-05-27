@@ -144,6 +144,7 @@ function Hero() {
 
 function GamesSection({ onToast }: { onToast: (m: string) => void }) {
   const { games } = useStore();
+  const { counts: stockCounts } = useStockCounts(games.map((g) => g.id));
   return (
     <section id="games" className="container mx-auto px-4 py-14">
       <div className="flex items-end justify-between mb-6">
@@ -157,7 +158,7 @@ function GamesSection({ onToast }: { onToast: (m: string) => void }) {
       </div>
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
         {games.map((g) => (
-          <GameCard key={g.id} game={g} onToast={onToast} />
+          <GameCard key={g.id} game={g} onToast={onToast} stock={stockCounts[g.id] ?? 0} />
         ))}
       </div>
     </section>
