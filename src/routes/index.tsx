@@ -338,78 +338,64 @@ function GameCard({ game, onToast, stock = 0 }: { game: Game; onToast: (m: strin
 }
 
 
-type DbRec = { id: string; name: string; game: string | null; text: string };
-function Recommendations({ onToast }: { onToast: (m: string) => void }) {
-  const [recs, setRecs] = useState<DbRec[]>([]);
-  const [name, setName] = useState("");
-  const [game, setGame] = useState("");
-  const [text, setText] = useState("");
-  useEffect(() => {
-    supabase
-      .from("testimonials")
-      .select("id, name, game, text")
-      .eq("visible", true)
-      .order("created_at", { ascending: false })
-      .limit(20)
-      .then(({ data }) => setRecs((data ?? []) as DbRec[]));
-  }, []);
-  const submit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!name.trim() || !text.trim()) return;
-    onToast("អរគុណចំពោះមតិរបស់អ្នក! នឹងបង្ហាញបន្ទាប់ពីការអនុម័ត។");
-    setName("");
-    setGame("");
-    setText("");
-  };
+function ServiceLinks() {
+  const services = [
+    {
+      title: "Game Topup — 400 Games+ Free Fire, ML & More",
+      href: "https://www.dynastore.xyz",
+      letter: "D",
+      gradient: "from-orange-400 to-rose-500",
+      badge: null as string | null,
+    },
+    {
+      title: "Telegram Service — Star, Premium, Boost",
+      href: "https://sabitotopup.store",
+      letter: "S",
+      gradient: "from-sky-400 to-blue-600",
+      badge: "NEW",
+    },
+    {
+      title: "TikTok Boost & Likes",
+      href: "https://www.kiratopup.online",
+      letter: "K",
+      gradient: "from-zinc-700 to-zinc-900",
+      badge: "NEW",
+    },
+  ];
   return (
-    <section id="community" className="container mx-auto px-4 py-14">
-      <div className="grid lg:grid-cols-2 gap-8 items-start">
-        <div>
-          <h2 className="font-display text-2xl md:text-3xl">មតិសហគមន៍</h2>
-          <p className="text-sm text-muted-foreground mt-1 mb-5">សួរស្តីពីហ្គេមដែលអ្នកចូលចិត្ត។</p>
-          <ul className="space-y-3">
-            {recs.length === 0 && <li className="text-sm text-muted-foreground">គ្មានមតិនៅឡើយ។</li>}
-            {recs.map((r) => (
-              <li key={r.id} className="glass rounded-2xl border border-border/60 p-4 flex gap-3">
-                <div className="h-10 w-10 shrink-0 rounded-full grid place-items-center bg-primary/15 text-primary font-semibold">
-                  {(r.name.charAt(0) || "?").toUpperCase()}
-                </div>
-                <div className="min-w-0">
-                  <div className="text-sm font-semibold">
-                    {r.name}{" "}
-                    <span className="text-muted-foreground font-normal">· {r.game || "—"}</span>
-                  </div>
-                  <p className="text-sm text-muted-foreground mt-0.5">{r.text}</p>
-                </div>
-              </li>
-            ))}
-          </ul>
-        </div>
-        <form onSubmit={submit} className="glass rounded-2xl border border-border/60 p-5 space-y-3">
-          <h3 className="font-semibold text-sm">ចែករំលែកមតិ</h3>
-          <input
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="ឈ្មោះអ្នក"
-            className="w-full rounded-xl bg-input px-4 py-2.5 text-sm outline-none ring-1 ring-border focus:ring-primary"
-          />
-          <input
-            value={game}
-            onChange={(e) => setGame(e.target.value)}
-            placeholder="ហ្គេម (ស្រេច)"
-            className="w-full rounded-xl bg-input px-4 py-2.5 text-sm outline-none ring-1 ring-border focus:ring-primary"
-          />
-          <textarea
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            rows={3}
-            placeholder="មតិរបស់អ្នក..."
-            className="w-full rounded-xl bg-input px-4 py-2.5 text-sm outline-none ring-1 ring-border focus:ring-primary resize-none"
-          />
-          <button className="inline-flex items-center gap-1.5 rounded-full bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground hover:opacity-90">
-            <Send className="h-3.5 w-3.5" /> ផ្ញើ
-          </button>
-        </form>
+    <section id="services" className="container mx-auto px-4 py-14">
+      <div className="text-[11px] tracking-[0.2em] font-semibold text-amber-500/90 mb-4 flex items-center gap-2">
+        <span className="h-px w-6 bg-amber-500/60" /> SERVICE / BUY
+      </div>
+      <div className="grid gap-3 sm:gap-4 grid-cols-1 md:grid-cols-3">
+        {services.map((s) => (
+          <a
+            key={s.href}
+            href={s.href}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="group relative overflow-hidden rounded-2xl border border-amber-200/40 bg-gradient-to-br from-amber-50/60 to-orange-50/40 dark:from-amber-500/5 dark:to-orange-500/5 p-4 flex items-center gap-3 hover:shadow-lg hover:-translate-y-0.5 transition"
+          >
+            <span className="absolute left-0 top-0 h-full w-1 bg-gradient-to-b from-amber-400 to-orange-500" />
+            <div className={`h-12 w-12 shrink-0 rounded-xl bg-gradient-to-br ${s.gradient} text-white grid place-items-center font-bold text-lg shadow-md`}>
+              {s.letter}
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2">
+                {s.badge && (
+                  <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-sky-500 text-white">{s.badge}</span>
+                )}
+                <h3 className="text-sm font-semibold truncate text-foreground">{s.title}</h3>
+              </div>
+              <span className="mt-1.5 inline-flex items-center gap-1 rounded-md bg-gradient-to-r from-amber-500 to-orange-500 text-white px-2.5 py-1 text-[10px] font-bold tracking-wide shadow-sm">
+                → BUY NOW
+              </span>
+            </div>
+            <div className="h-7 w-7 shrink-0 rounded-full bg-amber-100/80 dark:bg-amber-500/10 grid place-items-center text-amber-600 group-hover:translate-x-0.5 transition">
+              ›
+            </div>
+          </a>
+        ))}
       </div>
     </section>
   );
