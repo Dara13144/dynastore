@@ -4764,7 +4764,7 @@ function TopupsTab() {
       } else {
         setOutcome((o) => ({ ...o, [id]: "approved" }));
         toast.success(
-          `✓ Approved · +${r.credited.toLocaleString()} coins · balance ${r.new_balance.toLocaleString()}`,
+          `✓ Approved · +${r.credited.toLocaleString()} balance · total ${r.new_balance.toLocaleString()}`,
         );
       }
       await load();
