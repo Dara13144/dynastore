@@ -109,6 +109,8 @@ function GameDetailPage() {
     setDelivered(content);
     refreshWallet();
     refreshLibrary();
+    refreshStock();
+    window.dispatchEvent(new Event("stock:refresh"));
   };
 
   const payWithBalance = async () => {
