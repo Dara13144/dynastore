@@ -218,39 +218,6 @@ function Hero() {
         <p className="mt-4 text-base md:text-lg text-muted-foreground">
           ទិញហ្គេម PC/Console ភ្លាមៗដោយ Balance របស់អ្នក។
         </p>
-        <div className="mt-8 flex justify-center">
-          <div className="rounded-2xl bg-white p-5 shadow-xl ring-1 ring-black/10 w-full max-w-[440px]">
-            <img
-              src={heroKhqr}
-              alt="KHQR — Dyna Store"
-              className="w-full h-auto rounded-lg"
-            />
-            <div className="mt-2 text-center text-xs text-muted-foreground">
-              Scan here
-            </div>
-            <a
-              href="http://www.dynastore.xyz/"
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={handleDynastoreClick}
-              className="mt-4 inline-flex w-full items-center justify-center rounded-xl bg-gradient-to-r from-primary via-accent to-primary bg-[length:200%_auto] px-6 py-4 text-base md:text-lg font-bold text-primary-foreground shadow-lg ring-2 ring-primary/40 animate-[gradient-x_3s_ease_infinite] hover:scale-105 hover:shadow-[0_0_30px_oklch(0.78_0.18_195/0.6)] transition-all duration-300"
-              style={{ animation: "gradient-x 3s ease infinite, pulse-glow 2s ease-in-out infinite" }}
-            >
-              ✨ www.dynastore.xyz ✨
-            </a>
-            <a
-              href="https://www.dynastore.xyz"
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={handleNewSiteClick}
-              className="mt-3 group relative inline-flex w-full items-center justify-center overflow-hidden rounded-xl bg-gradient-to-r from-accent via-primary to-accent bg-[length:200%_auto] px-6 py-4 text-base md:text-lg font-bold text-primary-foreground shadow-lg ring-2 ring-accent/40 hover:scale-105 transition-all duration-300"
-              style={{ animation: "gradient-x 3s ease infinite, pulse-glow 2s ease-in-out infinite" }}
-            >
-              <span className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/30 to-transparent group-hover:translate-x-full transition-transform duration-1000" />
-              🚀 New Site — www.dynastore.xyz 🚀
-            </a>
-          </div>
-        </div>
       </div>
     </section>
   );
