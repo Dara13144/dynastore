@@ -324,24 +324,6 @@ function GameDetailPage() {
                   </button>
                 </div>
 
-                {/* Redeem Coins */}
-                <button
-                  onClick={() => setRedeemCoins(!redeemCoins)}
-                  className="w-full rounded-xl border border-border bg-card px-4 py-3 flex items-center justify-between hover:bg-accent/50 transition"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="h-8 w-8 rounded-full bg-amber-500/15 grid place-items-center">
-                      <Coins className="h-4 w-4 text-amber-500" />
-                    </div>
-                    <div className="text-left">
-                      <div className="text-sm font-semibold">Redeem Coins</div>
-                      <div className="text-[11px] text-muted-foreground">You have {userCoins} coins</div>
-                    </div>
-                  </div>
-                  <div className={`relative h-6 w-11 rounded-full transition ${redeemCoins ? "bg-emerald-500" : "bg-muted"}`}>
-                    <div className={`absolute top-0.5 h-5 w-5 rounded-full bg-white transition ${redeemCoins ? "left-[1.375rem]" : "left-0.5"}`} />
-                  </div>
-                </button>
 
                 {/* Total */}
                 <div className="rounded-2xl glass border border-border/60 p-5">
