@@ -249,28 +249,28 @@ function GameCard({ game, onToast }: { game: Game; onToast: (m: string) => void 
           </h3>
         </Link>
         <p className="text-[11px] sm:text-xs text-muted-foreground mt-1 line-clamp-2 hidden sm:block">{game.description}</p>
-        <div className="mt-3 space-y-2">
-          <div className="flex items-center justify-between text-xs">
+        <div className="mt-2 sm:mt-3 space-y-1.5 sm:space-y-2">
+          <div className="flex items-center justify-between text-[11px] sm:text-xs">
             <div className="inline-flex items-center gap-1 font-semibold text-primary">
-              <Wallet className="h-3.5 w-3.5" /> ${game.price_coins.toLocaleString()}
+              <Wallet className="h-3 w-3 sm:h-3.5 sm:w-3.5" /> ${game.price_coins.toLocaleString()}
             </div>
             {authed && !owned && (
               <div
-                className={`inline-flex items-center gap-1 ${balance >= game.price_coins ? "text-emerald-400" : "text-amber-400"}`}
+                className={`hidden sm:inline-flex items-center gap-1 ${balance >= game.price_coins ? "text-emerald-400" : "text-amber-400"}`}
               >
                 <Wallet className="h-3 w-3" /> Balance: ${balance.toLocaleString()}
               </div>
             )}
           </div>
           {authed && !owned && (
-            <div className="h-1.5 w-full overflow-hidden rounded-full bg-accent/40">
+            <div className="h-1 sm:h-1.5 w-full overflow-hidden rounded-full bg-accent/40">
               <div
                 className={`h-full transition-all ${balance >= game.price_coins ? "bg-emerald-400" : "bg-amber-400"}`}
                 style={{ width: `${Math.min(100, (balance / game.price_coins) * 100)}%` }}
               />
             </div>
           )}
-          <div className="flex items-center justify-end gap-1.5">
+          <div className="flex items-center justify-end gap-1 sm:gap-1.5">
             <button
               onClick={wish}
               aria-label={
@@ -279,31 +279,32 @@ function GameCard({ game, onToast }: { game: Game; onToast: (m: string) => void 
                   : `បន្ថែមទៅបញ្ជីចង់លេង — ${game.title}`
               }
               aria-pressed={wished}
-              className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1.5 text-xs hover:bg-accent ${wished ? "border-primary text-primary" : "border-border"}`}
+              className={`inline-flex items-center gap-1 rounded-full border px-2 py-1 sm:px-2.5 sm:py-1.5 text-[10px] sm:text-xs hover:bg-accent ${wished ? "border-primary text-primary" : "border-border"}`}
             >
-              <Star className={`h-3.5 w-3.5 ${wished ? "fill-primary" : ""}`} />
+              <Star className={`h-3 w-3 sm:h-3.5 sm:w-3.5 ${wished ? "fill-primary" : ""}`} />
             </button>
             {owned ? (
               <button
                 disabled
-                className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 text-emerald-400 px-3 py-1.5 text-xs font-semibold"
+                className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 text-emerald-400 px-2 py-1 sm:px-3 sm:py-1.5 text-[10px] sm:text-xs font-semibold"
               >
                 មាន
               </button>
             ) : authed && balance < game.price_coins ? (
               <button
                 disabled
-                className="inline-flex items-center gap-1 rounded-full border border-amber-400/50 bg-amber-400/10 text-amber-300 px-3 py-1.5 text-xs font-semibold opacity-80"
+                className="inline-flex items-center gap-1 rounded-full border border-amber-400/50 bg-amber-400/10 text-amber-300 px-2 py-1 sm:px-3 sm:py-1.5 text-[10px] sm:text-xs font-semibold opacity-80"
               >
-                Balance មិនគ្រប់គ្រាន់
+                <span className="hidden sm:inline">Balance មិនគ្រប់គ្រាន់</span>
+                <span className="sm:hidden">មិនគ្រប់</span>
               </button>
             ) : (
               <button
                 onClick={buy}
                 disabled={busy}
-                className="inline-flex items-center gap-1 rounded-full bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-60"
+                className="inline-flex items-center gap-1 rounded-full bg-primary px-2 py-1 sm:px-3 sm:py-1.5 text-[10px] sm:text-xs font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-60"
               >
-                {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "ទិញ"}
+                {busy ? <Loader2 className="h-3 w-3 sm:h-3.5 sm:w-3.5 animate-spin" /> : "ទិញ"}
               </button>
             )}
           </div>
