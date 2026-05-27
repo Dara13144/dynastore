@@ -370,6 +370,39 @@ export type Database = {
           },
         ]
       }
+      payment_transactions: {
+        Row: {
+          amount: number
+          bill_number: string
+          created_at: string
+          id: string
+          khqr: string
+          md5: string
+          paid_at: string | null
+          status: string
+        }
+        Insert: {
+          amount: number
+          bill_number: string
+          created_at?: string
+          id?: string
+          khqr: string
+          md5: string
+          paid_at?: string | null
+          status?: string
+        }
+        Update: {
+          amount?: number
+          bill_number?: string
+          created_at?: string
+          id?: string
+          khqr?: string
+          md5?: string
+          paid_at?: string | null
+          status?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
