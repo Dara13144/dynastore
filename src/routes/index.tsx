@@ -271,6 +271,13 @@ function GameCard({ game, onToast }: { game: Game; onToast: (m: string) => void 
             </div>
           )}
           <div className="flex items-center justify-end gap-1 sm:gap-1.5">
+            <Link
+              to="/games/$id"
+              params={{ id: game.id }}
+              className="inline-flex items-center gap-1 rounded-full border border-border bg-card px-2 py-1 sm:px-3 sm:py-1.5 text-[10px] sm:text-xs font-semibold hover:bg-muted transition"
+            >
+              View Details
+            </Link>
             <button
               onClick={wish}
               aria-label={
