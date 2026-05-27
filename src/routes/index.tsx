@@ -221,7 +221,7 @@ function GameCard({ game, onToast }: { game: Game; onToast: (m: string) => void 
       <Link
         to="/games/$id"
         params={{ id: game.id }}
-        className="block relative aspect-[16/10] overflow-hidden"
+      className="block relative aspect-[16/10] overflow-hidden"
       >
         <img
           src={game.image}
@@ -229,26 +229,26 @@ function GameCard({ game, onToast }: { game: Game; onToast: (m: string) => void 
           className="h-full w-full object-cover transition group-hover:scale-105"
         />
         {game.badge && (
-          <span className="absolute top-3 left-3 rounded-full bg-primary px-2.5 py-0.5 text-[10px] font-semibold text-primary-foreground">
+          <span className="absolute top-2 left-2 sm:top-3 sm:left-3 rounded-full bg-primary px-2 py-0.5 text-[9px] sm:text-[10px] font-semibold text-primary-foreground">
             {game.badge}
           </span>
         )}
         {owned && (
-          <span className="absolute top-3 right-3 rounded-full bg-emerald-500 px-2.5 py-0.5 text-[10px] font-semibold text-white inline-flex items-center gap-1">
-            <Check className="h-3 w-3" /> ជាកម្មសិទ្ធ
+          <span className="absolute top-2 right-2 sm:top-3 sm:right-3 rounded-full bg-emerald-500 px-2 py-0.5 text-[9px] sm:text-[10px] font-semibold text-white inline-flex items-center gap-1">
+            <Check className="h-2.5 w-2.5 sm:h-3 sm:w-3" /> ជាកម្មសិទ្ធ
           </span>
         )}
       </Link>
-      <div className="p-4">
-        <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
+      <div className="p-3 sm:p-4">
+        <div className="text-[9px] sm:text-[10px] uppercase tracking-wider text-muted-foreground">
           {game.category}
         </div>
         <Link to="/games/$id" params={{ id: game.id }} className="block">
-          <h3 className="font-display text-lg mt-0.5 hover:text-primary transition">
+          <h3 className="font-display text-sm sm:text-lg mt-0.5 hover:text-primary transition truncate">
             {game.title}
           </h3>
         </Link>
-        <p className="text-xs text-muted-foreground mt-1.5 line-clamp-2">{game.description}</p>
+        <p className="text-[11px] sm:text-xs text-muted-foreground mt-1 line-clamp-2 hidden sm:block">{game.description}</p>
         <div className="mt-3 space-y-2">
           <div className="flex items-center justify-between text-xs">
             <div className="inline-flex items-center gap-1 font-semibold text-primary">
