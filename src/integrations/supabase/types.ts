@@ -685,6 +685,7 @@ export type Database = {
       purchase_game_atomic: {
         Args: { _game_id: string; _user_id: string }
         Returns: {
+          delivered_content: string
           message: string
           new_balance: number
           ok: boolean
