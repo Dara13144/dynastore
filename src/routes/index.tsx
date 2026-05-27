@@ -80,7 +80,7 @@ function Page() {
       <main>
         <Hero />
         <GamesSection onToast={showToast} />
-        <NewSiteBanner />
+        
         <Recommendations onToast={showToast} />
       </main>
       <Footer />
@@ -314,48 +314,6 @@ function GameCard({ game, onToast }: { game: Game; onToast: (m: string) => void 
   );
 }
 
-function NewSiteBanner() {
-  const trackClick = useServerFn(recordClick);
-
-  const handleClick = () => {
-    trackClick({ data: { button_label: "new-site-banner" } });
-  };
-
-  return (
-    <section id="deals" className="container mx-auto px-4 py-10">
-      <div className="relative overflow-hidden rounded-3xl border border-border/60 bg-gradient-to-br from-primary/20 via-accent/20 to-primary/20 p-8 md:p-12 text-center">
-        <div className="absolute top-0 right-0 h-32 w-32 rounded-full bg-primary/20 blur-3xl" />
-        <div className="absolute bottom-0 left-0 h-32 w-32 rounded-full bg-accent/20 blur-3xl" />
-        <div className="relative">
-          <h2 className="font-display text-3xl md:text-5xl tracking-tight gradient-text mb-3">
-            New Site Design
-          </h2>
-          <p className="text-muted-foreground text-sm md:text-base max-w-lg mx-auto mb-6">
-            ទស្សនា Website ថ្មីរបស់យើងឥឡូវនេះ — រចនាសម័យថ្មី ល្បឿនលឿន និងងាយស្រួលប្រើ។
-          </p>
-          <a
-            href="https://www.dynastore.xyz"
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={handleClick}
-            className="group relative inline-flex items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-r from-primary via-accent to-primary bg-[length:300%_auto] px-10 py-5 text-lg md:text-2xl font-bold text-primary-foreground shadow-2xl ring-2 ring-primary/50 animate-[gradient-x_2.5s_ease_infinite] hover:scale-105 transition-all duration-300"
-            style={{ animation: "gradient-x 2.5s ease infinite, pulse-glow 2s ease-in-out infinite, float-y 3s ease-in-out infinite" }}
-          >
-            <span
-              className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/40 to-transparent group-hover:translate-x-full transition-transform duration-1000"
-              style={{ animation: "shimmer-slide 2.5s linear infinite" }}
-            />
-            <span className="relative flex items-center gap-3">
-              <Sparkles className="h-6 w-6 md:h-7 md:w-7 animate-[spin-slow_4s_linear_infinite]" />
-              New Site Design — www.dynastore.xyz
-              <Sparkles className="h-6 w-6 md:h-7 md:w-7 animate-[spin-slow_4s_linear_infinite_reverse]" />
-            </span>
-          </a>
-        </div>
-      </div>
-    </section>
-  );
-}
 
 type DbRec = { id: string; name: string; game: string | null; text: string };
 function Recommendations({ onToast }: { onToast: (m: string) => void }) {
