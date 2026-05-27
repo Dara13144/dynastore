@@ -20,7 +20,7 @@ import { SiteHeader } from "@/components/SiteHeader";
 import { listMyTopupRequests } from "@/lib/topup.functions";
 import { getMyDeliveries } from "@/lib/stock.functions";
 import { Copy, Mail } from "lucide-react";
-import { toast } from "sonner";
+import { toast as sonner } from "sonner";
 
 
 export const Route = createFileRoute("/account")({
