@@ -17,6 +17,7 @@ import { purchaseGame } from "@/lib/payment.functions";
 import { recordClick } from "@/lib/tracking.functions";
 import { TopupModal } from "@/components/TopupModal";
 import { DynastoreAIChat } from "@/components/DynastoreAIChat";
+import { WelcomeModal } from "@/components/WelcomeModal";
 import { SiteHeader } from "@/components/SiteHeader";
 import { useStockCounts } from "@/hooks/useStockCounts";
 
@@ -89,6 +90,7 @@ function Page() {
       {topupOpen && <TopupModal onClose={() => setTopupOpen(false)} onToast={showToast} />}
 
       <DynastoreAIChat />
+      <WelcomeModal />
 
       {toast && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[200] rounded-full bg-foreground text-background px-5 py-2 text-sm shadow-lg animate-in fade-in slide-in-from-bottom-2">
